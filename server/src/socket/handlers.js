@@ -5,9 +5,9 @@ const cleanupInProgress = new Set();
 const disconnectTimers = {};
 const IDLE_TIMEOUT = 2 * 60 * 1000;
 const DISCONNECT_GRACE_PERIOD = 3000;
-const REPORT_THRESHOLD = 3;
-const REPORT_EXPIRY = 3600;
-const BAN_DURATION = 3600;
+const SUSPEND_THRESHOLD = 3;
+const REPORT_WINDOW = 3600; // seconds
+const SUSPEND_DURATION = 24 * 3600; // 24 hours
 const NEXT_CAPTCHA_THRESHOLD = 5;
 const NEXT_CAPTCHA_WINDOW = 10; // seconds
 const REPORT_CAPTCHA_THRESHOLD = 2;
@@ -144,10 +144,12 @@ module.exports = (io, socket, redis) => {
       return;
     }
 
-    const isBanned = await redis.get(`banned:${deviceId}`);
-    if (isBanned) {
-      socket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
-      socket.disconnect(true);
+ const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
+    if (suspendTtl > 0) {
+      socket.emit('suspended', {
+        message: '⚠️ You are suspended. Please try after sometime.',
+        expiresAt: Date.now() + suspendTtl * 1000,
+      });
       return;
     }
 
@@ -167,10 +169,12 @@ module.exports = (io, socket, redis) => {
   socket.on('find_new_buddy', async ({ userId, userName, deviceId }) => {
     if (!userId) return;
 
-    const isBanned = await redis.get(`banned:${deviceId}`);
-    if (isBanned) {
-      socket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
-      socket.disconnect(true);
+    const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
+    if (suspendTtl > 0) {
+      socket.emit('suspended', {
+        message: '⚠️ You are suspended. Please try after sometime.',
+        expiresAt: Date.now() + suspendTtl * 1000,
+      });
       return;
     }
 
@@ -196,8 +200,10 @@ module.exports = (io, socket, redis) => {
     if (!roomName) return;
 
     const msgObj = { userId, userName, message, timestamp };
-    await redis.rpush(`chat:${roomName}`, JSON.stringify(msgObj));
-    await redis.expire(`chat:${roomName}`, 3600);
+    const chatKey = `chat:${roomName}`;
+    await redis.rpush(chatKey, JSON.stringify(msgObj));
+    await redis.ltrim(chatKey, -20, -1);
+    await redis.expire(chatKey, 30 * 24 * 3600);
 
     io.to(roomName).emit('chatMessage', msgObj);
     resetIdleTimer(userId, socket, handleDisconnect);
@@ -218,14 +224,18 @@ module.exports = (io, socket, redis) => {
     //   NEXT_CAPTCHA_WINDOW
     // );
 
-    const isBanned = await redis.get(`banned:${deviceId}`);
-    if (isBanned) {
-      socket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
-      socket.disconnect(true);
+const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
+    if (suspendTtl > 0) {
+      socket.emit('suspended', {
+        message: '⚠️ You are suspended. Please try after sometime.',
+        expiresAt: Date.now() + suspendTtl * 1000,
+      });
       return;
     }
 
     await forceCleanup(userId, socket);
+
+    socket.emit('next_ack');
 
     await Promise.all([
       redis.set(`deviceId:${userId}`, deviceId, 'EX', 600),
@@ -249,7 +259,6 @@ module.exports = (io, socket, redis) => {
       REPORT_CAPTCHA_WINDOW
     );
 
-    const reportKey = `reports:${reportedUserId}`;
     const recentReportKey = `report:recent:${reporterDeviceId}:${reportedUserId}`;
     const abuseKey = `reporter:abuse:${reporterDeviceId}`;
 
@@ -273,11 +282,13 @@ module.exports = (io, socket, redis) => {
       return;
     }
 
-    const isNew = !(await redis.exists(reportKey));
-    const reportCount = await redis.incr(reportKey);
-    if (isNew) {
-      await redis.expire(reportKey, REPORT_EXPIRY);
-    }
+const reportedDeviceId = await redis.get(`deviceId:${reportedUserId}`);
+    if (!reportedDeviceId) return;
+
+    const uniqueKey = `reports:unique:${reportedDeviceId}`;
+    await redis.sadd(uniqueKey, reporterDeviceId);
+    await redis.expire(uniqueKey, REPORT_WINDOW);
+    const uniqueCount = await redis.scard(uniqueKey);
 
     await redis.rpush(`reportlog:${reportedUserId}`, JSON.stringify({
       from: reporterId,
@@ -292,18 +303,26 @@ module.exports = (io, socket, redis) => {
       message: 'Thanks for your report. We’ll look into it.',
     });
 
-    if (reportCount >= REPORT_THRESHOLD) {
-      await redis.set(`banned:${reportedUserId}`, 1, 'EX', BAN_DURATION);
-      const deviceId = await redis.get(`deviceId:${reportedUserId}`);
-      if (deviceId) {
-        await redis.set(`banned:${deviceId}`, 1, 'EX', BAN_DURATION);
-      }
-
-      const reportedSocketId = await redis.get(`userSocket:${reportedUserId}`);
+    const reportedSocketId = await redis.get(`userSocket:${reportedUserId}`);
+    if (reportedSocketId && uniqueCount < SUSPEND_THRESHOLD) {
       const reportedSocket = io.sockets.sockets.get(reportedSocketId);
       if (reportedSocket) {
-        reportedSocket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
-        reportedSocket.disconnect(true);
+        reportedSocket.emit('report_warning', '⚠️ You have been reported. Please behave properly.');
+      }
+    }
+
+    if (uniqueCount >= SUSPEND_THRESHOLD) {
+      await redis.set(`suspended:${reportedDeviceId}`, 1, 'EX', SUSPEND_DURATION);
+      if (reportedSocketId) {
+        const reportedSocket = io.sockets.sockets.get(reportedSocketId);
+        if (reportedSocket) {
+          const expiresAt = Date.now() + SUSPEND_DURATION * 1000;
+          reportedSocket.emit('suspended', {
+            message: '⚠️ You have been reported multiple times. You are suspended for 24 hours.',
+            expiresAt,
+          });
+          reportedSocket.disconnect(true);
+        }
       }
     }
   });

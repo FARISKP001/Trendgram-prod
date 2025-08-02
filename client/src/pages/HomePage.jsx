@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import AppLogo from '../components/AppLogo';
+import WebbitLogo from '../components/WebbitLogo.jsx';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import { ArrowRightIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
@@ -18,6 +18,10 @@ const HomePage = () => {
   const [showCookieBar, setShowCookieBar] = useState(() => !localStorage.getItem('cookieAccepted'));
   const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
   const [deviceId, setDeviceId] = useState(null);
+  const [suspendedUntil, setSuspendedUntil] = useState(() => {
+    const stored = localStorage.getItem('suspendedUntil');
+    return stored ? parseInt(stored, 10) : null;
+  });
 
   const navigate = useNavigate();
   const { socket, isConnected } = useSocketContext();
@@ -29,6 +33,24 @@ const HomePage = () => {
   useEffect(() => {
     FingerprintJS.load().then(fp => fp.get().then(res => setDeviceId(res.visitorId)));
   }, []);
+
+  useEffect(() => {
+    if (suspendedUntil && Date.now() >= suspendedUntil) {
+      setSuspendedUntil(null);
+      localStorage.removeItem('suspendedUntil');
+      setError('');
+      return;
+    }
+    if (suspendedUntil) {
+      setError('You are suspended. Please try again later.');
+      const timeout = setTimeout(() => {
+        setSuspendedUntil(null);
+        localStorage.removeItem('suspendedUntil');
+        setError('');
+      }, suspendedUntil - Date.now());
+      return () => clearTimeout(timeout);
+    }
+  }, [suspendedUntil]);
 
   // 📡 Register Socket
   useEffect(() => {
@@ -76,14 +98,27 @@ const HomePage = () => {
       });
     };
 
+    const handleSuspended = ({ message, expiresAt }) => {
+      clearTimeout(timeoutRef.current);
+      setMatching(false);
+      setStatus('');
+      setError(message);
+      if (expiresAt) {
+        setSuspendedUntil(expiresAt);
+        localStorage.setItem('suspendedUntil', expiresAt);
+      }
+    };
+
     socket.on('no_buddy_found', handleNoBuddyFound);
     socket.on('partner_found', handlePartnerFound);
+    socket.on('suspended', handleSuspended);
 
     return () => {
       socket.off('no_buddy_found', handleNoBuddyFound);
       socket.off('partner_found', handlePartnerFound);
+      socket.off('suspended', handleSuspended);
     };
-  }, [socket, isConnected, name, navigate]);
+  }, [socket, isConnected, name, navigate, suspendedUntil]);
 
   // 🍪 Dismiss Cookie Bar
   const handleCookieDismiss = () => {
@@ -105,6 +140,11 @@ const HomePage = () => {
 
     if (!deviceId) {
       setError('Loading device identity...');
+      return;
+    }
+
+    if (suspendedUntil && Date.now() < suspendedUntil) {
+      setError('You are suspended temperorly. Please be polite in next time.');
       return;
     }
 
@@ -149,10 +189,9 @@ const HomePage = () => {
     <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-gray-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header Row with Logo + Toggle */}
       <div className="flex items-center justify-between w-full mb-4">
-        <div className="flex items-center">
-          <AppLogo size={80} />
+        <div className="p-4">
+          <WebbitLogo size={50} />
         </div>
-        
       </div>
 
       <main className="flex flex-col items-center">
@@ -169,7 +208,7 @@ const HomePage = () => {
             />
             <button
               type="submit"
-              disabled={matching || !name}
+              disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
               className="flex items-center justify-center w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {matching ? (
@@ -194,23 +233,6 @@ const HomePage = () => {
         </ul>
         <p className="mt-2">© 2025 webbit</p>
       </footer>
-
-      {showCookieBar && (
-        <div className="fixed bottom-0 left-0 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-50 text-sm p-3 flex flex-wrap justify-between items-center z-50 shadow-[0_-2px_6px_rgba(0,0,0,0.1)]">
-          <p>
-            We use cookies to improve your experience. By browsing, you agree to our&nbsp;
-            <a href="/privacy" target="_blank" className="underline">Privacy Policy</a>,&nbsp;
-            <a href="/cookies" target="_blank" className="underline">Cookie Policy</a>, and&nbsp;
-            <a href="/terms" target="_blank" className="underline">Terms & Conditions</a>.
-          </p>
-          <button
-            onClick={handleCookieDismiss}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded px-3 py-1 mt-2 ml-auto"
-          >
-            Got it
-          </button>
-        </div>
-      )}
     </div>
   );
 };

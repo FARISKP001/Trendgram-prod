@@ -13,7 +13,7 @@ import useChatAnalytics from '../hooks/useChatAnalytics';
 import showConfirmToast from '../utils/showConfirmToast';
 import { sanitizeMessage, validateText } from '../utils/textFilters';
 import { Send, ArrowRight, AlertTriangle } from 'lucide-react';
-import AppLogo from './AppLogo';
+import WebbitLogo from './WebbitLogo';
 
 // Modern Apple Photos style palette icon (SVG)
 const ModernPaletteIcon = ({ size = 28 }) => (
@@ -288,8 +288,6 @@ const ChatBox = () => {
       messages: lastMessages,
     });
     trackUserReported();
-    toast.success('You have reported the user. Searching for a new match...');
-    handleNext();
   };
 
   // Partner found: expect backend to send partnerName in payload!
@@ -345,10 +343,24 @@ const ChatBox = () => {
         msgs.length && msgs[msgs.length - 1]?.timestamp === msg.timestamp ? msgs : [...msgs, msg]
       );
     };
-    const handleBanned = (msg) => {
-      toast.error(msg || '⚠️ You are temporarily banned.');
+    const handleSuspended = ({ message }) => {
+      toast.error(message || '⚠️ You are temporarily suspended.');
       sessionStorage.clear();
       navigate('/', { replace: true });
+    };
+    const handleReportReceived = ({ status, message }) => {
+      if (status === 'accepted') {
+        toast.success('Report submitted. Searching for a new match...');
+        handleNext();
+      } else {
+        toast.info(message);
+      }
+    };
+    const handleReportWarning = (msg) => {
+      toast.warn(msg || 'You have been reported. Please behave properly.');
+    };
+    const handleNextAck = () => {
+      toast.success('Searching for a new buddy...');
     };
     socket.on('partner_found', handlePartnerFound);
     socket.on('partner_left', handlePartnerLeft);
@@ -362,7 +374,10 @@ const ChatBox = () => {
         closeOnClick: true,
       })
     );
-    socket.on('banned', handleBanned);
+    socket.on('suspended', handleSuspended);
+    socket.on('report_received', handleReportReceived);
+    socket.on('report_warning', handleReportWarning);
+    socket.on('next_ack', handleNextAck);
 
     return () => {
       socket.off('partner_found', handlePartnerFound);
@@ -370,7 +385,10 @@ const ChatBox = () => {
       socket.off('chatMessage', handleChatMessage);
       socket.off('no_buddy_found');
       socket.off('idle_warning');
-      socket.off('banned');
+      socket.off('suspended', handleSuspended);
+      socket.off('report_received', handleReportReceived);
+      socket.off('report_warning', handleReportWarning);
+      socket.off('next_ack', handleNextAck);
       clearTimeout(searchTimeout.current);
     };
   }, [socket, isConnected, userId, userName]);
@@ -454,7 +472,7 @@ const ChatBox = () => {
         >
            {/* Left side: Logo and Palette Icon */}
           <div className="flex items-center">
-            <AppLogo size={50} />
+            <WebbitLogo size={50} />
             <div className="relative z-20 ml-4">
               <button
                 onClick={() => setShowColorPicker((prev) => !prev)}

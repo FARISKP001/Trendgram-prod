@@ -5,11 +5,13 @@ import ChatBox from './components/ChatBox';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiePolicy from './pages/CookiePolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
-
+import CookieConsent from './components/CookieConsent';
 
 const App = () => {
   return (
     <Router>
+      {/* <-- Render here so it overlays every page */}
+      <CookieConsent />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/chatbox" element={<ChatBox />} />
