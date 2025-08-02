@@ -17,7 +17,7 @@ const CookieConsent = () => {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       {/* Dimmed background */}
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
       {/* Consent box */}

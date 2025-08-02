@@ -12,8 +12,10 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import useChatAnalytics from '../hooks/useChatAnalytics';
 import showConfirmToast from '../utils/showConfirmToast';
 import { sanitizeMessage, validateText } from '../utils/textFilters';
-import { Send, ArrowRight, AlertTriangle } from 'lucide-react';
 import WebbitLogo from './WebbitLogo';
+import SpeechBubble from './SpeechBubble';
+import ChatInput from './ChatInput';
+import ChatFooter from './ChatFooter';
 
 // Modern Apple Photos style palette icon (SVG)
 const ModernPaletteIcon = ({ size = 28 }) => (
@@ -56,57 +58,6 @@ const toCircleFont = (text) =>
     return code >= 65 && code <= 90 ? String.fromCharCode(0x24b6 + (code - 65)) : c;
   }).join('');
 
-const SpeechBubble = ({ children, isSender }) => {
-  const fillColor = isSender ? '#d9fdd3' : '#fff';
-  const strokeColor = isSender ? '#17C4FF' : '#ccc';
-
-  const containerStyle = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    maxWidth: '80vw',
-    padding: '6px 10px',
-    border: `2px solid ${strokeColor}`,
-    borderRadius: '20px',
-    fontSize: '1rem',
-    lineHeight: '1.3',
-    color: '#222e35',
-    backgroundColor: fillColor,
-    position: 'relative',
-  };
-
-  const svgStyle = {
-    flexShrink: 0,
-    width: 14,
-    height: 28,
-  };
-
-  return (
-    <div style={containerStyle}>
-      {!isSender && (
-        <svg
-          style={{ ...svgStyle, marginRight: 6 }}
-          viewBox="0 0 14 28"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <polygon points="14,0 0,14 14,28" fill={fillColor} stroke={strokeColor} strokeWidth="2" />
-        </svg>
-      )}
-      <div style={{ whiteSpace: 'normal' }}>{children}</div>
-      {isSender && (
-        <svg
-          style={{ ...svgStyle, marginLeft: 6 }}
-          viewBox="0 0 14 28"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <polygon points="0,0 14,14 0,28" fill={fillColor} stroke={strokeColor} strokeWidth="2" />
-        </svg>
-      )}
-    </div>
-  );
-};
-
 const ChatBox = () => {
   const { socket, isConnected } = useSocketContext();
   const location = useLocation();
@@ -132,6 +83,8 @@ const ChatBox = () => {
   const initialMatchRequested = useRef(false);
   const userIdRef = useRef(null);
   const partnerIdRef = useRef(null);
+  const idleTimer = useRef(null);
+  const isIdle = useRef(false);
 
   const {
     trackSessionStart,
@@ -366,14 +319,10 @@ const ChatBox = () => {
     socket.on('partner_left', handlePartnerLeft);
     socket.on('chatMessage', handleChatMessage);
     socket.on('no_buddy_found', () => setChatState('noBuddy'));
-    socket.on('idle_warning', ({ message }) =>
-      toast.warning(message, {
-        toastId: 'idle-toast',
-        autoClose: 30000,
-        pauseOnHover: true,
-        closeOnClick: true,
-      })
+    socket.on('partner_idle', () =>
+    toast.info('⚠️ Your partner seems idle.', { toastId: 'partner-idle' })
     );
+    socket.on('partner_active', () => toast.dismiss('partner-idle'));
     socket.on('suspended', handleSuspended);
     socket.on('report_received', handleReportReceived);
     socket.on('report_warning', handleReportWarning);
@@ -384,7 +333,8 @@ const ChatBox = () => {
       socket.off('partner_left', handlePartnerLeft);
       socket.off('chatMessage', handleChatMessage);
       socket.off('no_buddy_found');
-      socket.off('idle_warning');
+      socket.off('partner_idle');
+      socket.off('partner_active');
       socket.off('suspended', handleSuspended);
       socket.off('report_received', handleReportReceived);
       socket.off('report_warning', handleReportWarning);
@@ -393,6 +343,39 @@ const ChatBox = () => {
     };
   }, [socket, isConnected, userId, userName]);
 
+  useEffect(() => {
+    if (!socket || !userId) return;
+
+    const handleActivity = () => {
+      if (isIdle.current) {
+        isIdle.current = false;
+        socket.emit('heartbeat', { userId });
+      }
+      clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(() => {
+        isIdle.current = true;
+        socket.emit('user_idle', { userId });
+      }, 60000);
+    };
+
+    ['mousemove', 'keydown', 'click'].forEach((e) =>
+      window.addEventListener(e, handleActivity)
+    );
+    handleActivity();
+
+    const interval = setInterval(() => {
+      if (!isIdle.current) socket.emit('heartbeat', { userId });
+    }, 15000);
+
+    return () => {
+      ['mousemove', 'keydown', 'click'].forEach((e) =>
+        window.removeEventListener(e, handleActivity)
+      );
+      clearTimeout(idleTimer.current);
+      clearInterval(interval);
+    };
+  }, [socket, userId]);
+  
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -573,52 +556,16 @@ const ChatBox = () => {
           </div>
 
           {/* Input bar */}
-          {(chatState === 'chatting' || chatState === 'disconnected') && (
-            <form
-              onSubmit={e => { e.preventDefault(); handleSend(); }}
-              className="sticky bottom-0 left-0 right-0 bg-inherit z-10 p-2"
-            >
-              <div className="flex items-center w-full border border-[#ece5dd] rounded-full bg-white dark:bg-gray-700 px-2 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker((prev) => !prev)}
-                  className="text-xl px-1 emoji-btn"
-                  aria-label="Open Emoji Picker"
-                  disabled={chatState === 'disconnected'}
-                >
-                  😊
-                </button>
-                <input
-                  ref={inputRef}
-                  value={input}
-                  onChange={handleInputChange}
-                  className="flex-1 px-3 py-2 bg-transparent outline-none"
-                  placeholder="Type a message..."
-                  required
-                  autoFocus
-                  disabled={chatState === 'disconnected'}
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || !!inputError || chatState === 'disconnected'}
-                  className={`
-                    ml-2 px-4 py-2
-                    bg-green-500 text-white
-                    rounded-full flex items-center gap-2 text-base font-semibold
-                    transition disabled:opacity-40 disabled:cursor-not-allowed
-                    shadow-[0_0_10px_#22c55e] hover:bg-green-600 hover:text-white
-                    disabled:hover:bg-green-500 disabled:hover:text-white
-                  `}
-                  tabIndex={input.trim() && chatState !== 'disconnected' ? 0 : -1}
-                >
-                  <Send className="w-4 h-4" />
-                  Send
-                </button>
-              </div>
-            </form>
-          )}
-
-          {inputError && <div className="text-red-500 text-xs mt-1 px-4">{inputError}</div>}
+          <ChatInput
+            input={input}
+            inputError={inputError}
+            chatState={chatState}
+            handleInputChange={handleInputChange}
+            handleSend={handleSend}
+            showEmojiPicker={showEmojiPicker}
+            setShowEmojiPicker={setShowEmojiPicker}
+            inputRef={inputRef}
+          />
 
           {/* Emoji Picker Drawer: WhatsApp Style */}
           {showEmojiPicker && (
@@ -659,35 +606,7 @@ const ChatBox = () => {
           )}
 
           {/* Footer controls */}
-          <div className="flex justify-center gap-3 py-3 mt-auto bg-white dark:bg-[#1e1e1e] border-t border-gray-200 dark:border-gray-800">
-            <button
-              onClick={handleNext}
-              title="Next"
-              aria-label="Next"
-              className="flex items-center gap-2 px-6 py-2 rounded-full
-             text-sm font-semibold text-white
-             bg-blue-600 hover:bg-blue-700
-             transition-transform transform
-             shadow-md hover:brightness-110"
-            >
-              <ArrowRight className="w-5 h-5" />
-              Next
-            </button>
-
-            <button
-              onClick={handleReport}
-              title="Report"
-              aria-label="Report"
-              className="flex items-center gap-2 px-6 py-2 rounded-full
-             text-sm font-semibold text-white
-             bg-red-600 hover:bg-red-700
-             transition-transform transform active:scale-95
-             shadow-md"
-            >
-              <AlertTriangle className="w-5 h-5" />
-              Report
-            </button>
-          </div>
+          <ChatFooter handleNext={handleNext} handleReport={handleReport} />
           {/* Toast Notifications */}
           <ToastContainer position="bottom-center" />
         </div>

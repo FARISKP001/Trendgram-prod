@@ -1,32 +1,15 @@
 const userRoomMap = {};
-const userTimeoutMap = {};
-const warningTimeoutMap = {};
 const cleanupInProgress = new Set();
-const disconnectTimers = {};
-const IDLE_TIMEOUT = 2 * 60 * 1000;
-const DISCONNECT_GRACE_PERIOD = 3000;
+const idleUsers = new Set();
+const idleDisconnectTimers = {};
+const IDLE_MAX = 2 * 60 * 1000;
 const SUSPEND_THRESHOLD = 3;
-const REPORT_WINDOW = 3600; // seconds
-const SUSPEND_DURATION = 24 * 3600; // 24 hours
+const REPORT_WINDOW = 3600;  
+const SUSPEND_DURATION = 24 * 3600;  
 const NEXT_CAPTCHA_THRESHOLD = 5;
-const NEXT_CAPTCHA_WINDOW = 10; // seconds
+const NEXT_CAPTCHA_WINDOW = 10;  
 const REPORT_CAPTCHA_THRESHOLD = 2;
-const REPORT_CAPTCHA_WINDOW = 300; // seconds
-
-function resetIdleTimer(userId, socket, disconnectHandler) {
-  clearTimeout(userTimeoutMap[userId]);
-  clearTimeout(warningTimeoutMap[userId]);
-
-  warningTimeoutMap[userId] = setTimeout(() => {
-    socket.emit('idle_warning', {
-      message: '⚠️ You’ll be disconnected in 30 seconds due to inactivity.',
-    });
-  }, IDLE_TIMEOUT - 10000);
-
-  userTimeoutMap[userId] = setTimeout(() => {
-    disconnectHandler(userId, socket);
-  }, IDLE_TIMEOUT);
-}
+const REPORT_CAPTCHA_WINDOW = 300;  
 
 module.exports = (io, socket, redis) => {
   let currentUserId = null;
@@ -70,13 +53,13 @@ module.exports = (io, socket, redis) => {
         redis.lrem('chat:waitingQueue', 0, userId),
         redis.del(`userSocket:${userId}`),
         redis.del(`userName:${userId}`),
+        redis.del(`userIdle:${userId}`),
       ]);
 
       delete userRoomMap[userId];
-      clearTimeout(userTimeoutMap[userId]);
-      clearTimeout(warningTimeoutMap[userId]);
-      delete userTimeoutMap[userId];
-      delete warningTimeoutMap[userId];
+      idleUsers.delete(userId);
+      clearTimeout(idleDisconnectTimers[userId]);
+      delete idleDisconnectTimers[userId];
     } catch (err) {
       console.error('Cleanup error:', err);
     } finally {
@@ -86,6 +69,36 @@ module.exports = (io, socket, redis) => {
 
   const handleDisconnect = async (userId, socketInstance) => {
     await forceCleanup(userId, socketInstance);
+  };
+
+  const markIdle = async (userId, socketInstance) => {
+    idleUsers.add(userId);
+    await redis.set(`userIdle:${userId}`, 1, 'EX', IDLE_MAX / 1000);
+    const userRoom = userRoomMap[userId];
+    if (userRoom) {
+      const { partnerId } = userRoom;
+      const partnerSocketId = await redis.get(`userSocket:${partnerId}`);
+      if (partnerSocketId) {
+        io.to(partnerSocketId).emit('partner_idle');
+      }
+    }
+    clearTimeout(idleDisconnectTimers[userId]);
+    idleDisconnectTimers[userId] = setTimeout(() => handleDisconnect(userId, socketInstance), IDLE_MAX);
+  };
+
+  const markActive = async (userId, socketInstance) => {
+    if (idleUsers.has(userId)) {
+      idleUsers.delete(userId);
+      const userRoom = userRoomMap[userId];
+      if (userRoom) {
+        const partnerSocketId = await redis.get(`userSocket:${userRoom.partnerId}`);
+        if (partnerSocketId) {
+          io.to(partnerSocketId).emit('partner_active');
+        }
+      }
+    }
+    clearTimeout(idleDisconnectTimers[userId]);
+    await redis.del(`userIdle:${userId}`);
   };
 
   const ensureRegistered = async (userId) => {
@@ -159,11 +172,6 @@ module.exports = (io, socket, redis) => {
       redis.set(`userSocket:${userId}`, socket.id, 'EX', 600),
       redis.set(`userName:${userId}`, userName, 'EX', 600),
     ]);
-
-    if (disconnectTimers[userId]) {
-      clearTimeout(disconnectTimers[userId]);
-      delete disconnectTimers[userId];
-    }
   });
 
   socket.on('find_new_buddy', async ({ userId, userName, deviceId }) => {
@@ -206,9 +214,20 @@ module.exports = (io, socket, redis) => {
     await redis.expire(chatKey, 30 * 24 * 3600);
 
     io.to(roomName).emit('chatMessage', msgObj);
-    resetIdleTimer(userId, socket, handleDisconnect);
+    await markActive(userId, socket);
 
     await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+  });
+
+  socket.on('user_idle', async ({ userId }) => {
+    if (!(await ensureRegistered(userId))) return;
+    await markIdle(userId, socket);
+  });
+
+  socket.on('heartbeat', async ({ userId }) => {
+    if (!(await ensureRegistered(userId))) return;
+    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+    await markActive(userId, socket);
   });
 
   socket.on('leave_chat', async ({ userId }) => {
@@ -218,11 +237,11 @@ module.exports = (io, socket, redis) => {
   socket.on('next', async ({ userId, userName, deviceId }) => {
     if (!userId) return;
 
-    // await incrementAction(
-    //   `next:${deviceId}`,
-    //   NEXT_CAPTCHA_THRESHOLD,
-    //   NEXT_CAPTCHA_WINDOW
-    // );
+     await incrementAction(
+       `next:${deviceId}`,
+       NEXT_CAPTCHA_THRESHOLD,
+       NEXT_CAPTCHA_WINDOW
+     );
 
 const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
     if (suspendTtl > 0) {
@@ -329,10 +348,7 @@ const reportedDeviceId = await redis.get(`deviceId:${reportedUserId}`);
 
   socket.on('disconnect', async () => {
     if (currentUserId) {
-      disconnectTimers[currentUserId] = setTimeout(() => {
-        handleDisconnect(currentUserId, socket);
-        delete disconnectTimers[currentUserId];
-      }, DISCONNECT_GRACE_PERIOD);
+      await handleDisconnect(currentUserId, socket);
     }
   });
 };
