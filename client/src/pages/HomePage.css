@@ -1,0 +1,232 @@
+/* HomePage.css */
+/* Base styles to ensure full height and reset margins */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.dark html, .dark body {
+  background-color: #0b1120;
+  color: #f9fafb;
+}
+
+.homepage-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 1rem;
+  background-color: #f3f4f6; /* Light mode */
+  color: #111827;
+}
+
+/* 🌙 Dark Mode */
+.dark .homepage-container {
+  background-color: #0b1120;
+  color: #f9fafb;
+}
+
+.homepage-header {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #7c3aed;
+  margin-bottom: 2rem;
+}
+
+.dark .homepage-header {
+  color: #ffffff;
+}
+
+.theme-toggle-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+/* ChatGPT-style input box */
+.chatgpt-style-input-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  padding: 0.4rem 0.9rem; /* reduced vertical padding */
+  max-height: 56px;       /* add max height if needed */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  max-width: 420px;
+  width: 100%;
+  margin: 2rem auto;
+}
+
+
+.dark .chatgpt-style-input-wrapper {
+  background-color: #111c2f;
+}
+
+.name-input {
+  background: transparent;
+  color: #111827;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;  /* slightly smaller */
+  flex: 1;
+  padding: 0.3rem 0.8rem; /* reduce padding */
+  border-radius: 9999px;
+  min-width: 0;
+}
+
+
+.dark .name-input {
+  color: #f9fafb;
+}
+
+.name-input::placeholder {
+  color: #6b7280;
+}
+
+.dark .name-input::placeholder {
+  color: #9ca3af;
+}
+
+.chatgpt-style-input-wrapper button {
+  flex-shrink: 0; /* Prevent from shrinking */
+  flex-grow: 0;   /* Prevent stretching */
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #93c5fd; /* sky-300 */
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.chatgpt-style-input-wrapper button:hover {
+  background-color: #60a5fa; /* sky-400 */
+  transform: scale(1.05);
+}
+
+
+
+.chatgpt-style-input-wrapper button:disabled {
+  background-color: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.status-msg {
+  margin-top: 1rem;
+  color: #059669;
+}
+
+.dark .status-msg {
+  color: #34d399;
+}
+
+.error-msg {
+  margin-top: 1rem;
+  color: #dc2626;
+}
+
+.dark .error-msg {
+  color: #f87171;
+}
+
+/* Footer */
+.linkie-footer {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.dark .linkie-footer {
+  color: #9ca3af;
+}
+
+.linkie-footer ul {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+.linkie-footer a {
+  color: #065f46;
+  text-decoration: underline;
+}
+
+.linkie-footer a:hover {
+  color: #10b981;
+}
+
+.dark .linkie-footer a {
+  color: #34d399;
+}
+
+/* Cookie consent bar */
+.cookie-consent-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #e5e7eb;
+  color: #111827;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dark .cookie-consent-bar {
+  background-color: #1f2937;
+  color: #f9fafb;
+}
+
+.cookie-consent-bar a {
+  text-decoration: underline;
+}
+
+.cookie-consent-bar button {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  margin-top: 0.5rem;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.cookie-consent-bar button:hover {
+  background-color: #059669;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

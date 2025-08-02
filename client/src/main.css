@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure app takes full height */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+/* === Toastify override === */
+.Toastify__toast-container {
+  @apply z-[9999];
+}
+
+/* === Emoji drawer scrollbar hide === */
+.emoji-wrapper::-webkit-scrollbar {
+  display: none;
+}
+.emoji-wrapper {
+  -ms-overflow-style: none; /* IE */
+  scrollbar-width: none;     /* Firefox */
+}

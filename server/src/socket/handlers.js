@@ -1,0 +1,311 @@
+const userRoomMap = {};
+const userTimeoutMap = {};
+const warningTimeoutMap = {};
+const cleanupInProgress = new Set();
+const disconnectTimers = {};
+const IDLE_TIMEOUT = 2 * 60 * 1000;
+const DISCONNECT_GRACE_PERIOD = 3000;
+const REPORT_THRESHOLD = 3;
+const REPORT_EXPIRY = 3600;
+const BAN_DURATION = 3600;
+const NEXT_CAPTCHA_THRESHOLD = 5;
+const NEXT_CAPTCHA_WINDOW = 10; // seconds
+const REPORT_CAPTCHA_THRESHOLD = 2;
+const REPORT_CAPTCHA_WINDOW = 300; // seconds
+
+function resetIdleTimer(userId, socket, disconnectHandler) {
+  clearTimeout(userTimeoutMap[userId]);
+  clearTimeout(warningTimeoutMap[userId]);
+
+  warningTimeoutMap[userId] = setTimeout(() => {
+    socket.emit('idle_warning', {
+      message: '⚠️ You’ll be disconnected in 30 seconds due to inactivity.',
+    });
+  }, IDLE_TIMEOUT - 10000);
+
+  userTimeoutMap[userId] = setTimeout(() => {
+    disconnectHandler(userId, socket);
+  }, IDLE_TIMEOUT);
+}
+
+module.exports = (io, socket, redis) => {
+  let currentUserId = null;
+
+  const checkCaptchaPassed = async (deviceId) => {
+    if (!deviceId) return false;
+    return !!(await redis.get(`captcha:passed:${deviceId}`));
+  };
+
+  const incrementAction = async (key, limit, window) => {
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, window);
+    return count > limit;
+  };
+
+  const forceCleanup = async (userId, socketInstance) => {
+    if (cleanupInProgress.has(userId)) return;
+    cleanupInProgress.add(userId);
+
+    try {
+      const userRoom = userRoomMap[userId];
+      if (userRoom) {
+        const { roomName, partnerId } = userRoom;
+        const partnerSocketId = await redis.get(`userSocket:${partnerId}`);
+
+        if (partnerSocketId) {
+          io.to(partnerSocketId).emit('partner_left');
+          const partnerSocket = io.sockets.sockets.get(partnerSocketId);
+          if (partnerSocket) {
+            setTimeout(() => forceCleanup(partnerId, partnerSocket), 100);
+          }
+        } else {
+          await redis.del(`userSocket:${partnerId}`);
+          await redis.del(`userName:${partnerId}`);
+        }
+
+        await redis.del(`chat:${roomName}`);
+      }
+
+      await Promise.all([
+        redis.lrem('chat:waitingQueue', 0, userId),
+        redis.del(`userSocket:${userId}`),
+        redis.del(`userName:${userId}`),
+      ]);
+
+      delete userRoomMap[userId];
+      clearTimeout(userTimeoutMap[userId]);
+      clearTimeout(warningTimeoutMap[userId]);
+      delete userTimeoutMap[userId];
+      delete warningTimeoutMap[userId];
+    } catch (err) {
+      console.error('Cleanup error:', err);
+    } finally {
+      cleanupInProgress.delete(userId);
+    }
+  };
+
+  const handleDisconnect = async (userId, socketInstance) => {
+    await forceCleanup(userId, socketInstance);
+  };
+
+  const ensureRegistered = async (userId) => {
+    const storedSocket = await redis.get(`userSocket:${userId}`);
+    return storedSocket === socket.id;
+  };
+
+  const matchUser = async (userId, userName) => {
+    if (!userId) return;
+
+    await redis.lrem('chat:waitingQueue', 0, userId);
+
+    while (true) {
+      const partnerId = await redis.lpop('chat:waitingQueue');
+      if (!partnerId || partnerId === userId) break;
+
+      const partnerSocketId = await redis.get(`userSocket:${partnerId}`);
+      const partnerSocket = io.sockets.sockets.get(partnerSocketId);
+
+      if (partnerSocket) {
+        const roomName = [userId, partnerId].sort().join('-');
+
+        userRoomMap[userId] = { roomName, partnerId };
+        userRoomMap[partnerId] = { roomName, partnerId: userId };
+
+        socket.join(roomName);
+        partnerSocket.join(roomName);
+
+        const partnerName = await redis.get(`userName:${partnerId}`) || 'Stranger';
+        console.log("Sending partnerName:", partnerName, "for partnerId:", partnerId);
+        const myName = userName || 'Stranger';   
+        console.log("Sending myName:", myName, "for userId:", userId);
+
+        socket.emit('partner_found', { partnerId, partnerName });
+        partnerSocket.emit('partner_found', { partnerId: userId, partnerName: myName });
+
+        await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+        await redis.set(`userSocket:${partnerId}`, partnerSocket.id, 'EX', 600);
+        return;
+      } else {
+        await redis.del(`userSocket:${partnerId}`);
+        await redis.del(`userName:${partnerId}`);
+      }
+    }
+
+    await redis.rpush('chat:waitingQueue', userId);
+    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+  };
+
+  socket.on('register_user', async ({ userId, deviceId, userName }) => {
+    currentUserId = userId;
+
+    const captchaOk = await checkCaptchaPassed(deviceId);
+    if (!captchaOk) {
+      socket.emit('captcha_required');
+      return;
+    }
+
+    const isBanned = await redis.get(`banned:${deviceId}`);
+    if (isBanned) {
+      socket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
+      socket.disconnect(true);
+      return;
+    }
+
+    await Promise.all([
+      redis.set(`deviceId:${userId}`, deviceId, 'EX', 600),
+      redis.set(`userId:${deviceId}`, userId, 'EX', 600),
+      redis.set(`userSocket:${userId}`, socket.id, 'EX', 600),
+      redis.set(`userName:${userId}`, userName, 'EX', 600),
+    ]);
+
+    if (disconnectTimers[userId]) {
+      clearTimeout(disconnectTimers[userId]);
+      delete disconnectTimers[userId];
+    }
+  });
+
+  socket.on('find_new_buddy', async ({ userId, userName, deviceId }) => {
+    if (!userId) return;
+
+    const isBanned = await redis.get(`banned:${deviceId}`);
+    if (isBanned) {
+      socket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
+      socket.disconnect(true);
+      return;
+    }
+
+    await Promise.all([
+      redis.set(`deviceId:${userId}`, deviceId, 'EX', 600),
+      redis.set(`userId:${deviceId}`, userId, 'EX', 600),
+      redis.set(`userSocket:${userId}`, socket.id, 'EX', 600),
+      redis.set(`userName:${userId}`, userName, 'EX', 600),
+    ]);
+
+    const isValid = await ensureRegistered(userId);
+    if (!isValid) return;
+
+    await matchUser(userId, userName);
+  });
+
+  socket.on('chatMessage', async ({ userId, partnerId, message, timestamp, userName }) => {
+    if (!(await ensureRegistered(userId))) return;
+
+    const roomName = partnerId
+      ? [userId, partnerId].sort().join('-')
+      : userRoomMap[userId]?.roomName;
+    if (!roomName) return;
+
+    const msgObj = { userId, userName, message, timestamp };
+    await redis.rpush(`chat:${roomName}`, JSON.stringify(msgObj));
+    await redis.expire(`chat:${roomName}`, 3600);
+
+    io.to(roomName).emit('chatMessage', msgObj);
+    resetIdleTimer(userId, socket, handleDisconnect);
+
+    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+  });
+
+  socket.on('leave_chat', async ({ userId }) => {
+    await forceCleanup(userId, socket);
+  });
+
+  socket.on('next', async ({ userId, userName, deviceId }) => {
+    if (!userId) return;
+
+   // await incrementAction(
+    //  `next:${deviceId}`,
+    //  NEXT_CAPTCHA_THRESHOLD,
+    //  NEXT_CAPTCHA_WINDOW
+    //);
+    
+    const isBanned = await redis.get(`banned:${deviceId}`);
+    if (isBanned) {
+      socket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
+      socket.disconnect(true);
+      return;
+    }
+
+    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+    if (!(await ensureRegistered(userId))) return;
+
+    await forceCleanup(userId, socket);
+    await matchUser(userId, userName);
+  });
+
+  socket.on('report_user', async ({ reporterId, reporterDeviceId, reportedUserId, messages }) => {
+    if (!reporterId || !reporterDeviceId || !reportedUserId) return;
+
+    await incrementAction(
+      `report:${reporterDeviceId}`,
+      REPORT_CAPTCHA_THRESHOLD,
+      REPORT_CAPTCHA_WINDOW
+    );
+    
+    const reportKey = `reports:${reportedUserId}`;
+    const recentReportKey = `report:recent:${reporterDeviceId}:${reportedUserId}`;
+    const abuseKey = `reporter:abuse:${reporterDeviceId}`;
+
+    const alreadyReported = await redis.get(recentReportKey);
+    if (alreadyReported) {
+      socket.emit('report_received', {
+        status: 'duplicate',
+        message: 'You’ve already reported this user recently.',
+      });
+      return;
+    }
+    await redis.set(recentReportKey, 1, 'EX', 600);
+
+    const abuseCount = await redis.incr(abuseKey);
+    await redis.expire(abuseKey, 3600);
+    if (abuseCount > 10) {
+      socket.emit('report_received', {
+        status: 'limited',
+        message: 'You’ve exceeded the reporting limit. Please try again later.',
+      });
+      return;
+    }
+
+    const isNew = !(await redis.exists(reportKey));
+    const reportCount = await redis.incr(reportKey);
+    if (isNew) {
+      await redis.expire(reportKey, REPORT_EXPIRY);
+    }
+
+    await redis.rpush(`reportlog:${reportedUserId}`, JSON.stringify({
+      from: reporterId,
+      reporterDeviceId,
+      reportedUserId,
+      messages,
+      timestamp: Date.now()
+    }));
+
+    socket.emit('report_received', {
+      status: 'accepted',
+      message: 'Thanks for your report. We’ll look into it.',
+    });
+
+    if (reportCount >= REPORT_THRESHOLD) {
+      await redis.set(`banned:${reportedUserId}`, 1, 'EX', BAN_DURATION);
+      const deviceId = await redis.get(`deviceId:${reportedUserId}`);
+      if (deviceId) {
+        await redis.set(`banned:${deviceId}`, 1, 'EX', BAN_DURATION);
+      }
+
+      const reportedSocketId = await redis.get(`userSocket:${reportedUserId}`);
+      const reportedSocket = io.sockets.sockets.get(reportedSocketId);
+      if (reportedSocket) {
+        reportedSocket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
+        reportedSocket.disconnect(true);
+      }
+    }
+  });
+
+  socket.on('disconnect', async () => {
+    if (currentUserId) {
+      disconnectTimers[currentUserId] = setTimeout(() => {
+        handleDisconnect(currentUserId, socket);
+        delete disconnectTimers[currentUserId];
+      }, DISCONNECT_GRACE_PERIOD);
+    }
+  });
+};

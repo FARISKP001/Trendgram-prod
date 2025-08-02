@@ -1,0 +1,45 @@
+# Root .gitignore for my-fullstack-app
+
+# Node modules (client & server)
+node_modules/
+client/client-vite/node_modules/
+server/node_modules/
+
+# Build output
+dist/
+build/
+client/client-vite/dist/
+server/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.*
+server/.env
+client/client-vite/.env
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# Coverage/test output
+coverage/
+*.lcov
+
+# Misc
+*.tgz
+*.bak
+*.tmp
+
+# Optional: Ignore local data
+*.local
