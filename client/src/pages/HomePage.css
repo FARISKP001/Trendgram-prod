@@ -15,6 +15,7 @@ html, body {
 }
 
 .homepage-container {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -49,6 +50,13 @@ html, body {
   cursor: pointer;
   background: transparent;
   border: none;
+}
+
+.homepage-logo {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  height: 80px;
 }
 
 /* ChatGPT-style input box */

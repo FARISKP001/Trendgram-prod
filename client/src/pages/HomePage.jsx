@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
-import './HomePage.css';
 import { ArrowRightIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import { usePageView } from '../hooks/usePageView';
 import sendAnalyticsEvent from '../utils/analytics.js';
@@ -153,21 +152,22 @@ const HomePage = () => {
   };
 
   return (
-    <div className="homepage-container">
-      <header className="homepage-header">TrendGram</header>
+    <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-gray-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
+      <header className="mb-8 text-[2.5rem] font-extrabold text-purple-600 dark:text-white">TrendGram</header>
+
 
       <button
         onClick={() => setDarkMode((prev) => !prev)}
-        className="theme-toggle-btn"
+        className="absolute top-4 right-4 text-xl cursor-pointer bg-transparent border-0"
       >
         {darkMode ? '☀️' : '🌙'}
       </button>
 
-      <main className="homepage-main">
+      <main className="flex flex-col items-center">
         <form onSubmit={handleFindMatch} className="flex justify-center">
-          <div className="chatgpt-style-input-wrapper">
+          <div className="flex items-center justify-between bg-gray-200 dark:bg-[#111c2f] rounded-full py-1.5 px-4 max-h-14 shadow-md max-w-[420px] w-full mx-auto my-8">
             <input
-              className="name-input"
+              className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 border-0 outline-none text-sm flex-1 px-3 py-1 rounded-full min-w-0"
               type="text"
               value={name}
               onChange={handleNameChange}
@@ -175,7 +175,11 @@ const HomePage = () => {
               required
               maxLength={10}
             />
-            <button type="submit" disabled={matching || !name}>
+            <button
+              type="submit"
+              disabled={matching || !name}
+              className="flex items-center justify-center w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
               {matching ? (
                 <ArrowPathIcon className="w-4 h-4 animate-spin text-gray-900 dark:text-white" />
               ) : (
@@ -185,29 +189,34 @@ const HomePage = () => {
           </div>
         </form>
 
-        {status && <p className="status-msg">{status}</p>}
-        {error && <p className="error-msg">{error}</p>}
+        {status && <p className="mt-4 text-green-600 dark:text-emerald-400">{status}</p>}
+        {error && <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>}
       </main>
 
-      <footer className="linkie-footer">
+      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-12 mb-2">
         <p>We use cookies to improve your experience. By browsing, you agree to this.</p>
-        <ul>
-          <li><a href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-          <li><a href="/cookie-policy" target="_blank" rel="noopener noreferrer">Cookie Policy</a></li>
-          <li><a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms & Conditions</a></li>
+        <ul className="flex justify-center gap-8 mt-2 list-none p-0">
+          <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+          <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/cookie-policy" target="_blank" rel="noopener noreferrer">Cookie Policy</a></li>
+          <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms & Conditions</a></li>
         </ul>
-        <p className="copyright">© 2025 TrendGram</p>
+        <p className="mt-2">© 2025 TrendGram</p>
       </footer>
 
       {showCookieBar && (
-        <div className="cookie-consent-bar">
+        <div className="fixed bottom-0 left-0 w-full bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-50 text-sm p-3 flex flex-wrap justify-between items-center z-50 shadow-[0_-2px_6px_rgba(0,0,0,0.1)]">
           <p>
             We use cookies to improve your experience. By browsing, you agree to our&nbsp;
-            <a href="/privacy" target="_blank">Privacy Policy</a>,&nbsp;
-            <a href="/cookies" target="_blank">Cookie Policy</a>, and&nbsp;
-            <a href="/terms" target="_blank">Terms & Conditions</a>.
+            <a href="/privacy" target="_blank" className="underline">Privacy Policy</a>,&nbsp;
+            <a href="/cookies" target="_blank" className="underline">Cookie Policy</a>, and&nbsp;
+            <a href="/terms" target="_blank" className="underline">Terms & Conditions</a>.
           </p>
-          <button onClick={handleCookieDismiss}>Got it</button>
+          <button
+            onClick={handleCookieDismiss}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded px-3 py-1 mt-2 ml-auto"
+          >
+            Got it
+          </button>
         </div>
       )}
     </div>
