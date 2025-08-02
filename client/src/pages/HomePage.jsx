@@ -15,7 +15,6 @@ const HomePage = () => {
   const [matching, setMatching] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
   const [showCookieBar, setShowCookieBar] = useState(() => !localStorage.getItem('cookieAccepted'));
   const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
   const [deviceId, setDeviceId] = useState(null);
@@ -30,12 +29,6 @@ const HomePage = () => {
   useEffect(() => {
     FingerprintJS.load().then(fp => fp.get().then(res => setDeviceId(res.visitorId)));
   }, []);
-
-  // 🌗 Handle Dark Mode
-    useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('darkMode', darkMode);
-  }, [darkMode]);
 
   // 📡 Register Socket
   useEffect(() => {
@@ -159,13 +152,7 @@ const HomePage = () => {
         <div className="flex items-center">
           <AppLogo size={80} />
         </div>
-        <button
-          onClick={() => setDarkMode((prev) => !prev)}
-          className="text-2xl cursor-pointer bg-transparent border-0 focus:outline-none ml-auto"
-          title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {darkMode ? '☀️' : '🌙'}
-        </button>
+        
       </div>
 
       <main className="flex flex-col items-center">
@@ -183,7 +170,7 @@ const HomePage = () => {
             <button
               type="submit"
               disabled={matching || !name}
-              className={`flex items-center justify-center w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 ${matching ? 'animate-spin' : ''}`}
+              className="flex items-center justify-center w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {matching ? (
                 <ArrowPathIcon className="w-4 h-4 text-gray-900 dark:text-white" />
