@@ -49,7 +49,7 @@ const showMobileExitToast = (onConfirm) => {
 };
 
 const toCircleFont = (text) =>
-  
+
   text.split('').map((c) => {
     const code = c.toUpperCase().charCodeAt(0);
     return code >= 65 && code <= 90 ? String.fromCharCode(0x24b6 + (code - 65)) : c;
@@ -129,6 +129,8 @@ const ChatBox = () => {
   const inputRef = useRef(null);
   const hasHandledLeave = useRef(false);
   const initialMatchRequested = useRef(false);
+  const userIdRef = useRef(null);
+  const partnerIdRef = useRef(null);
 
   const {
     trackSessionStart,
@@ -161,6 +163,8 @@ const ChatBox = () => {
     setUserId(finalId);
     setUserName(nameFromState || storedName || 'Guest');
   }, [location.state, navigate]);
+  useEffect(() => { userIdRef.current = userId; }, [userId]);
+  useEffect(() => { partnerIdRef.current = partnerId; }, [partnerId]);
 
   const playSound = (type) => new Audio(type === 'join' ? joinSound : leaveSound).play();
 
@@ -291,8 +295,10 @@ const ChatBox = () => {
   useEffect(() => {
     if (!socket?.connected || !userId || !deviceId) return;
     const partnerIdFromState = location.state?.partnerId;
+    const partnerNameFromState = location.state?.partnerName;
     if (partnerIdFromState) {
       setPartnerId(partnerIdFromState);
+      setPartnerName(partnerNameFromState || '');
       setChatState('chatting');
       trackSessionStart();
       return;
@@ -312,7 +318,7 @@ const ChatBox = () => {
       console.log("PARTNER FOUND PAYLOAD:", { partnerId, partnerName });
       clearTimeout(searchTimeout.current);
       hasHandledLeave.current = false;
-      toast.success(`You have connected to ${userName} 🎉`);
+      toast.success(`You have connected to ${partnerName} 🎉`);
       playSound('join');
       setPartnerId(partnerId);
       setPartnerName(partnerName);
@@ -320,6 +326,7 @@ const ChatBox = () => {
       setChatState('chatting');
       trackSessionStart();
     };
+
     const handlePartnerLeft = () => {
       playSound('leave');
       if (!leftManually.current) toast.info('Your partner has left the chat.');
@@ -376,8 +383,9 @@ const ChatBox = () => {
     onBack: () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
-        socket.disconnect();
+
       }
+      hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
       setChatState('idle');
@@ -388,16 +396,18 @@ const ChatBox = () => {
     onRefresh: () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
-        socket.disconnect();
+
       }
+      hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
     },
     showExitConfirmToast: () => showMobileExitToast(() => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
-        socket.disconnect();
+
       }
+      hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
       setChatState('idle');
@@ -409,14 +419,14 @@ const ChatBox = () => {
 
   useEffect(() => {
     return () => {
-      if (!hasHandledLeave.current && socket && userId && partnerId) {
-        socket.emit('leave_chat', { userId });
-        socket.disconnect();
+      if (!hasHandledLeave.current && socket && userIdRef.current && partnerIdRef.current) {
+        socket.emit('leave_chat', { userId: userIdRef.current });
+
         trackSessionEnd();
         sessionStorage.clear();
       }
     };
-  }, [socket, userId, partnerId]);
+  }, [socket]);
 
   // For popover click-away
   const colorPopoverRef = useRef(null);

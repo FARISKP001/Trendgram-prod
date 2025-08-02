@@ -115,9 +115,9 @@ module.exports = (io, socket, redis) => {
         partnerSocket.join(roomName);
 
         const partnerName = await redis.get(`userName:${partnerId}`) || 'Stranger';
-        console.log("Sending partnerName:", partnerName, "for partnerId:", partnerId);
-        const myName = userName || 'Stranger';   
-        console.log("Sending myName:", myName, "for userId:", userId);
+        
+        const myName = userName || 'Stranger';
+        
 
         socket.emit('partner_found', { partnerId, partnerName });
         partnerSocket.emit('partner_found', { partnerId: userId, partnerName: myName });
@@ -212,12 +212,12 @@ module.exports = (io, socket, redis) => {
   socket.on('next', async ({ userId, userName, deviceId }) => {
     if (!userId) return;
 
-   // await incrementAction(
-    //  `next:${deviceId}`,
-    //  NEXT_CAPTCHA_THRESHOLD,
-    //  NEXT_CAPTCHA_WINDOW
-    //);
-    
+    // await incrementAction(
+    //   `next:${deviceId}`,
+    //   NEXT_CAPTCHA_THRESHOLD,
+    //   NEXT_CAPTCHA_WINDOW
+    // );
+
     const isBanned = await redis.get(`banned:${deviceId}`);
     if (isBanned) {
       socket.emit('banned', '⚠️ You have been banned. Please be polite and try after sometime.');
@@ -225,12 +225,20 @@ module.exports = (io, socket, redis) => {
       return;
     }
 
-    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+    await forceCleanup(userId, socket);
+
+    await Promise.all([
+      redis.set(`deviceId:${userId}`, deviceId, 'EX', 600),
+      redis.set(`userId:${deviceId}`, userId, 'EX', 600),
+      redis.set(`userSocket:${userId}`, socket.id, 'EX', 600),
+      redis.set(`userName:${userId}`, userName, 'EX', 600),
+    ]);
+
     if (!(await ensureRegistered(userId))) return;
 
-    await forceCleanup(userId, socket);
     await matchUser(userId, userName);
   });
+
 
   socket.on('report_user', async ({ reporterId, reporterDeviceId, reportedUserId, messages }) => {
     if (!reporterId || !reporterDeviceId || !reportedUserId) return;
@@ -240,7 +248,7 @@ module.exports = (io, socket, redis) => {
       REPORT_CAPTCHA_THRESHOLD,
       REPORT_CAPTCHA_WINDOW
     );
-    
+
     const reportKey = `reports:${reportedUserId}`;
     const recentReportKey = `report:recent:${reporterDeviceId}:${reportedUserId}`;
     const abuseKey = `reporter:abuse:${reporterDeviceId}`;
