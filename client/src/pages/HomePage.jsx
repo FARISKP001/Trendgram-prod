@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import AppLogo from '../components/AppLogo';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import { ArrowRightIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
@@ -31,7 +32,7 @@ const HomePage = () => {
   }, []);
 
   // 🌗 Handle Dark Mode
-  useEffect(() => {
+    useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
     localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
@@ -153,15 +154,19 @@ const HomePage = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-gray-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
-      <header className="mb-8 text-[2.5rem] font-extrabold text-purple-600 dark:text-white">TrendGram</header>
-
-
-      <button
-        onClick={() => setDarkMode((prev) => !prev)}
-        className="absolute top-4 right-4 text-xl cursor-pointer bg-transparent border-0"
-      >
-        {darkMode ? '☀️' : '🌙'}
-      </button>
+      {/* Header Row with Logo + Toggle */}
+      <div className="flex items-center justify-between w-full mb-4">
+        <div className="flex items-center">
+          <AppLogo size={80} />
+        </div>
+        <button
+          onClick={() => setDarkMode((prev) => !prev)}
+          className="text-2xl cursor-pointer bg-transparent border-0 focus:outline-none ml-auto"
+          title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {darkMode ? '☀️' : '🌙'}
+        </button>
+      </div>
 
       <main className="flex flex-col items-center">
         <form onSubmit={handleFindMatch} className="flex justify-center">
@@ -178,10 +183,10 @@ const HomePage = () => {
             <button
               type="submit"
               disabled={matching || !name}
-              className="flex items-center justify-center w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`flex items-center justify-center w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 ${matching ? 'animate-spin' : ''}`}
             >
               {matching ? (
-                <ArrowPathIcon className="w-4 h-4 animate-spin text-gray-900 dark:text-white" />
+                <ArrowPathIcon className="w-4 h-4 text-gray-900 dark:text-white" />
               ) : (
                 <ArrowRightIcon className="w-4 h-4 text-gray-900 dark:text-white" />
               )}
@@ -200,7 +205,7 @@ const HomePage = () => {
           <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/cookie-policy" target="_blank" rel="noopener noreferrer">Cookie Policy</a></li>
           <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms & Conditions</a></li>
         </ul>
-        <p className="mt-2">© 2025 TrendGram</p>
+        <p className="mt-2">© 2025 webbit</p>
       </footer>
 
       {showCookieBar && (

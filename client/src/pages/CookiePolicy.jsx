@@ -51,11 +51,11 @@ const CookiePolicy = () => (
     </div>
     <div style={{ color: "#444", fontSize: "1rem", marginBottom: "1.2em" }}>
       <div><strong>Effective Date:</strong> July 14, 2025</div>
-      <div><strong>Website Name:</strong> TrendGram</div>
+      <div><strong>Website Name:</strong> webbit</div>
       <div><strong>Website URL:</strong> <a href="https://www.Linklie.co.in" target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>www.Linklie.co.in</a></div>
     </div>
     <p>
-      This Cookie Policy explains how TrendGram uses cookies and similar technologies on our website.
+      This Cookie Policy explains how webbit uses cookies and similar technologies on our website.
     </p>
 
     <div style={subheadingStyle}>1. What Are Cookies?</div>
@@ -86,7 +86,7 @@ const CookiePolicy = () => (
     </p>
 
     <div style={footerStyle}>
-      &copy; 2025 TrendGram
+      &copy; 2025 webbit
     </div>
   </div>
 );

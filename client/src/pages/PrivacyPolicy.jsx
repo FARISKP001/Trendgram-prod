@@ -51,11 +51,11 @@ const PrivacyPolicy = () => (
     </div>
     <div style={{ color: "#444", fontSize: "1rem", marginBottom: "1.2em" }}>
       <div><strong>Effective Date:</strong> July 14, 2025</div>
-      <div><strong>Website Name:</strong> TrendGram</div>
+      <div><strong>Website Name:</strong> webbit</div>
       <div><strong>Website URL:</strong> <a href="https://www.Linklie.co.in" target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>www.Linklie.co.in</a></div>
     </div>
     <p>
-      At TrendGram, your privacy is important to us. This policy outlines how we collect, use, and protect your personal data.
+      At webbit, your privacy is important to us. This policy outlines how we collect, use, and protect your personal data.
     </p>
 
     <div style={subheadingStyle}>1. What Information We Collect</div>
@@ -88,7 +88,7 @@ const PrivacyPolicy = () => (
 
     <div style={subheadingStyle}>5. Your Rights</div>
     <p>
-      You may request access to, correction of, or deletion of your personal data by contacting us at <a href="mailto:your@email.com" style={{ color: "#2563eb" }}>TrendGram-contact-us@gmail.com</a>.
+      You may request access to, correction of, or deletion of your personal data by contacting us at <a href="mailto:your@email.com" style={{ color: "#2563eb" }}>webbit-contact-us@gmail.com</a>.
     </p>
 
     <div style={subheadingStyle}>6. Data Security</div>
@@ -108,7 +108,7 @@ const PrivacyPolicy = () => (
 
     {/* Footer */}
     <div style={footerStyle}>
-      &copy; 2025 TrendGram
+      &copy; 2025 webbit
     </div>
   </div>
 );
