@@ -464,75 +464,69 @@ const ChatBox = () => {
         font-[system-ui,sans-serif] text-base
         border sm:border-0
       ">
-        {/* Header with logo, palette, partner name and info icons */}
+        {/* Header with logo, partner name and palette icon */}
         <div
-          className="flex items-center justify-between px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
+          className="flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] relative"
           style={{ height: '60px' }}
         >
-           {/* Left side: Logo and Palette Icon */}
-          <div className="flex items-center">
-            <WebbitLogo size={100} />
-<div className="relative z-20 ml-8">
-  <button
-    onClick={() => setShowColorPicker((prev) => !prev)}
-    className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-    title="Change chat background"
-    aria-label="Change background color"
-    type="button"
-  >
-    <ModernPaletteIcon size={28} />
-  </button>
-              {showColorPicker && (
-                <div
-                  ref={colorPopoverRef}
-                  className="absolute right-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 flex flex-wrap p-3 z-30"
-                  style={{
-                    minWidth: '200px',
-                    marginTop: '8px',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(5, 36px)',
-                    gridTemplateRows: 'repeat(2, 36px)',
-                    gap: '12px',
-                  }}
-                >
-                  {colorOptions.map((color) => (
-                    <button
-                      key={color}
-                      className="w-9 h-9 rounded-full outline-none focus:ring-2 focus:ring-cyan-400 transition hover:scale-110 flex items-center justify-center"
-                      style={{
-                        background: color,
-                        boxShadow: bgColor === color ? '0 0 0 2.5px #17C4FF' : '0 2px 8px 0 #0001',
-                        borderColor: bgColor === color ? '#17C4FF' : 'transparent',
-                        borderWidth: bgColor === color ? '2px' : '0px',
-                        borderStyle: 'solid',
-                      }}
-                      aria-label={`Change background to ${color}`}
-                      onClick={() => {
-                        setBgColor(color);
-                        sessionStorage.setItem('chatBgColor', color);
-                        setShowColorPicker(false);
-                      }}
-                    >
-                      {bgColor === color && (
-                        <span style={{ color: '#222', fontSize: '1.2rem', fontWeight: 900, lineHeight: 1 }}>
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+           <WebbitLogo size={120} style={{ marginTop: '-20px', marginBottom: '-20px' }} />
 
-          {/* Center: Partner Name */}
-          <div className="flex-1 text-center">
+          <div className="absolute left-1/2 -translate-x-1/2 text-center">
             <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
               {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
             </span>
           </div>
-                    {/* Spacer to balance header layout */}
-          <div className="w-16" />
+                   <div className="ml-auto relative z-20">
+            <button
+              onClick={() => setShowColorPicker((prev) => !prev)}
+              className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+              title="Change chat background"
+              aria-label="Change background color"
+              type="button"
+            >
+              <ModernPaletteIcon size={28} />
+            </button>
+            {showColorPicker && (
+              <div
+                ref={colorPopoverRef}
+                className="absolute right-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 flex flex-wrap p-3 z-30"
+                style={{
+                  minWidth: '200px',
+                  marginTop: '8px',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(5, 36px)',
+                  gridTemplateRows: 'repeat(2, 36px)',
+                  gap: '12px',
+                }}
+              >
+                {colorOptions.map((color) => (
+                  <button
+                    key={color}
+                    className="w-9 h-9 rounded-full outline-none focus:ring-2 focus:ring-cyan-400 transition hover:scale-110 flex items-center justify-center"
+                    style={{
+                      background: color,
+                      boxShadow: bgColor === color ? '0 0 0 2.5px #17C4FF' : '0 2px 8px 0 #0001',
+                      borderColor: bgColor === color ? '#17C4FF' : 'transparent',
+                      borderWidth: bgColor === color ? '2px' : '0px',
+                      borderStyle: 'solid',
+                    }}
+                    aria-label={`Change background to ${color}`}
+                    onClick={() => {
+                      setBgColor(color);
+                      sessionStorage.setItem('chatBgColor', color);
+                      setShowColorPicker(false);
+                    }}
+                  >
+                    {bgColor === color && (
+                      <span style={{ color: '#222', fontSize: '1.2rem', fontWeight: 900, lineHeight: 1 }}>
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Main Chat Body */}
