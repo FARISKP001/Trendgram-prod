@@ -51,11 +51,11 @@ const TermsAndConditions = () => (
     </div>
     <div style={{ color: "#444", fontSize: "1rem", marginBottom: "1.2em" }}>
       <div><strong>Effective Date:</strong> July 14, 2025</div>
-      <div><strong>Website Name:</strong> webbit</div>
+      <div><strong>Website Name:</strong> TrendGram</div>
       <div><strong>Website URL:</strong> <a href="https://www.Linklie.co.in" target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>www.Linklie.co.in</a></div>
     </div>
     <p>
-      Welcome to webbit! By accessing or using our website, you agree to be bound by these Terms of Use. If you do not agree, please do not use our website.
+      Welcome to TrendGram! By accessing or using our website, you agree to be bound by these Terms of Use. If you do not agree, please do not use our website.
     </p>
 
     <div style={subheadingStyle}>1. Use of the Website</div>
@@ -66,7 +66,7 @@ const TermsAndConditions = () => (
 
     <div style={subheadingStyle}>2. Intellectual Property</div>
     <p>
-      All content, trademarks, logos, and other intellectual property displayed on this website are the property of webbit or its licensors. You may not use or reproduce them without prior written permission.
+      All content, trademarks, logos, and other intellectual property displayed on this website are the property of TrendGram or its licensors. You may not use or reproduce them without prior written permission.
     </p>
 
     <div style={subheadingStyle}>3. User Content</div>
@@ -95,7 +95,7 @@ const TermsAndConditions = () => (
     </p>
 
     <div style={footerStyle}>
-      &copy; 2025 webbit
+      &copy; 2025 TrendGram
     </div>
   </div>
 );

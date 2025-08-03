@@ -20,8 +20,12 @@ module.exports = (io, socket, redis) => {
   };
 
   const incrementAction = async (key, limit, window) => {
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, window);
+    const results = await redis
+      .multi()
+      .incr(key)
+      .expire(key, window, 'NX')
+      .exec();
+    const count = results[0][1];
     return count > limit;
   };
 
@@ -111,7 +115,7 @@ module.exports = (io, socket, redis) => {
 
     await redis.lrem('chat:waitingQueue', 0, userId);
 
-    while (true) {
+    for (let i = 0; i < 50; i++) {
       const partnerId = await redis.lpop('chat:waitingQueue');
       if (!partnerId || partnerId === userId) break;
 

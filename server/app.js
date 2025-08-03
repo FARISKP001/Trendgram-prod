@@ -3,6 +3,7 @@ const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const compression = require('compression');
 
 const registerSocketHandlers = require('./src/socket');
 const redis = require('./src/config/redisClient');
@@ -13,6 +14,17 @@ const app = express();
 
 // Apply CORS configuration
 app.use(cors(corsOptions));
+
+// Compress responses
+app.use(compression());
+
+// Cache GET responses briefly
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=60');
+  }
+  next();
+});
 
 // JSON body parser
 app.use(express.json());

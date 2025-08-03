@@ -6,7 +6,6 @@ import { ArrowRightIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import { usePageView } from '../hooks/usePageView';
 import sendAnalyticsEvent from '../utils/analytics.js';
 import { validateText } from '../utils/textFilters';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
 const HomePage = () => {
   usePageView('HomePage');
@@ -31,7 +30,13 @@ const HomePage = () => {
   const userId = useRef(storedUserId);
 
   useEffect(() => {
-    FingerprintJS.load().then(fp => fp.get().then(res => setDeviceId(res.visitorId)));
+    const init = async () => {
+      const FingerprintJS = await import('@fingerprintjs/fingerprintjs');
+      const fp = await FingerprintJS.load();
+      const res = await fp.get();
+      setDeviceId(res.visitorId);
+    };
+    init();
   }, []);
 
   useEffect(() => {
@@ -231,7 +236,7 @@ const HomePage = () => {
           <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/cookie-policy" target="_blank" rel="noopener noreferrer">Cookie Policy</a></li>
           <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms & Conditions</a></li>
         </ul>
-        <p className="mt-2">© 2025 webbit</p>
+        <p className="mt-2">© 2025 TrendGram</p>
       </footer>
     </div>
   );

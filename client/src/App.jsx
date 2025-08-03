@@ -1,24 +1,26 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import ChatBox from './components/ChatBox';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import CookiePolicy from './pages/CookiePolicy';
-import TermsAndConditions from './pages/TermsAndConditions';
 import CookieConsent from './components/CookieConsent';
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ChatBox = lazy(() => import('./components/ChatBox'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
+const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
 
 const App = () => {
   return (
     <Router>
       {/* <-- Render here so it overlays every page */}
       <CookieConsent />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/chatbox" element={<ChatBox />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/cookie-policy" element={<CookiePolicy />} />
-        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-      </Routes>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/chatbox" element={<ChatBox />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 };

@@ -8,7 +8,7 @@ import useSocketContext from '../context/useSocketContext';
 import joinSound from '../assets/join.mp3';
 import leaveSound from '../assets/leave.mp3';
 import useExitProtection from '../hooks/useExitProtection';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
 import showConfirmToast from '../utils/showConfirmToast';
 import { sanitizeMessage, validateText } from '../utils/textFilters';
@@ -77,7 +77,9 @@ const ChatBox = () => {
   const [bgColor, setBgColor] = useState(() => sessionStorage.getItem('chatBgColor') || '#ffffff');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const searchTimeout = useRef(null);
-  const messageEndRef = useRef(null);
+  const messageListRef = useRef(null);
+  const listContainerRef = useRef(null);
+  const [listHeight, setListHeight] = useState(0);
   const inputRef = useRef(null);
   const hasHandledLeave = useRef(false);
   const initialMatchRequested = useRef(false);
@@ -100,6 +102,7 @@ const ChatBox = () => {
 
   useEffect(() => {
     const init = async () => {
+      const FingerprintJS = await import('@fingerprintjs/fingerprintjs');
       const fp = await FingerprintJS.load();
       const result = await fp.get();
       setDeviceId(result.visitorId);
@@ -377,7 +380,20 @@ const ChatBox = () => {
   }, [socket, userId]);
   
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const updateHeight = () => {
+      if (listContainerRef.current) {
+        setListHeight(listContainerRef.current.clientHeight);
+      }
+    };
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  useEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollToItem(messages.length - 1);
+    }
   }, [messages]);
 
   useExitProtection({
@@ -530,29 +546,40 @@ const ChatBox = () => {
           }}
         >
           {/* Messages */}
-          <div className="flex-1 flex flex-col gap-2 px-2 py-4">
-            {messages.map((msg, i) => (
-              <div
-                key={msg.timestamp || i}
-                className={
-                  msg.from === 'system'
-                    ? 'flex justify-center my-2'
-                    : msg.userId === userId
-                      ? 'flex justify-end'
-                      : 'flex justify-start'
-                }
-              >
-                {msg.message?.trim() && (
-                  <SpeechBubble isSender={msg.userId === userId}>
-                    {msg.message}
-                  </SpeechBubble>
-                )}
-                {msg.from === 'system' && (
-                  <div className="italic text-sm text-gray-500">{msg.text}</div>
-                )}
-              </div>
-            ))}
-            <div ref={messageEndRef} />
+          <div className="flex-1 flex flex-col gap-2 px-2 py-4" ref={listContainerRef}>
+            <List
+              height={listHeight}
+              itemCount={messages.length}
+              itemSize={80}
+              width={'100%'}
+              ref={messageListRef}
+            >
+              {({ index, style }) => {
+                const msg = messages[index];
+                return (
+                  <div
+                    style={style}
+                    key={msg.timestamp || index}
+                    className={
+                      msg.from === 'system'
+                        ? 'flex justify-center my-2'
+                        : msg.userId === userId
+                        ? 'flex justify-end'
+                        : 'flex justify-start'
+                    }
+                  >
+                    {msg.message?.trim() && (
+                      <SpeechBubble isSender={msg.userId === userId}>
+                        {msg.message}
+                      </SpeechBubble>
+                    )}
+                    {msg.from === 'system' && (
+                      <div className="italic text-sm text-gray-500">{msg.text}</div>
+                    )}
+                  </div>
+                );
+              }}
+            </List>
           </div>
 
           {/* Input bar */}
