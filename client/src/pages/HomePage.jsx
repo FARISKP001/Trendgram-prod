@@ -5,8 +5,6 @@ import useSocketContext from '../context/useSocketContext';
 import {
   ArrowRightIcon,
   ArrowPathIcon,
-  InformationCircleIcon,
-  EnvelopeIcon,
 } from '@heroicons/react/24/solid';
 import { usePageView } from '../hooks/usePageView';
 import sendAnalyticsEvent from '../utils/analytics.js';
@@ -20,8 +18,6 @@ const HomePage = () => {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [showCookieBar, setShowCookieBar] = useState(() => !localStorage.getItem('cookieAccepted'));
-  const [showAbout, setShowAbout] = useState(false);
-  const [showSuggestion, setShowSuggestion] = useState(false);
   const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
   const [deviceId, setDeviceId] = useState(null);
   const [suspendedUntil, setSuspendedUntil] = useState(() => {
@@ -206,57 +202,10 @@ const HomePage = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-gray-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
-       {/* Header */}
-          <div className="flex items-center justify-between w-full mb-8 px-4 py-3 bg-white dark:bg-[#2a2f32] shadow-md rounded-2xl relative">
-            <WebbitLogo size={80} />
-            <div className="relative flex items-center gap-3">
-              {/* About Button */}
-              <button
-                type="button"
-                onClick={() => { setShowAbout((prev) => !prev); setShowSuggestion(false); }}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="About TrendGram"
-              >
-                <InformationCircleIcon className="w-7 h-7 text-sky-600 dark:text-sky-300" />
-              </button>
-              {/* Suggestion Button */}
-              <button
-                type="button"
-                onClick={() => { setShowSuggestion((prev) => !prev); setShowAbout(false); }}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Send Suggestions"
-              >
-                <EnvelopeIcon className="w-7 h-7 text-emerald-600 dark:text-emerald-300" />
-              </button>
-              {/* About Popover */}
-              {showAbout && (
-                <div className="absolute right-0 top-12 w-80 max-w-xs p-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 z-30">
-                  <h3 className="font-semibold mb-1 text-lg text-sky-700 dark:text-sky-300">About TrendGram</h3>
-                  <p>
-                    trendGram is a vibrant platform to instantly connect, chat, and share moments with people worldwide. Designed for Gen Z and anyone seeking real, spontaneous conversations. Experience trending topics, global connections, all in a safe, anonymous, and friendly space!
-                  </p>
-                </div>
-              )}
-              {/* Suggestion Popover */}
-              {showSuggestion && (
-                <div className="absolute right-0 top-12 w-80 max-w-xs p-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 z-30">
-                  <h3 className="font-semibold mb-1 text-lg text-emerald-700 dark:text-emerald-300">Suggestions</h3>
-                  <p className="mb-2">
-                    Your feedback shapes trendGram! Send ideas or suggestions to&nbsp;
-                    <a
-                      href="mailto:support@trendgram.com"
-                      className="text-blue-700 dark:text-blue-400 underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      support@trendgram.com
-                    </a>
-                    —we’re always listening!
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+      {/* Header */}
+    <div className="flex items-center w-full mb-2 px-8 py-2 bg-white dark:bg-[#2a2f32] shadow-md rounded-2xl relative overflow-visible" style={{ minHeight: 72 }}>
+  <WebbitLogo size={110} style={{ marginTop: '-18px', marginBottom: '-18px' }} />
+</div>
 
       <main className="flex flex-col items-center">
         <form onSubmit={handleFindMatch} className="flex justify-center">

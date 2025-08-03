@@ -16,7 +16,6 @@ import WebbitLogo from './WebbitLogo';
 import SpeechBubble from './SpeechBubble';
 import ChatInput from './ChatInput';
 import ChatFooter from './ChatFooter';
-import { InformationCircleIcon, EnvelopeIcon } from '@heroicons/react/24/solid';
 
 // Modern Apple Photos style palette icon (SVG)
 const ModernPaletteIcon = ({ size = 28 }) => (
@@ -77,8 +76,6 @@ const ChatBox = () => {
   const [inputError, setInputError] = useState('');
   const [bgColor, setBgColor] = useState(() => sessionStorage.getItem('chatBgColor') || '#ffffff');
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [showSuggestion, setShowSuggestion] = useState(false);
   const searchTimeout = useRef(null);
   const messageListRef = useRef(null);
   const listContainerRef = useRef(null);
@@ -474,17 +471,17 @@ const ChatBox = () => {
         >
            {/* Left side: Logo and Palette Icon */}
           <div className="flex items-center">
-            <WebbitLogo size={50} />
-            <div className="relative z-20 ml-4">
-              <button
-                onClick={() => setShowColorPicker((prev) => !prev)}
-                className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-                title="Change chat background"
-                aria-label="Change background color"
-                type="button"
-              >
-                 <ModernPaletteIcon size={28} />
-              </button>
+            <WebbitLogo size={100} />
+<div className="relative z-20 ml-8">
+  <button
+    onClick={() => setShowColorPicker((prev) => !prev)}
+    className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+    title="Change chat background"
+    aria-label="Change background color"
+    type="button"
+  >
+    <ModernPaletteIcon size={28} />
+  </button>
               {showColorPicker && (
                 <div
                   ref={colorPopoverRef}
@@ -534,40 +531,8 @@ const ChatBox = () => {
               {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
             </span>
           </div>
-          {/* Right side: About and Suggestion Icons */}
-          <div className="relative flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => { setShowAbout((prev) => !prev); setShowSuggestion(false); }}
-              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-              aria-label="About TrendGram"
-            >
-              <InformationCircleIcon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowSuggestion((prev) => !prev); setShowAbout(false); }}
-              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-              aria-label="Send Suggestions"
-            >
-              <EnvelopeIcon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
-            </button>
-            {showAbout && (
-              <div className="absolute right-0 top-full mt-2 w-80 p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl shadow-xl text-sm z-20">
-                <p>
-                  trendGram is a vibrant platform where you can instantly connect, chat, and share moments with people from around the world. Designed for Gen Z and anyone looking for real, spontaneous conversations, trendGram lets you experience the pulse of trending topics and global connections—all in a safe, anonymous, and friendly environment. Join trendGram and start your next great conversation!
-                </p>
-              </div>
-            )}
-            {showSuggestion && (
-              <div className="absolute right-0 top-full mt-2 w-80 p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl shadow-xl text-sm z-20">
-                <p className="mb-2">
-                  Your feedback shapes trendGram! Have an idea or feature you’d like to see?
-                  Send your suggestions to <a href="https://mail.google.com/mail/?view=cm&fs=1&to=support@trendgram.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">support@trendgram.com</a>—we’re always listening and looking to improve your chat experience.
-                </p>
-              </div>
-            )}
-          </div>
+                    {/* Spacer to balance header layout */}
+          <div className="w-16" />
         </div>
 
         {/* Main Chat Body */}

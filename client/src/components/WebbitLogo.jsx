@@ -1,14 +1,14 @@
 import React from 'react';
-import logo from '../assets/tg_logo.jpeg';
+import logo from '../assets/tg_logo.png';
 
-const WebbitLogo = ({ size = 80 }) => (
+const WebbitLogo = ({ size = 180 }) => (
   <img
     src={logo}
     width={size}
     height={size}
     alt="TrendGram logo"
-    className="rounded-full border-2 border-sky-400 shadow-lg object-cover"
-    style={{ background: '#fff' }}
+    className="object-contain shadow-xl bg-white rounded-2xl"
+    style={{ display: 'block' }}
   />
 );
 
