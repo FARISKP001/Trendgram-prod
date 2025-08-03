@@ -16,6 +16,7 @@ import WebbitLogo from './WebbitLogo';
 import SpeechBubble from './SpeechBubble';
 import ChatInput from './ChatInput';
 import ChatFooter from './ChatFooter';
+import { InformationCircleIcon, EnvelopeIcon } from '@heroicons/react/24/solid';
 
 // Modern Apple Photos style palette icon (SVG)
 const ModernPaletteIcon = ({ size = 28 }) => (
@@ -76,6 +77,8 @@ const ChatBox = () => {
   const [inputError, setInputError] = useState('');
   const [bgColor, setBgColor] = useState(() => sessionStorage.getItem('chatBgColor') || '#ffffff');
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showSuggestion, setShowSuggestion] = useState(false);
   const searchTimeout = useRef(null);
   const messageListRef = useRef(null);
   const listContainerRef = useRef(null);
@@ -464,7 +467,7 @@ const ChatBox = () => {
         font-[system-ui,sans-serif] text-base
         border sm:border-0
       ">
-        {/* Header with logo, palette, and partner name */}
+        {/* Header with logo, palette, partner name and info icons */}
         <div
           className="flex items-center justify-between px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
           style={{ height: '60px' }}
@@ -490,9 +493,9 @@ const ChatBox = () => {
                     minWidth: '200px',
                     marginTop: '8px',
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(5, 36px)', // 5 colors per row
-                    gridTemplateRows: 'repeat(2, 36px)', // 2 rows total
-                    gap: '12px', // space between colors
+                    gridTemplateColumns: 'repeat(5, 36px)',
+                    gridTemplateRows: 'repeat(2, 36px)',
+                    gap: '12px',
                   }}
                 >
                   {colorOptions.map((color) => (
@@ -502,8 +505,8 @@ const ChatBox = () => {
                       style={{
                         background: color,
                         boxShadow: bgColor === color ? '0 0 0 2.5px #17C4FF' : '0 2px 8px 0 #0001',
-                        borderColor: bgColor === color ? '#17C4FF' : 'transparent', // no border for unselected
-                        borderWidth: bgColor === color ? '2px' : '0px', // show border only if selected
+                        borderColor: bgColor === color ? '#17C4FF' : 'transparent',
+                        borderWidth: bgColor === color ? '2px' : '0px',
                         borderStyle: 'solid',
                       }}
                       aria-label={`Change background to ${color}`}
@@ -525,11 +528,45 @@ const ChatBox = () => {
             </div>
           </div>
 
-          {/* Right side: Partner Name */}
-          <div className="mr-4">
+          {/* Center: Partner Name */}
+          <div className="flex-1 text-center">
             <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
-              {partnerName ? toCircleFont(partnerName) : "Ⓦⓐⓘⓣⓘⓝⓖ..."}
+              {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
             </span>
+          </div>
+          {/* Right side: About and Suggestion Icons */}
+          <div className="relative flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => { setShowAbout((prev) => !prev); setShowSuggestion(false); }}
+              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+              aria-label="About TrendGram"
+            >
+              <InformationCircleIcon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowSuggestion((prev) => !prev); setShowAbout(false); }}
+              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+              aria-label="Send Suggestions"
+            >
+              <EnvelopeIcon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+            </button>
+            {showAbout && (
+              <div className="absolute right-0 top-full mt-2 w-80 p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl shadow-xl text-sm z-20">
+                <p>
+                  trendGram is a vibrant platform where you can instantly connect, chat, and share moments with people from around the world. Designed for Gen Z and anyone looking for real, spontaneous conversations, trendGram lets you experience the pulse of trending topics and global connections—all in a safe, anonymous, and friendly environment. Join trendGram and start your next great conversation!
+                </p>
+              </div>
+            )}
+            {showSuggestion && (
+              <div className="absolute right-0 top-full mt-2 w-80 p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl shadow-xl text-sm z-20">
+                <p className="mb-2">
+                  Your feedback shapes trendGram! Have an idea or feature you’d like to see?
+                  Send your suggestions to <a href="https://mail.google.com/mail/?view=cm&fs=1&to=support@trendgram.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">support@trendgram.com</a>—we’re always listening and looking to improve your chat experience.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
