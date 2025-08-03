@@ -16,6 +16,7 @@ import WebbitLogo from './WebbitLogo';
 import SpeechBubble from './SpeechBubble';
 import ChatInput from './ChatInput';
 import ChatFooter from './ChatFooter';
+import CaptchaModal from './CaptchaModal';
 
 // Modern Apple Photos style palette icon (SVG)
 const ModernPaletteIcon = ({ size = 28 }) => (
@@ -87,6 +88,11 @@ const ChatBox = () => {
   const partnerIdRef = useRef(null);
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const pendingAction = useRef(null);
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+  const siteKey = import.meta.env.VITE_CF_SITE_KEY;
 
   const {
     trackSessionStart,
@@ -123,6 +129,16 @@ const ChatBox = () => {
   useEffect(() => { userIdRef.current = userId; }, [userId]);
   useEffect(() => { partnerIdRef.current = partnerId; }, [partnerId]);
 
+  useEffect(() => {
+    if (!socket) return;
+    const handleCaptcha = () => {
+      setCaptchaVerified(false);
+      setShowCaptcha(true);
+    };
+    socket.on('captcha_required', handleCaptcha);
+    return () => socket.off('captcha_required', handleCaptcha);
+  }, [socket]);
+
   const playSound = (type) => new Audio(type === 'join' ? joinSound : leaveSound).play();
 
   // Register user (always send userName)
@@ -131,6 +147,39 @@ const ChatBox = () => {
     socket.emit('register_user', { userId, deviceId });
     sessionStorage.setItem('userId', userId);
     sessionStorage.setItem('userName', userName);
+  };
+
+  const ensureCaptcha = (action) => {
+    if (!captchaVerified) {
+      pendingAction.current = action;
+      setShowCaptcha(true);
+    } else {
+      action();
+    }
+  };
+
+  const handleCaptchaSuccess = async (token) => {
+    if (!deviceId) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/verify-captcha`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, deviceId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCaptchaVerified(true);
+        setShowCaptcha(false);
+        socket.emit('register_user', { userId, deviceId });
+        if (pendingAction.current) {
+          const fn = pendingAction.current;
+          pendingAction.current = null;
+          fn();
+        }
+      }
+    } catch (err) {
+      console.error('Captcha verification failed', err);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -209,41 +258,47 @@ const ChatBox = () => {
   const handleNext = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
-    leftManually.current = true;
-    setMessages([{ text: 'You left the chat. Searching for a new buddy...', from: 'system' }]);
-    setChatState('searching');
-    setPartnerId(null);
-    sessionStorage.clear();
-    trackSessionEnd();
-    socket.emit('next', { userId, userName, deviceId });
-    hasHandledLeave.current = true;
-    clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 30000);
+    ensureCaptcha(() => {
+      leftManually.current = true;
+      setMessages([{ text: 'You left the chat. Searching for a new buddy...', from: 'system' }]);
+      setChatState('searching');
+      setPartnerId(null);
+      sessionStorage.clear();
+      trackSessionEnd();
+      socket.emit('next', { userId, userName, deviceId });
+      hasHandledLeave.current = true;
+      clearTimeout(searchTimeout.current);
+      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 30000);
+    });
   };
 
   const handleNewBuddy = () => {
     if (chatState === 'chatting' || partnerId || !deviceId) return;
     if (!socket?.connected) return toast.error('Unable to connect to server.');
-    hasHandledLeave.current = false;
-    setChatState('searching');
-    setPartnerId(null);
-    setMessages([]);
-    sessionStorage.clear();
-    socket.emit('find_new_buddy', { userId, userName, deviceId });
-    clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 30000);
+    ensureCaptcha(() => {
+      hasHandledLeave.current = false;
+      setChatState('searching');
+      setPartnerId(null);
+      setMessages([]);
+      sessionStorage.clear();
+      socket.emit('find_new_buddy', { userId, userName, deviceId });
+      clearTimeout(searchTimeout.current);
+      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 30000);
+    });
   };
 
   const handleReport = () => {
     if (!socket || !partnerId || !deviceId) return;
-    const lastMessages = messages.slice(-10);
-    socket.emit('report_user', {
-      reporterId: userId,
-      reporterDeviceId: deviceId,
-      reportedUserId: partnerId,
-      messages: lastMessages,
+    ensureCaptcha(() => {
+      const lastMessages = messages.slice(-10);
+      socket.emit('report_user', {
+        reporterId: userId,
+        reporterDeviceId: deviceId,
+        reportedUserId: partnerId,
+        messages: lastMessages,
+      });
+      trackUserReported();
     });
-    trackUserReported();
   };
 
   // Partner found: expect backend to send partnerName in payload!
@@ -323,7 +378,7 @@ const ChatBox = () => {
     socket.on('chatMessage', handleChatMessage);
     socket.on('no_buddy_found', () => setChatState('noBuddy'));
     socket.on('partner_idle', () =>
-    toast.info('⚠️ Your partner seems idle.', { toastId: 'partner-idle' })
+      toast.info('⚠️ Your partner seems idle.', { toastId: 'partner-idle' })
     );
     socket.on('partner_active', () => toast.dismiss('partner-idle'));
     socket.on('suspended', handleSuspended);
@@ -378,7 +433,7 @@ const ChatBox = () => {
       clearInterval(interval);
     };
   }, [socket, userId]);
-  
+
   useEffect(() => {
     const updateHeight = () => {
       if (listContainerRef.current) {
@@ -469,14 +524,14 @@ const ChatBox = () => {
           className="flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] relative"
           style={{ height: '60px' }}
         >
-           <WebbitLogo size={120} style={{ marginTop: '-20px', marginBottom: '-20px' }} />
+          <WebbitLogo size={120} style={{ marginTop: '-20px', marginBottom: '-20px' }} />
 
           <div className="absolute left-1/2 -translate-x-1/2 text-center">
             <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
               {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
             </span>
           </div>
-                   <div className="ml-auto relative z-20">
+          <div className="ml-auto relative z-20">
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
               className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -560,8 +615,8 @@ const ChatBox = () => {
                       msg.from === 'system'
                         ? 'flex justify-center my-2'
                         : msg.userId === userId
-                        ? 'flex justify-end'
-                        : 'flex justify-start'
+                          ? 'flex justify-end'
+                          : 'flex justify-start'
                     }
                   >
                     {msg.message?.trim() && (
@@ -632,6 +687,11 @@ const ChatBox = () => {
           <ChatFooter handleNext={handleNext} handleReport={handleReport} />
           {/* Toast Notifications */}
           <ToastContainer position="bottom-center" />
+          <CaptchaModal
+            visible={showCaptcha}
+            onSuccess={handleCaptchaSuccess}
+            siteKey={siteKey}
+          />
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import WebbitLogo from '../components/WebbitLogo.jsx';
+import CaptchaModal from '../components/CaptchaModal.jsx';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import {
@@ -24,6 +25,10 @@ const HomePage = () => {
     const stored = localStorage.getItem('suspendedUntil');
     return stored ? parseInt(stored, 10) : null;
   });
+const [showCaptcha, setShowCaptcha] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const pendingAction = useRef(null);
+  const siteKey = import.meta.env.VITE_CF_SITE_KEY;
 
   const navigate = useNavigate();
   const { socket, isConnected } = useSocketContext();
@@ -128,10 +133,53 @@ const HomePage = () => {
     };
   }, [socket, isConnected, name, navigate, suspendedUntil]);
 
+  useEffect(() => {
+    if (!socket) return;
+    const handleCaptcha = () => {
+      setCaptchaVerified(false);
+      setShowCaptcha(true);
+    };
+    socket.on('captcha_required', handleCaptcha);
+    return () => socket.off('captcha_required', handleCaptcha);
+  }, [socket]);
+
   // 🍪 Dismiss Cookie Bar
   const handleCookieDismiss = () => {
     localStorage.setItem('cookieAccepted', 'true');
     setShowCookieBar(false);
+  };
+
+  const ensureCaptcha = (action) => {
+    if (!captchaVerified) {
+      pendingAction.current = action;
+      setShowCaptcha(true);
+    } else {
+      action();
+    }
+  };
+
+  const handleCaptchaSuccess = async (token) => {
+    if (!deviceId) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/verify-captcha`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, deviceId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCaptchaVerified(true);
+        setShowCaptcha(false);
+        socket.emit('register_user', { userId: userId.current, deviceId });
+        if (pendingAction.current) {
+          const fn = pendingAction.current;
+          pendingAction.current = null;
+          fn();
+        }
+      }
+    } catch (err) {
+      console.error('Captcha verification failed', err);
+    }
   };
 
   const handleNameChange = (e) => {
@@ -166,38 +214,37 @@ const HomePage = () => {
     // Clear any previous timeout
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    setMatching(true);
-    setStatus('');
-    setError('');
-
     const validation = validateText(name);
     if (!validation.valid) {
       setError('Please enter a valid name.');
-      setMatching(false);
       return;
     }
 
     if (!socket || !isConnected) {
       setError('Socket not connected.');
-      setMatching(false);
       return;
     }
 
-    socket.emit('find_new_buddy', {
-      userId: userId.current,
-      userName: name,
-      deviceId,
-    });
-    sendAnalyticsEvent('user_connected', {
-      user_id: userId.current,
-      user_name: name,
-      timestamp: new Date().toISOString(),
-    });
+    ensureCaptcha(() => {
+      setMatching(true);
+      setStatus('');
+      setError('');
+      socket.emit('find_new_buddy', {
+        userId: userId.current,
+        userName: name,
+        deviceId,
+      });
+      sendAnalyticsEvent('user_connected', {
+        user_id: userId.current,
+        user_name: name,
+        timestamp: new Date().toISOString(),
+      });
 
     timeoutRef.current = setTimeout(() => {
-      setMatching(false);
-      setStatus('No partner is available');
-    }, 60 * 1000); // 1 minute
+        setMatching(false);
+        setStatus('No partner is available');
+      }, 60 * 1000); // 1 minute
+    });
   };
 
   return (
@@ -249,6 +296,7 @@ const HomePage = () => {
         </ul>
         <p className="mt-2">© 2025 TrendGram</p>
       </footer>
+      <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
     </div>
   );
 };

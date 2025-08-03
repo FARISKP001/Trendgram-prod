@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import './CaptchaModal.css';
 
 const CaptchaModal = ({ visible, onSuccess, siteKey }) => {
   const ref = useRef(null);
