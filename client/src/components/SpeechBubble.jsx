@@ -36,7 +36,7 @@ const SpeechBubble = ({ children, isSender }) => {
           <polygon points="14,0 0,14 14,28" fill={fillColor} stroke={strokeColor} strokeWidth="2" />
         </svg>
       )}
-      <div style={{ whiteSpace: 'normal' }}>{children}</div>
+      <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{children}</div>
       {isSender && (
         <svg
           style={{ ...svgStyle, marginLeft: 6 }}

@@ -25,7 +25,7 @@ const HomePage = () => {
     const stored = localStorage.getItem('suspendedUntil');
     return stored ? parseInt(stored, 10) : null;
   });
-const [showCaptcha, setShowCaptcha] = useState(false);
+  const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const pendingAction = useRef(null);
   const siteKey = import.meta.env.VITE_CF_SITE_KEY;
@@ -240,7 +240,7 @@ const [showCaptcha, setShowCaptcha] = useState(false);
         timestamp: new Date().toISOString(),
       });
 
-    timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setMatching(false);
         setStatus('No partner is available');
       }, 60 * 1000); // 1 minute
@@ -248,10 +248,10 @@ const [showCaptcha, setShowCaptcha] = useState(false);
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-gray-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
+    <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-     <div
-        className="flex items-center justify-center w-full mb-2 px-8 py-2 bg-white dark:bg-[#2a2f32] shadow-md rounded-2xl relative overflow-visible"
+      <div
+        className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-md rounded-2xl relative overflow-visible"
         style={{ minHeight: 64 }}
       >
         <WebbitLogo size={130} style={{ marginTop: '-32px', marginBottom: '-32px' }} />
@@ -275,7 +275,7 @@ const [showCaptcha, setShowCaptcha] = useState(false);
               className="flex items-center justify-center w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 border-2 border-sky-500"
             >
               {matching ? (
-                <ArrowPathIcon className="w-4 h-4 text-gray-900 dark:text-white" />
+                <ArrowPathIcon className="w-4 h-4 text-gray-900 dark:text-white animate-spin" />
               ) : (
                 <ArrowRightIcon className="w-4 h-4 text-gray-900 dark:text-white" />
               )}

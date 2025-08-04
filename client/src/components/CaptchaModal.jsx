@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import './CaptchaModal.css';
 
 const CaptchaModal = ({ visible, onSuccess, siteKey }) => {
   const ref = useRef(null);
@@ -28,8 +27,8 @@ const CaptchaModal = ({ visible, onSuccess, siteKey }) => {
   if (!visible) return null;
 
   return (
-    <div className="captcha-overlay">
-      <div className="captcha-box">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 p-5 rounded-lg">
         <div ref={ref} />
       </div>
     </div>
