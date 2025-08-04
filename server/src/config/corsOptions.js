@@ -1,5 +1,6 @@
 const allowedOrigins = [
   'https://trendgram.pages.dev',
+  'https://trendgramprod.pages.dev',
   'http://localhost:5173',
 ];
 
