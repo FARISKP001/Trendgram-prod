@@ -10,6 +10,7 @@ import {
 import { usePageView } from '../hooks/usePageView';
 import sendAnalyticsEvent from '../utils/analytics.js';
 import { validateText } from '../utils/textFilters';
+import CookieConsent from '../components/CookieConsent.jsx';
 
 const HomePage = () => {
   usePageView('HomePage');
