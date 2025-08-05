@@ -557,7 +557,7 @@ const ChatBox = () => {
     ">
         {/* Header */}
         <div
-          className="sticky top-0 z-20 relative flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] flex-shrink-0"
+          className="relative flex items-center shrink-0 px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
           style={{ height: '60px' }}
         >
           <WebbitLogo size={52} style={{ marginTop: 0, marginBottom: 0 }} />
@@ -659,7 +659,7 @@ const ChatBox = () => {
             </List>
           </div>
           {/* Input and Footer */}
-          <div className="bg-inherit z-10 flex-shrink-0">
+          <div className="sticky bottom-0 left-0 right-0 bg-inherit z-10">
             <ChatInput
               input={input}
               inputError={inputError}
