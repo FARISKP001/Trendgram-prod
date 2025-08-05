@@ -248,7 +248,8 @@ const HomePage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom)+32px)] bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50 overflow-x-hidden">
+    <div className="relative min-h-screen flex flex-col justify-between overflow-hidden px-4 pt-8 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
+      
       {/* Header */}
       <div
         className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-green-100 dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
@@ -257,17 +258,13 @@ const HomePage = () => {
         <WebbitLogo size={130} style={{ marginTop: '-32px', marginBottom: '-32px' }} />
       </div>
 
-
-      <main className="flex flex-col items-center">
+      {/* Main content */}
+      <main className="flex-1 flex flex-col items-center justify-center">
         <form onSubmit={handleFindMatch} className="flex justify-center">
           <div className="flex items-center gap-x-8 bg-gray-200 dark:bg-[#111c2f] rounded-full px-6 shadow-md max-w-[600px] w-full mx-auto my-8">
             <input
               style={{ height: '45px', fontSize: '1.25rem' }}
-              className="
-      bg-transparent text-gray-900 dark:text-gray-50 
-      placeholder-gray-500 dark:placeholder-gray-400 
-      outline-none rounded-full border-2 border-sky-400 w-72 max-w-full
-    "
+              className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-sky-400 w-72 max-w-full"
               type="text"
               value={name}
               onChange={handleNameChange}
@@ -287,23 +284,36 @@ const HomePage = () => {
               )}
             </button>
           </div>
-
         </form>
-
 
         {status && <p className="mt-4 text-green-600 dark:text-emerald-400">{status}</p>}
         {error && <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>}
       </main>
 
-      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-12 mb-4 px-4">
+      {/* Footer */}
+      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 px-2">
         <p>We use cookies to improve your experience. By browsing, you agree to this.</p>
-        <ul className="flex justify-center gap-8 mt-2 list-none p-0">
-          <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-          <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/cookie-policy" target="_blank" rel="noopener noreferrer">Cookie Policy</a></li>
-          <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms & Conditions</a></li>
+        <ul className="flex justify-center gap-6 mt-2 list-none p-0 flex-wrap">
+          <li>
+            <a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/privacy-policy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </a>
+          </li>
+          <li>
+            <a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/cookie-policy" target="_blank" rel="noopener noreferrer">
+              Cookie Policy
+            </a>
+          </li>
+          <li>
+            <a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">
+              Terms & Conditions
+            </a>
+          </li>
         </ul>
         <p className="mt-2">© 2025 TrendGram</p>
       </footer>
+
+      <CookieConsent />
       <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
     </div>
   );
