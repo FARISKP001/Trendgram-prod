@@ -7,7 +7,7 @@ const SpeechBubble = ({ children, isSender }) => {
   const containerStyle = {
     display: 'inline-block',
     maxWidth: '70vw',
-    padding: '8px 12px',
+    padding: '4px 10px',
     border: `2px solid ${strokeColor}`,
     borderRadius: '12px',
     fontSize: '0.9rem',

@@ -259,9 +259,9 @@ const HomePage = () => {
 
       <main className="flex flex-col items-center">
         <form onSubmit={handleFindMatch} className="flex justify-center">
-          <div className="flex items-center justify-between bg-gray-200 dark:bg-[#111c2f] rounded-full py-5 px-6 max-h-20 shadow-md max-w-[500px] w-full mx-auto my-8">
+          <div className="flex items-center justify-between bg-gray-200 dark:bg-[#111c2f] rounded-full py-6 px-8 max-h-24 shadow-md max-w-[600px] w-full mx-auto my-8">
             <input
-              className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-lg flex-1 px-6 py-5 rounded-full min-w-0 border-2 border-sky-400"
+              className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-lg flex-1 px-8 py-6 rounded-full min-w-0 border-2 border-sky-400"
               type="text"
               value={name}
               onChange={handleNameChange}
