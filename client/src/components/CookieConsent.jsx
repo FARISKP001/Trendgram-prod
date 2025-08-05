@@ -17,11 +17,22 @@ const CookieConsent = () => {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[2000] flex items-start justify-center p-4">
       {/* Dimmed background */}
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-      {/* Consent box */}
-      <div className="relative z-10 w-[90vw] max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl flex flex-col items-center text-center px-5 py-7">
+
+      {/* Consent box with top safe spacing */}
+      <div
+        className="
+          relative z-10 w-[90vw] max-w-md
+          bg-white dark:bg-gray-900
+          border border-gray-200 dark:border-gray-700
+          rounded-2xl shadow-2xl
+          flex flex-col items-center text-center
+          px-5 py-7
+          mt-[calc(env(safe-area-inset-top,0px)+24px)]
+        "
+      >
         <div className="mb-2 text-lg font-bold text-gray-900 dark:text-white">
           We use cookies to improve your experience.
         </div>

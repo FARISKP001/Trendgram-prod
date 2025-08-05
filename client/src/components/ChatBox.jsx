@@ -554,9 +554,10 @@ const ChatBox = () => {
           {/* Header */}
           <div className="h-[60px] shrink-0 flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
             <WebbitLogo size={52} />
-            <div className="ml-3 mr-6 relative flex items-center">
+            <div className="ml-3 mr-6 relative z-30">
+              {/* Color Picker Toggle Button */}
               <button
-                onClick={() => setShowColorPicker(prev => !prev)}
+                onClick={() => setShowColorPicker((prev) => !prev)}
                 className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 title="Change chat background"
                 aria-label="Change background color"
@@ -564,12 +565,14 @@ const ChatBox = () => {
               >
                 <ModernPaletteIcon size={28} />
               </button>
+
+              {/* Color Options Popover */}
               {showColorPicker && (
                 <div
                   ref={colorPopoverRef}
-                  className="absolute left-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-50 grid grid-cols-2 grid-rows-3 gap-2 min-w-[100px] mt-2"
+                  className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-50 grid grid-cols-2 grid-rows-3 gap-2 min-w-[120px]"
                 >
-                  {colorOptions.map(color => (
+                  {colorOptions.map((color) => (
                     <button
                       key={color}
                       className="w-9 h-9 rounded-full outline-none focus:ring-2 focus:ring-cyan-400 transition hover:scale-110 flex items-center justify-center"
@@ -587,12 +590,15 @@ const ChatBox = () => {
                         setShowColorPicker(false);
                       }}
                     >
-                      {bgColor === color && <span style={{ color: '#222', fontSize: '1.2rem', fontWeight: 900 }}>✓</span>}
+                      {bgColor === color && (
+                        <span style={{ color: '#222', fontSize: '1.2rem', fontWeight: 900 }}>✓</span>
+                      )}
                     </button>
                   ))}
                 </div>
               )}
             </div>
+
             <span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
               {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
             </span>

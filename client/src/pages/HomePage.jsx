@@ -248,7 +248,7 @@ const HomePage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50 overflow-x-hidden">
+    <div className="relative min-h-screen flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom)+32px)] bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50 overflow-x-hidden">
       {/* Header */}
       <div
         className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-green-100 dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
@@ -295,7 +295,7 @@ const HomePage = () => {
         {error && <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>}
       </main>
 
-      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-12 mb-2">
+      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-12 mb-4 px-4">
         <p>We use cookies to improve your experience. By browsing, you agree to this.</p>
         <ul className="flex justify-center gap-8 mt-2 list-none p-0">
           <li><a className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400" href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
