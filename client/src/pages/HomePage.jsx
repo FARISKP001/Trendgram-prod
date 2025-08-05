@@ -248,7 +248,7 @@ const HomePage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
+    <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50 overflow-x-hidden">
       {/* Header */}
       <div
         className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-md rounded-2xl relative overflow-visible"
@@ -259,9 +259,9 @@ const HomePage = () => {
 
       <main className="flex flex-col items-center">
         <form onSubmit={handleFindMatch} className="flex justify-center">
-          <div className="flex items-center justify-between bg-gray-200 dark:bg-[#111c2f] rounded-full py-2.5 px-4 max-h-16 shadow-md max-w-[420px] w-full mx-auto my-8">
+          <div className="flex items-center justify-between bg-gray-200 dark:bg-[#111c2f] rounded-full py-3.5 px-4 max-h-16 shadow-md max-w-[420px] w-full mx-auto my-8">
             <input
-              className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-sm flex-1 px-4 py-2 rounded-full min-w-0 border-2 border-sky-400"
+              className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none text-sm flex-1 px-4 py-3 rounded-full min-w-0 border-2 border-sky-400"
               type="text"
               value={name}
               onChange={handleNameChange}

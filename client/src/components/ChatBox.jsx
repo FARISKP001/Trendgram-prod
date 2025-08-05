@@ -267,7 +267,9 @@ const ChatBox = () => {
       setMessages([{ text: 'You left the chat. Searching for a new buddy...', from: 'system' }]);
       setChatState('searching');
       setPartnerId(null);
-      sessionStorage.clear();
+      setPartnerName('');
+      sessionStorage.removeItem('partnerId');
+      sessionStorage.removeItem('partnerName');
       trackSessionEnd();
       socket.emit('next', { userId, userName, deviceId });
       hasHandledLeave.current = true;
@@ -351,15 +353,19 @@ const ChatBox = () => {
     };
 
     const handlePartnerLeft = () => {
+      if (leftManually.current) {
+        leftManually.current = false;
+        return;
+      }
       playSound('leave');
-      if (!leftManually.current) toast.info('Your partner has left the chat.');
-      leftManually.current = false;
+      toast.info('Your partner has left the chat.');
       setMessages((msgs) => [...msgs, { text: 'Partner has left the chat.', from: 'system' }]);
       setChatState('disconnected');
       setPartnerId(null);
       setPartnerName('');
       trackSessionEnd();
-      sessionStorage.clear();
+      sessionStorage.removeItem('partnerId');
+      sessionStorage.removeItem('partnerName');
       socket.emit('leave_chat', { userId });
     };
     const handleChatMessage = (msg) => {
@@ -519,14 +525,14 @@ const ChatBox = () => {
   useClickAway(colorPopoverRef, () => setShowColorPicker(false));
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300" style={{ minHeight: "100vh" }}>
+    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 overflow-x-hidden" style={{ minHeight: "100vh" }}>
       <div className="
         flex flex-col
         w-full h-[100dvh]
         max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
         sm:rounded-2xl
         bg-[#f8f9fa] dark:bg-[#23272b]
-        shadow-2xl overflow-hidden
+        shadow-2xl overflow-x-hidden
         relative
         text-[#222e35] dark:text-gray-100
         font-[system-ui,sans-serif] text-base
@@ -534,14 +540,14 @@ const ChatBox = () => {
       ">
         {/* Header with logo, partner name and palette icon */}
         <div
-          className="flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
+          className="relative flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
           style={{ height: '60px' }}
         >
           <WebbitLogo size={120} style={{ marginTop: '-20px', marginBottom: '-20px' }} />
 <span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
             {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
           </span>
-          <div className="ml-auto relative z-20 flex items-center">
+          <div className="absolute left-1/2 -translate-x-1/2 z-20 flex items-center">
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
               className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -554,7 +560,7 @@ const ChatBox = () => {
             {showColorPicker && (
               <div
                 ref={colorPopoverRef}
-                className="absolute right-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-30"
+                className="absolute left-1/2 -translate-x-1/2 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-30"
                 style={{
                   minWidth: '140px',
                   marginTop: '8px',
@@ -596,7 +602,7 @@ const ChatBox = () => {
 
         {/* Main Chat Body */}
         <div
-          className="flex-1 overflow-y-auto py-4 px-2 flex flex-col gap-2 bg-repeat relative"
+          className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 flex flex-col gap-2 bg-repeat relative"
           style={{
             backgroundImage: `url(${doodleBg})`,
             backgroundRepeat: 'repeat',
