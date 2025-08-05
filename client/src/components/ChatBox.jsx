@@ -390,6 +390,8 @@ const ChatBox = () => {
       toast.warn(msg || 'You have been reported. Please behave properly.');
     };
     const handleNextAck = () => {
+      if (!leftManually.current) return;
+      leftManually.current = false;
       toast.success('Searching for a new buddy...');
     };
     socket.on('partner_found', handlePartnerFound);
@@ -418,7 +420,7 @@ const ChatBox = () => {
       socket.off('next_ack', handleNextAck);
       clearTimeout(searchTimeout.current);
     };
-  }, [socket, isConnected, userId, userName]);
+  }, [socket, isConnected, userId, userName, deviceId]);
 
   useEffect(() => {
     if (!socket || !userId) return;
@@ -602,7 +604,7 @@ const ChatBox = () => {
 
         {/* Main Chat Body */}
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 flex flex-col gap-2 bg-repeat relative"
+          className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 flex flex-col gap-2 bg-repeat relative no-scrollbar"
           style={{
             backgroundImage: `url(${doodleBg})`,
             backgroundRepeat: 'repeat',

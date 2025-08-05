@@ -22,3 +22,12 @@ html, body, #root {
   -ms-overflow-style: none; /* IE */
   scrollbar-width: none;     /* Firefox */
 }
+
+/* Hide scrollbars for designated containers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE */
+  scrollbar-width: none;     /* Firefox */
+}
