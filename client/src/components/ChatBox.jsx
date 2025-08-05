@@ -659,20 +659,20 @@ const ChatBox = () => {
               }}
             </List>
           </div>
-          {/* Input Bar */}
-          <ChatInput
-            input={input}
-            inputError={inputError}
-            chatState={chatState}
-            handleInputChange={handleInputChange}
-            handleSend={handleSend}
-            showEmojiPicker={showEmojiPicker}
-            setShowEmojiPicker={setShowEmojiPicker}
-            inputRef={inputRef}
-          />
-
-          {/* Footer with Next/Report: Always at bottom, never scrolls */}
-          <ChatFooter handleNext={handleNext} handleReport={handleReport} />
+          {/* Input and Footer */}
+          <div className="sticky bottom-0 left-0 right-0 bg-inherit z-10">
+            <ChatInput
+              input={input}
+              inputError={inputError}
+              chatState={chatState}
+              handleInputChange={handleInputChange}
+              handleSend={handleSend}
+              showEmojiPicker={showEmojiPicker}
+              setShowEmojiPicker={setShowEmojiPicker}
+              inputRef={inputRef}
+            />
+            <ChatFooter handleNext={handleNext} handleReport={handleReport} />
+          </div>
 
           {/* Emoji Picker Drawer: WhatsApp Style */}
           {showEmojiPicker && (

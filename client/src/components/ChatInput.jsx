@@ -18,7 +18,7 @@ const ChatInput = ({
           e.preventDefault();
           handleSend();
         }}
-        className="sticky bottom-16 left-0 right-0 bg-inherit z-10 p-3"
+        className="w-full bg-inherit p-3"
       >
         <div className="flex items-center w-full h-12 border border-[#ece5dd] rounded-lg bg-white dark:bg-gray-700 px-3 shadow-sm">
           <button

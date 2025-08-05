@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 
 const ChatFooter = ({ handleNext, handleReport }) => (
-  <div className="fixed bottom-0 left-0 right-0 flex justify-center gap-6 py-3 bg-white dark:bg-[#1e1e1e] border-t border-gray-200 dark:border-gray-800 z-10">
+  <div className="w-full flex justify-center gap-6 py-3 bg-white dark:bg-[#1e1e1e] border-t border-gray-200 dark:border-gray-800">
     <button
       onClick={handleNext}
       title="Next"
