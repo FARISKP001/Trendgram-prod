@@ -311,7 +311,7 @@ const HomePage = () => {
             </a>
           </li>
         </ul>
-        <p className="mt-2">© 2025 TrendGram</p>
+        <p className="mt-2 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">© 2025 TrendGram</p>
       </footer>
 
       <CookieConsent />
