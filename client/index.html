@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/Linkie.ico" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- ✅ Mobile-safe viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  
   <title>TrendGram</title>
 
   <!-- ✅ Cloudflare Turnstile -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
-  <!-- Google tag (gtag.js) -->
+  <!-- ✅ Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8C48NM4EG"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -17,11 +20,36 @@
     gtag('js', new Date());
     gtag('config', 'G-C8C48NM4EG');
   </script>
+
+  <!-- ✅ Safe-area fix (optional global style) -->
+  <style>
+    html, body {
+      padding: 0;
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      overscroll-behavior-y: none;
+    }
+
+    @supports (height: 100dvh) {
+      html, body {
+        height: 100dvh;
+      }
+    }
+
+    @supports not (height: 100dvh) {
+      html, body {
+        height: 100vh;
+      }
+    }
+  </style>
 </head>
 
 <body>
   <div id="root"></div>
+
   <script type="module" src="/src/main.jsx"></script>
+
+  <!-- ✅ Persist dark mode -->
   <script>
     if (localStorage.getItem('darkMode') === 'true') {
       document.documentElement.classList.add('dark');

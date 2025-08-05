@@ -18,6 +18,7 @@ import SpeechBubble from './SpeechBubble';
 import ChatInput from './ChatInput';
 import ChatFooter from './ChatFooter';
 import CaptchaModal from './CaptchaModal';
+import useKeyboardVisible from '../hooks/useKeyboardVisible';
 
 // Modern Apple Photos style palette icon (SVG)
 const ModernPaletteIcon = ({ size = 28 }) => (
@@ -91,6 +92,7 @@ const ChatBox = () => {
   const pendingAction = useRef(null);
   const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
   const siteKey = import.meta.env.VITE_CF_SITE_KEY;
+  const keyboardVisible = useKeyboardVisible();
 
   const {
     trackSessionStart,
@@ -542,24 +544,24 @@ const ChatBox = () => {
   useClickAway(colorPopoverRef, () => setShowColorPicker(false));
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 min-h-screen">
+    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-hidden">
       <div className="
-      flex flex-col
-      w-full h-[100dvh]
-      max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
-      sm:rounded-2xl
-      bg-[#f8f9fa] dark:bg-[#23272b]
-      shadow-2xl overflow-x-hidden
-      relative
-      text-[#222e35] dark:text-gray-100
-      font-[system-ui,sans-serif] text-base
-      border sm:border-0
-    ">
+        flex flex-col
+        w-full h-full
+        max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
+        sm:rounded-2xl
+        bg-[#f8f9fa] dark:bg-[#23272b]
+        shadow-2xl overflow-hidden
+        relative
+        text-[#222e35] dark:text-gray-100
+        font-[system-ui,sans-serif] text-base
+        border sm:border-0
+      ">
+
         {/* Header */}
-        <div className="sticky top-0 z-20 flex items-center shrink-0 px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
-  style={{ height: '60px' }}>
-          <WebbitLogo size={52} style={{ marginTop: 0, marginBottom: 0 }} />
-          {/* Color Icon at far left */}
+        <div className="h-[60px] shrink-0 flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
+          <WebbitLogo size={52} />
+          {/* Color Picker */}
           <div className="ml-3 mr-6 relative flex items-center">
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
@@ -609,23 +611,23 @@ const ChatBox = () => {
           </span>
         </div>
 
-        {/* Main Chat Body */}
-        <div className="flex-1 flex flex-col bg-repeat relative no-scrollbar"
+        {/* Main Chat Area */}
+        <div
+          className="flex-1 flex flex-col overflow-hidden bg-repeat relative"
           style={{
             backgroundImage: `url(${doodleBg})`,
             backgroundRepeat: 'repeat',
             backgroundSize: '400px',
             backgroundColor: bgColor,
-            opacity: 1,
             transition: 'background-color 0.3s'
           }}
         >
-          {/* Messages Area: Only this part scrolls */}
-          <div className="flex-1 overflow-y-auto px-2 py-4" ref={listContainerRef}>
+          {/* Scrollable Messages */}
+          <div className="flex-1 overflow-y-auto px-2 py-4 no-scrollbar" ref={listContainerRef}>
             <List
               height={listHeight}
               itemCount={messages.length}
-              itemSize={60}  // Set lower for more compact message bubbles
+              itemSize={60}
               width={'100%'}
               ref={messageListRef}
             >
@@ -656,8 +658,9 @@ const ChatBox = () => {
               }}
             </List>
           </div>
-          {/* Input and Footer */}
-          <div className="sticky bottom-0 left-0 right-0 bg-inherit z-10">
+
+          {/* Input & Footer (non-scrollable bottom section) */}
+          <div className={`shrink-0 transition-all duration-300 ${keyboardVisible ? 'pb-[env(safe-area-inset-bottom)]' : ''}`}>
             <ChatInput
               input={input}
               inputError={inputError}
@@ -668,55 +671,57 @@ const ChatBox = () => {
               setShowEmojiPicker={setShowEmojiPicker}
               inputRef={inputRef}
             />
-            <ChatFooter handleNext={handleNext} handleReport={handleReport} />
+            {!keyboardVisible && (
+              <ChatFooter handleNext={handleNext} handleReport={handleReport} />
+            )}
           </div>
-
-          {/* Emoji Picker Drawer: WhatsApp Style */}
-          {showEmojiPicker && (
-            <div
-              className={`
-                emoji-picker-modal fixed left-0 w-full z-50
-                bg-white dark:bg-gray-800 shadow-2xl
-                rounded-t-2xl
-                transition-transform duration-300
-                bottom-0 translate-y-0
-                flex justify-center
-                md:absolute md:rounded-2xl md:w-[340px] md:left-1/2 md:-translate-x-1/2 md:bottom-24
-                md:opacity-100 pointer-events-auto
-              `}
-              style={{
-                height: '320px',
-                maxHeight: '80vh',
-                width: '100%',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.16)',
-                ...(window.innerWidth >= 768 && {
-                  width: '340px',
-                  height: '370px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                })
-              }}
-            >
-              <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
-                <EmojiPicker
-                  onEmojiClick={handleEmojiClick}
-                  width="100%"
-                  height={window.innerWidth >= 768 ? "370px" : "320px"}
-                  lazyLoadEmojis
-                  skinTonesDisabled
-                />
-              </Suspense>
-            </div>
-          )}
-
-          {/* Toast Notifications */}
-          <ToastContainer position="bottom-center" />
-          <CaptchaModal
-            visible={showCaptcha}
-            onSuccess={handleCaptchaSuccess}
-            siteKey={siteKey}
-          />
         </div>
+
+        {/* Emoji Picker */}
+        {showEmojiPicker && (
+          <div
+            className={`
+              emoji-picker-modal fixed left-0 w-full z-50
+              bg-white dark:bg-gray-800 shadow-2xl
+              rounded-t-2xl
+              transition-transform duration-300
+              bottom-0 translate-y-0
+              flex justify-center
+              md:absolute md:rounded-2xl md:w-[340px] md:left-1/2 md:-translate-x-1/2 md:bottom-24
+              md:opacity-100 pointer-events-auto
+            `}
+            style={{
+              height: '320px',
+              maxHeight: '80vh',
+              width: '100%',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.16)',
+              ...(window.innerWidth >= 768 && {
+                width: '340px',
+                height: '370px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+              })
+            }}
+          >
+            <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
+              <EmojiPicker
+                onEmojiClick={handleEmojiClick}
+                width="100%"
+                height={window.innerWidth >= 768 ? "370px" : "320px"}
+                lazyLoadEmojis
+                skinTonesDisabled
+              />
+            </Suspense>
+          </div>
+        )}
+
+        {/* Toast + Captcha */}
+        <ToastContainer position="bottom-center" />
+        <CaptchaModal
+          visible={showCaptcha}
+          onSuccess={handleCaptchaSuccess}
+          siteKey={siteKey}
+        />
       </div>
     </div>
   );

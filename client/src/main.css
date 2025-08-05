@@ -2,32 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ensure app takes full height */
+/* === Global Layout Fix === */
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  font-family: system-ui, sans-serif;
+  overscroll-behavior-y: none;
 }
-/* === Toastify override === */
+
+/* === Viewport Height Fallback for Mobile === */
+@supports (height: 100dvh) {
+  html, body {
+    height: 100dvh;
+  }
+}
+@supports not (height: 100dvh) {
+  html, body {
+    height: 100vh;
+  }
+}
+
+/* === Toastify Override === */
 .Toastify__toast-container {
   @apply z-[9999];
 }
 
-/* === Emoji drawer scrollbar hide === */
+/* === Emoji Picker Drawer Scrollbar Hide === */
 .emoji-wrapper::-webkit-scrollbar {
   display: none;
 }
 .emoji-wrapper {
-  -ms-overflow-style: none; /* IE */
+  -ms-overflow-style: none;  /* IE */
   scrollbar-width: none;     /* Firefox */
 }
 
-/* Hide scrollbars for designated containers */
+/* === Custom Scrollbar Hide Class === */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE */
+  -ms-overflow-style: none;  /* IE */
   scrollbar-width: none;     /* Firefox */
 }
