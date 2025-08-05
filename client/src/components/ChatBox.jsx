@@ -544,151 +544,150 @@ const ChatBox = () => {
   useClickAway(colorPopoverRef, () => setShowColorPicker(false));
 
   return (
-  <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-hidden">
-    <div className="w-full h-full flex flex-col">
-      <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
+    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-hidden">
+      <div className="w-full h-full flex flex-col">
+        <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
         sm:rounded-2xl bg-[#f8f9fa] dark:bg-[#23272b] shadow-2xl overflow-hidden relative
         text-[#222e35] dark:text-gray-100 font-[system-ui,sans-serif] text-base border sm:border-0"
-      >
-
-        {/* Header */}
-        <div className="h-[60px] shrink-0 flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
-          <WebbitLogo size={52} />
-          <div className="ml-3 mr-6 relative flex items-center">
-            <button
-              onClick={() => setShowColorPicker(prev => !prev)}
-              className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-              title="Change chat background"
-              aria-label="Change background color"
-              type="button"
-            >
-              <ModernPaletteIcon size={28} />
-            </button>
-            {showColorPicker && (
-              <div
-                ref={colorPopoverRef}
-                className="absolute left-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-50 grid grid-cols-2 grid-rows-3 gap-2 min-w-[100px] mt-2"
-              >
-                {colorOptions.map(color => (
-                  <button
-                    key={color}
-                    className="w-9 h-9 rounded-full outline-none focus:ring-2 focus:ring-cyan-400 transition hover:scale-110 flex items-center justify-center"
-                    style={{
-                      background: color,
-                      boxShadow: bgColor === color ? '0 0 0 2.5px #17C4FF' : '0 2px 8px 0 #0001',
-                      borderColor: bgColor === color ? '#17C4FF' : 'transparent',
-                      borderWidth: bgColor === color ? '2px' : '0px',
-                      borderStyle: 'solid',
-                    }}
-                    aria-label={`Change background to ${color}`}
-                    onClick={() => {
-                      setBgColor(color);
-                      sessionStorage.setItem('chatBgColor', color);
-                      setShowColorPicker(false);
-                    }}
-                  >
-                    {bgColor === color && <span style={{ color: '#222', fontSize: '1.2rem', fontWeight: 900 }}>✓</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
-            {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
-          </span>
-        </div>
-
-        {/* Chat area */}
-        <div
-          className="flex-1 flex flex-col overflow-hidden bg-repeat relative"
-          style={{
-            backgroundImage: `url(${doodleBg})`,
-            backgroundRepeat: 'repeat',
-            backgroundSize: '400px',
-            backgroundColor: bgColor,
-            transition: 'background-color 0.3s',
-          }}
         >
-          {/* Scrollable message list */}
-          <div className="flex-1 overflow-y-auto px-3 pt-4 pb-2 no-scrollbar" ref={listContainerRef}>
-            {messages.map((msg, index) => (
-              <div
-                key={msg.timestamp || index}
-                className={msg.from === 'system' ? 'flex justify-center my-2' :
-                  msg.userId === userId ? 'flex justify-end mt-1 mb-1' : 'flex justify-start mt-1 mb-1'}
+
+          {/* Header */}
+          <div className="h-[60px] shrink-0 flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
+            <WebbitLogo size={52} />
+            <div className="ml-3 mr-6 relative flex items-center">
+              <button
+                onClick={() => setShowColorPicker(prev => !prev)}
+                className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                title="Change chat background"
+                aria-label="Change background color"
+                type="button"
               >
-                {msg.message?.trim() && (
-                  <SpeechBubble isSender={msg.userId === userId}>
-                    {msg.message}
-                  </SpeechBubble>
-                )}
-                {msg.from === 'system' && (
-                  <div className="italic text-sm text-gray-500">{msg.text}</div>
-                )}
-              </div>
-            ))}
+                <ModernPaletteIcon size={28} />
+              </button>
+              {showColorPicker && (
+                <div
+                  ref={colorPopoverRef}
+                  className="absolute left-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-50 grid grid-cols-2 grid-rows-3 gap-2 min-w-[100px] mt-2"
+                >
+                  {colorOptions.map(color => (
+                    <button
+                      key={color}
+                      className="w-9 h-9 rounded-full outline-none focus:ring-2 focus:ring-cyan-400 transition hover:scale-110 flex items-center justify-center"
+                      style={{
+                        background: color,
+                        boxShadow: bgColor === color ? '0 0 0 2.5px #17C4FF' : '0 2px 8px 0 #0001',
+                        borderColor: bgColor === color ? '#17C4FF' : 'transparent',
+                        borderWidth: bgColor === color ? '2px' : '0px',
+                        borderStyle: 'solid',
+                      }}
+                      aria-label={`Change background to ${color}`}
+                      onClick={() => {
+                        setBgColor(color);
+                        sessionStorage.setItem('chatBgColor', color);
+                        setShowColorPicker(false);
+                      }}
+                    >
+                      {bgColor === color && <span style={{ color: '#222', fontSize: '1.2rem', fontWeight: 900 }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+              {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
+            </span>
           </div>
 
-          {/* Input + Footer */}
-          <div className={`shrink-0 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-inherit`}>
-            <ChatInput
-              input={input}
-              inputError={inputError}
-              chatState={chatState}
-              handleInputChange={handleInputChange}
-              handleSend={handleSend}
-              showEmojiPicker={showEmojiPicker}
-              setShowEmojiPicker={setShowEmojiPicker}
-              inputRef={inputRef}
-            />
-            {!keyboardVisible && (
-              <div className="mt-2 flex justify-around gap-3">
-                <NextButton onClick={handleNext} />
-                <ReportButton onClick={handleReport} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
-          <div className="emoji-picker-modal fixed left-0 w-full z-50 bg-white dark:bg-gray-800 shadow-2xl rounded-t-2xl transition-transform duration-300 bottom-0 translate-y-0 flex justify-center md:absolute md:rounded-2xl md:w-[340px] md:left-1/2 md:-translate-x-1/2 md:bottom-24 md:opacity-100 pointer-events-auto"
+          {/* Chat area */}
+          <div
+            className="flex-1 flex flex-col overflow-hidden bg-repeat relative"
             style={{
-              height: '320px',
-              maxHeight: '80vh',
-              width: '100%',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.16)',
-              ...(window.innerWidth >= 768 && {
-                width: '340px',
-                height: '370px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-              })
+              backgroundImage: `url(${doodleBg})`,
+              backgroundRepeat: 'repeat',
+              backgroundSize: '400px',
+              backgroundColor: bgColor,
+              transition: 'background-color 0.3s',
             }}
           >
-            <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
-              <EmojiPicker
-                onEmojiClick={handleEmojiClick}
-                width="100%"
-                height={window.innerWidth >= 768 ? '370px' : '320px'}
-                lazyLoadEmojis
-                skinTonesDisabled
-              />
-            </Suspense>
-          </div>
-        )}
+            {/* Scrollable message list */}
+            <div className="flex-1 overflow-y-auto px-3 pt-4 pb-2 no-scrollbar" ref={listContainerRef}>
+              {messages.map((msg, index) => (
+                <div
+                  key={msg.timestamp || index}
+                  className={msg.from === 'system' ? 'flex justify-center my-2' :
+                    msg.userId === userId ? 'flex justify-end mt-1 mb-1' : 'flex justify-start mt-1 mb-1'}
+                >
+                  {msg.message?.trim() && (
+                    <SpeechBubble isSender={msg.userId === userId}>
+                      {msg.message}
+                    </SpeechBubble>
+                  )}
+                  {msg.from === 'system' && (
+                    <div className="italic text-sm text-gray-500">{msg.text}</div>
+                  )}
+                </div>
+              ))}
+            </div>
 
-        {/* Toast + Captcha */}
-        <ToastContainer position="bottom-center" />
-        <CaptchaModal
-          visible={showCaptcha}
-          onSuccess={handleCaptchaSuccess}
-          siteKey={siteKey}
-        />
+            {/* Input + Footer */}
+            <div className={`shrink-0 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-inherit`}>
+              <ChatInput
+                input={input}
+                inputError={inputError}
+                chatState={chatState}
+                handleInputChange={handleInputChange}
+                handleSend={handleSend}
+                showEmojiPicker={showEmojiPicker}
+                setShowEmojiPicker={setShowEmojiPicker}
+                inputRef={inputRef}
+              />
+              {!keyboardVisible && (
+                <div className="mt-2">
+                  <ChatFooter handleNext={handleNext} handleReport={handleReport} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Emoji Picker */}
+          {showEmojiPicker && (
+            <div className="emoji-picker-modal fixed left-0 w-full z-50 bg-white dark:bg-gray-800 shadow-2xl rounded-t-2xl transition-transform duration-300 bottom-0 translate-y-0 flex justify-center md:absolute md:rounded-2xl md:w-[340px] md:left-1/2 md:-translate-x-1/2 md:bottom-24 md:opacity-100 pointer-events-auto"
+              style={{
+                height: '320px',
+                maxHeight: '80vh',
+                width: '100%',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.16)',
+                ...(window.innerWidth >= 768 && {
+                  width: '340px',
+                  height: '370px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                })
+              }}
+            >
+              <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  width="100%"
+                  height={window.innerWidth >= 768 ? '370px' : '320px'}
+                  lazyLoadEmojis
+                  skinTonesDisabled
+                />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Toast + Captcha */}
+          <ToastContainer position="bottom-center" />
+          <CaptchaModal
+            visible={showCaptcha}
+            onSuccess={handleCaptchaSuccess}
+            siteKey={siteKey}
+          />
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default ChatBox;
