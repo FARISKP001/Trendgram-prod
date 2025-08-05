@@ -49,7 +49,7 @@ module.exports = (io, socket, redis) => {
     return !captchaOk || exceeded || rapid;
   };
 
-  const forceCleanup = async (userId, socketInstance) => {
+  const forceCleanup = async (userId, socketInstance, notifyPartner = true) => {
     if (cleanupInProgress.has(userId)) return;
     cleanupInProgress.add(userId);
 
@@ -57,18 +57,29 @@ module.exports = (io, socket, redis) => {
       const userRoom = userRoomMap[userId];
       if (userRoom) {
         const { roomName, partnerId } = userRoom;
-        const partnerSocketId = await redis.get(`userSocket:${partnerId}`);
-
-        if (partnerSocketId) {
-          io.to(partnerSocketId).emit('partner_left');
-          const partnerSocket = io.sockets.sockets.get(partnerSocketId);
-          if (partnerSocket) {
-            setTimeout(() => forceCleanup(partnerId, partnerSocket), 100);
-          }
-        } else {
-          await redis.del(`userSocket:${partnerId}`);
-          await redis.del(`userName:${partnerId}`);
+        
+        // Ensure the current socket leaves the room so that lingering
+        // subscriptions do not receive future messages.
+        if (socketInstance && roomName) {
+          socketInstance.leave(roomName);
         }
+
+        if (notifyPartner) {
+          const partnerSocketId = await redis.get(`userSocket:${partnerId}`);
+          if (partnerSocketId) {
+            io.to(partnerSocketId).emit('partner_left');
+            const partnerSocket = io.sockets.sockets.get(partnerSocketId);
+            if (partnerSocket) {
+              // Cleanup partner without triggering another notification back to
+              // this user. This prevents both parties from receiving duplicate
+              // "partner_left" events when one clicks "Next".
+              setTimeout(() => forceCleanup(partnerId, partnerSocket, false), 100);
+            }
+          } else {
+            await redis.del(`userSocket:${partnerId}`);
+            await redis.del(`userName:${partnerId}`);
+          }
+        } 
 
         await redis.del(`chat:${roomName}`);
       }
