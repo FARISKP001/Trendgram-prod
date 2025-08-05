@@ -251,42 +251,42 @@ const HomePage = () => {
     <div className="relative min-h-screen flex flex-col justify-between py-8 px-4 bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50 overflow-x-hidden">
       {/* Header */}
       <div
-  className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-green-100 dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
-  style={{ minHeight: 64 }}
->
-  <WebbitLogo size={130} style={{ marginTop: '-32px', marginBottom: '-32px' }} />
-</div>
+        className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-green-100 dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
+        style={{ minHeight: 64 }}
+      >
+        <WebbitLogo size={130} style={{ marginTop: '-32px', marginBottom: '-32px' }} />
+      </div>
 
 
       <main className="flex flex-col items-center">
         <form onSubmit={handleFindMatch} className="flex justify-center">
           <div className="flex items-center gap-x-8 bg-gray-200 dark:bg-[#111c2f] rounded-full px-6 shadow-md max-w-[600px] w-full mx-auto my-8">
-  <input
-    style={{ height: '45px', fontSize: '1.25rem' }}
-    className="
+            <input
+              style={{ height: '45px', fontSize: '1.25rem' }}
+              className="
       bg-transparent text-gray-900 dark:text-gray-50 
       placeholder-gray-500 dark:placeholder-gray-400 
       outline-none rounded-full border-2 border-sky-400 w-72 max-w-full
     "
-    type="text"
-    value={name}
-    onChange={handleNameChange}
-    placeholder="Enter your name"
-    required
-    maxLength={10}
-  />
-  <button
-    type="submit"
-    disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-    className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 border-2 border-sky-500"
-  >
-    {matching ? (
-      <ArrowPathIcon className="w-5 h-5 text-gray-900 dark:text-white animate-spin" />
-    ) : (
-      <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
-    )}
-  </button>
-</div>
+              type="text"
+              value={name}
+              onChange={handleNameChange}
+              placeholder="Enter your name"
+              required
+              maxLength={10}
+            />
+            <button
+              type="submit"
+              disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
+              className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-colors transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 border-2 border-sky-500"
+            >
+              {matching ? (
+                <ArrowPathIcon className="w-5 h-5 text-gray-900 dark:text-white animate-spin" />
+              ) : (
+                <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+              )}
+            </button>
+          </div>
 
         </form>
 
@@ -304,7 +304,7 @@ const HomePage = () => {
         </ul>
         <p className="mt-2">© 2025 TrendGram</p>
       </footer>
-      //<CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
+      <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
     </div>
   );
 };
