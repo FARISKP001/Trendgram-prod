@@ -544,7 +544,9 @@ const ChatBox = () => {
   useClickAway(colorPopoverRef, () => setShowColorPicker(false));
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-hidden">
+  <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-hidden">
+    {/* ✅ FIX: Safe bottom padding wrapper */}
+    <div className="w-full h-full flex flex-col pb-safe">
       <div className="
         flex flex-col
         w-full h-full
@@ -622,8 +624,8 @@ const ChatBox = () => {
             transition: 'background-color 0.3s'
           }}
         >
-          {/* Scrollable Messages */}
-          <div className="flex-1 overflow-y-auto px-2 pt-[72px] pb-4 no-scrollbar" ref={listContainerRef}>
+          {/* ✅ FIX: Top padding for first message */}
+          <div className="flex-1 overflow-y-auto px-2 pt-[60px] pb-4 no-scrollbar" ref={listContainerRef}>
             <List
               height={listHeight}
               itemCount={messages.length}
@@ -659,7 +661,7 @@ const ChatBox = () => {
             </List>
           </div>
 
-          {/* Input & Footer (non-scrollable bottom section) */}
+          {/* Input + Footer */}
           <div className={`shrink-0 transition-all duration-300 ${keyboardVisible ? 'pb-[env(safe-area-inset-bottom)]' : 'pb-4'}`}>
             <ChatInput
               input={input}
@@ -723,6 +725,7 @@ const ChatBox = () => {
           siteKey={siteKey}
         />
       </div>
+    </div>
     </div>
   );
 };
