@@ -31,16 +31,24 @@ const ChatInput = ({
           >
             😊
           </button>
-          <input
+          <textarea
             ref={inputRef}
             value={input}
             onChange={handleInputChange}
-            className="flex-1 px-4 py-2 h-full bg-transparent outline-none rounded-md text-lg"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!input.trim() || inputError || chatState === 'disconnected') return;
+                handleSend();
+              }
+            }}
+            className="flex-1 px-4 py-2 h-full bg-transparent outline-none rounded-md text-lg resize-none overflow-y-auto whitespace-pre-wrap"
             placeholder="Type a message..."
             required
             autoFocus
             disabled={chatState === 'disconnected'}
             style={{ minHeight: 40 }}
+            rows={1}
           />
           <button
             type="submit"
