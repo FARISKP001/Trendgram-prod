@@ -69,15 +69,19 @@ module.exports = (io, socket, redis) => {
           if (partnerSocketId) {
             io.to(partnerSocketId).emit('partner_left');
             const partnerSocket = io.sockets.sockets.get(partnerSocketId);
-            if (partnerSocket) {
-              // Cleanup partner without triggering another notification back to
-              // this user. This prevents both parties from receiving duplicate
-              // "partner_left" events when one clicks "Next".
-              setTimeout(() => forceCleanup(partnerId, partnerSocket, false), 100);
-            }
+            // Cleanup partner without triggering another notification back to
+            // this user. This prevents both parties from receiving duplicate
+            // "partner_left" events when one clicks "Next".
+            setTimeout(() => forceCleanup(partnerId, partnerSocket, false), 100);
           } else {
-            await redis.del(`userSocket:${partnerId}`);
-            await redis.del(`userName:${partnerId}`);
+            // If we cannot find the partner socket (e.g., redis key expired),
+            // notify whoever is still in the room as a fallback so the user is
+            // aware that their partner has left.
+            if (socketInstance && roomName) {
+              socketInstance.to(roomName).emit('partner_left');
+            }
+            // Proceed with cleanup to remove any stale mappings for the partner.
+            setTimeout(() => forceCleanup(partnerId, null, false), 100);
           }
         } 
 
