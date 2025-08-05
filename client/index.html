@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/Linkie.ico" />
-  
+
   <!-- ✅ Mobile-safe viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  
+
   <title>TrendGram</title>
 
   <!-- ✅ Cloudflare Turnstile -->
@@ -21,13 +21,15 @@
     gtag('config', 'G-C8C48NM4EG');
   </script>
 
-  <!-- ✅ Safe-area fix (optional global style) -->
+  <!-- ✅ Global safe-area & mobile fix styles -->
   <style>
     html, body {
       padding: 0;
       margin: 0;
       font-family: system-ui, sans-serif;
       overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #f0f4f8; /* fallback background */
     }
 
     @supports (height: 100dvh) {
@@ -41,12 +43,30 @@
         height: 100vh;
       }
     }
+
+    /* ✅ Prevent iOS bounce and layout shift */
+    body {
+      position: relative;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    input, button, textarea, select {
+      font: inherit;
+    }
+
+    /* ✅ Safe-area fallback for padding */
+    :root {
+      --safe-area-inset-top: env(safe-area-inset-top);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom);
+    }
   </style>
 </head>
 
 <body>
   <div id="root"></div>
 
+  <!-- ✅ Main React app entry -->
   <script type="module" src="/src/main.jsx"></script>
 
   <!-- ✅ Persist dark mode -->
