@@ -623,7 +623,7 @@ const ChatBox = () => {
           }}
         >
           {/* Scrollable Messages */}
-          <div className="flex-1 overflow-y-auto px-2 py-4 no-scrollbar" ref={listContainerRef}>
+          <div className="flex-1 overflow-y-auto px-2 pt-[72px] pb-4 no-scrollbar" ref={listContainerRef}>
             <List
               height={listHeight}
               itemCount={messages.length}
@@ -660,7 +660,7 @@ const ChatBox = () => {
           </div>
 
           {/* Input & Footer (non-scrollable bottom section) */}
-          <div className={`shrink-0 transition-all duration-300 ${keyboardVisible ? 'pb-[env(safe-area-inset-bottom)]' : ''}`}>
+          <div className={`shrink-0 transition-all duration-300 ${keyboardVisible ? 'pb-[env(safe-area-inset-bottom)]' : 'pb-4'}`}>
             <ChatInput
               input={input}
               inputError={inputError}
