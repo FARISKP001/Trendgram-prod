@@ -349,7 +349,6 @@ const ChatBox = () => {
       console.log("PARTNER FOUND PAYLOAD:", { partnerId, partnerName });
       clearTimeout(searchTimeout.current);
       hasHandledLeave.current = false;
-      toast.success(`You have connected to ${partnerName} 🎉`);
       playSound('join');
       setPartnerId(partnerId);
       setPartnerName(partnerName);
