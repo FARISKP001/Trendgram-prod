@@ -85,7 +85,7 @@ const ChatBox = () => {
   const partnerIdRef = useRef(null);
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
-  const nextClicksRef = useRef([]); 
+  const nextClicksRef = useRef([]);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const pendingAction = useRef(null);
@@ -256,7 +256,7 @@ const ChatBox = () => {
   const handleNext = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
-    
+
     // Rate limit "Next" clicks: captcha after 3 clicks within a minute
     const now = Date.now();
     nextClicksRef.current = nextClicksRef.current.filter((ts) => now - ts < 60000);
@@ -274,7 +274,10 @@ const ChatBox = () => {
       socket.emit('next', { userId, userName, deviceId });
       hasHandledLeave.current = true;
       clearTimeout(searchTimeout.current);
-       searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 60000);
+      searchTimeout.current = setTimeout(() => {
+        setChatState('noBuddy');
+        socket.emit('leave_chat', { userId });
+      }, 60000);
     };
 
     if (nextClicksRef.current.length >= 3) {
@@ -298,7 +301,10 @@ const ChatBox = () => {
       sessionStorage.clear();
       socket.emit('find_new_buddy', { userId, userName, deviceId });
       clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 60000);
+      searchTimeout.current = setTimeout(() => {
+        setChatState('noBuddy');
+        socket.emit('leave_chat', { userId });
+      }, 60000);
     });
   };
 
@@ -358,18 +364,18 @@ const ChatBox = () => {
         return;
       }
       playSound('leave');
-      toast.info('Your partner has left the chat. Searching for a new buddy...');
-      setMessages([{ text: 'Partner has left the chat. Searching for a new buddy...', from: 'system' }]);
-      setChatState('searching');
+      toast.info('Your partner has left the chat. Click "Next" to find a new buddy.');
+      setMessages([
+        { text: 'Partner has left the chat. Click "Next" to find a new buddy.', from: 'system' },
+      ]);
+      setChatState('noBuddy');
       setPartnerId(null);
       setPartnerName('');
       trackSessionEnd();
       sessionStorage.removeItem('partnerId');
       sessionStorage.removeItem('partnerName');
-      hasHandledLeave.current = true;
-      socket.emit('find_new_buddy', { userId, userName, deviceId });
+      hasHandledLeave.current = false;
       clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 60000);
     };
     const handleChatMessage = (msg) => {
       setMessages((msgs) =>
@@ -398,7 +404,10 @@ const ChatBox = () => {
       hasHandledLeave.current = false;
       socket.emit('find_new_buddy', { userId, userName, deviceId });
       clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 60000);
+      searchTimeout.current = setTimeout(() => {
+        setChatState('noBuddy');
+        socket.emit('leave_chat', { userId });
+      }, 60000);
       toast.success('Searching for a new buddy...');
     };
     socket.on('partner_found', handlePartnerFound);
@@ -534,29 +543,27 @@ const ChatBox = () => {
   useClickAway(colorPopoverRef, () => setShowColorPicker(false));
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 overflow-x-hidden" style={{ minHeight: "100vh" }}>
+    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 min-h-screen">
       <div className="
-        flex flex-col
-        w-full h-[100dvh]
-        max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
-        sm:rounded-2xl
-        bg-[#f8f9fa] dark:bg-[#23272b]
-        shadow-2xl overflow-x-hidden
-        relative
-        text-[#222e35] dark:text-gray-100
-        font-[system-ui,sans-serif] text-base
-        border sm:border-0
-      ">
-        {/* Header with logo, partner name and palette icon */}
+      flex flex-col
+      w-full h-[100dvh]
+      max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
+      sm:rounded-2xl
+      bg-[#f8f9fa] dark:bg-[#23272b]
+      shadow-2xl overflow-x-hidden
+      relative
+      text-[#222e35] dark:text-gray-100
+      font-[system-ui,sans-serif] text-base
+      border sm:border-0
+    ">
+        {/* Header */}
         <div
           className="relative flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
           style={{ height: '60px' }}
         >
-          <WebbitLogo size={120} style={{ marginTop: '-20px', marginBottom: '-20px' }} />
-<span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
-            {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
-          </span>
-          <div className="ml-auto mr-4 relative flex items-center">
+          <WebbitLogo size={52} style={{ marginTop: 0, marginBottom: 0 }} />
+          {/* Color Icon at far left */}
+          <div className="ml-3 mr-6 relative flex items-center">
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
               className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -569,15 +576,7 @@ const ChatBox = () => {
             {showColorPicker && (
               <div
                 ref={colorPopoverRef}
-                className="absolute right-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-30"
-                style={{
-                  minWidth: '100px',
-                  marginTop: '8px',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 36px)',
-                  gridTemplateRows: 'repeat(3, 36px)',
-                  gap: '12px',
-                }}
+                className="absolute left-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-30 grid grid-cols-2 grid-rows-3 gap-2 min-w-[100px] mt-2"
               >
                 {colorOptions.map((color) => (
                   <button
@@ -607,11 +606,14 @@ const ChatBox = () => {
               </div>
             )}
           </div>
+          {/* Partner Name */}
+          <span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+            {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
+          </span>
         </div>
 
         {/* Main Chat Body */}
-        <div
-          className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 pb-24 flex flex-col gap-2 bg-repeat relative no-scrollbar"
+        <div className="flex-1 flex flex-col bg-repeat relative no-scrollbar"
           style={{
             backgroundImage: `url(${doodleBg})`,
             backgroundRepeat: 'repeat',
@@ -621,12 +623,12 @@ const ChatBox = () => {
             transition: 'background-color 0.3s'
           }}
         >
-          {/* Messages */}
-          <div className="flex-1 flex flex-col gap-2 px-2 py-4" ref={listContainerRef}>
+          {/* Messages Area: Only this part scrolls */}
+          <div className="flex-1 overflow-y-auto px-2 py-4" ref={listContainerRef}>
             <List
               height={listHeight}
               itemCount={messages.length}
-              itemSize={80}
+              itemSize={60}  // Set lower for more compact message bubbles
               width={'100%'}
               ref={messageListRef}
             >
@@ -657,8 +659,7 @@ const ChatBox = () => {
               }}
             </List>
           </div>
-
-          {/* Input bar */}
+          {/* Input Bar */}
           <ChatInput
             input={input}
             inputError={inputError}
@@ -669,6 +670,9 @@ const ChatBox = () => {
             setShowEmojiPicker={setShowEmojiPicker}
             inputRef={inputRef}
           />
+
+          {/* Footer with Next/Report: Always at bottom, never scrolls */}
+          <ChatFooter handleNext={handleNext} handleReport={handleReport} />
 
           {/* Emoji Picker Drawer: WhatsApp Style */}
           {showEmojiPicker && (
@@ -708,8 +712,6 @@ const ChatBox = () => {
             </div>
           )}
 
-          {/* Footer controls */}
-          <ChatFooter handleNext={handleNext} handleReport={handleReport} />
           {/* Toast Notifications */}
           <ToastContainer position="bottom-center" />
           <CaptchaModal

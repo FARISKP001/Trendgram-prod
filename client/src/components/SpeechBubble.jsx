@@ -5,18 +5,18 @@ const SpeechBubble = ({ children, isSender }) => {
   const strokeColor = isSender ? '#17C4FF' : '#ccc';
 
   const containerStyle = {
-    display: 'inline-block',
-    maxWidth: '70vw',
-    padding: '4px 10px',
-    border: `2px solid ${strokeColor}`,
-    borderRadius: '12px',
-    fontSize: '0.9rem',
-    lineHeight: '1.4',
-    color: '#222e35',
-    backgroundColor: fillColor,
-    wordBreak: 'break-word',
-    whiteSpace: 'pre-wrap',
-  };
+  display: 'inline-block',
+  maxWidth: '70vw',
+  padding: '2px 10px', // More compact
+  border: `2px solid ${strokeColor}`,
+  borderRadius: '12px',
+  fontSize: '0.93rem',
+  lineHeight: '1.2',
+  color: '#222e35',
+  backgroundColor: fillColor,
+  wordBreak: 'break-word',
+  whiteSpace: 'pre-wrap',
+};
 
   return <div style={containerStyle}>{children}</div>;
 };
