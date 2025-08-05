@@ -5,50 +5,20 @@ const SpeechBubble = ({ children, isSender }) => {
   const strokeColor = isSender ? '#17C4FF' : '#ccc';
 
   const containerStyle = {
-    display: 'inline-flex',
-    alignItems: 'center',
+    display: 'inline-block',
     maxWidth: '70vw',
-    padding: '2px 5px',
+    padding: '8px 12px',
     border: `2px solid ${strokeColor}`,
-    borderRadius: '10px',
+    borderRadius: '12px',
     fontSize: '0.9rem',
-    lineHeight: '1.2',
+    lineHeight: '1.4',
     color: '#222e35',
     backgroundColor: fillColor,
-    position: 'relative',
+    wordBreak: 'break-word',
+    whiteSpace: 'pre-wrap',
   };
 
-  const svgStyle = {
-    flexShrink: 0,
-    width: 14,
-    height: 28,
-  };
-
-  return (
-    <div style={containerStyle}>
-      {!isSender && (
-        <svg
-          style={{ ...svgStyle, marginRight: 6 }}
-          viewBox="0 0 14 28"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <polygon points="14,0 0,14 14,28" fill={fillColor} stroke={strokeColor} strokeWidth="2" />
-        </svg>
-      )}
-      <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{children}</div>
-      {isSender && (
-        <svg
-          style={{ ...svgStyle, marginLeft: 6 }}
-          viewBox="0 0 14 28"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <polygon points="0,0 14,14 0,28" fill={fillColor} stroke={strokeColor} strokeWidth="2" />
-        </svg>
-      )}
-    </div>
-  );
+  return <div style={containerStyle}>{children}</div>;
 };
 
 export default SpeechBubble;

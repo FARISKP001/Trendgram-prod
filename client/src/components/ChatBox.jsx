@@ -358,15 +358,18 @@ const ChatBox = () => {
         return;
       }
       playSound('leave');
-      toast.info('Your partner has left the chat.');
-      setMessages((msgs) => [...msgs, { text: 'Partner has left the chat.', from: 'system' }]);
-      setChatState('disconnected');
+      toast.info('Your partner has left the chat. Searching for a new buddy...');
+      setMessages([{ text: 'Partner has left the chat. Searching for a new buddy...', from: 'system' }]);
+      setChatState('searching');
       setPartnerId(null);
       setPartnerName('');
       trackSessionEnd();
       sessionStorage.removeItem('partnerId');
       sessionStorage.removeItem('partnerName');
-      socket.emit('leave_chat', { userId });
+      hasHandledLeave.current = true;
+      socket.emit('find_new_buddy', { userId, userName, deviceId });
+      clearTimeout(searchTimeout.current);
+      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 60000);
     };
     const handleChatMessage = (msg) => {
       setMessages((msgs) =>
@@ -549,7 +552,7 @@ const ChatBox = () => {
 <span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
             {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
           </span>
-          <div className="absolute left-1/2 -translate-x-1/2 z-20 flex items-center">
+          <div className="ml-auto relative flex items-center">
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
               className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -562,7 +565,7 @@ const ChatBox = () => {
             {showColorPicker && (
               <div
                 ref={colorPopoverRef}
-                className="absolute left-1/2 -translate-x-1/2 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-30"
+                className="absolute right-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-30"
                 style={{
                   minWidth: '140px',
                   marginTop: '8px',
