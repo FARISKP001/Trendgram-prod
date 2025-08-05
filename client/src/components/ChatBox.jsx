@@ -556,10 +556,8 @@ const ChatBox = () => {
       border sm:border-0
     ">
         {/* Header */}
-        <div
-          className="relative flex items-center shrink-0 px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
-          style={{ height: '60px' }}
-        >
+        <div className="sticky top-0 z-20 flex items-center shrink-0 px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
+  style={{ height: '60px' }}>
           <WebbitLogo size={52} style={{ marginTop: 0, marginBottom: 0 }} />
           {/* Color Icon at far left */}
           <div className="ml-3 mr-6 relative flex items-center">
