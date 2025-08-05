@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import useSocketContext from '../context/useSocketContext';
 import joinSound from '../assets/join.mp3';
 import leaveSound from '../assets/leave.mp3';
+import doodleBg from '../assets/doodle-bg.png';
 import useExitProtection from '../hooks/useExitProtection';
 import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
@@ -30,18 +31,14 @@ const ModernPaletteIcon = ({ size = 28 }) => (
   </svg>
 );
 
+// Limit the palette to six visible options arranged 3×2
 const colorOptions = [
-  '#ffffff', // White
-  '#f9fafb', // Off-white
-  '#ffe9a7', // Yellow
-  '#ffd6e0', // Pink
-  '#bfe5ff', // Sky Blue
-  '#d2ffe3', // Mint
-  '#e4caff', // Lavender
-  '#fff3d6', // Cream
-  '#ffd6fa', // Pastel Purple
-  '#ffeed6', // Peach
-  '#f5f6fa', // Very light grey
+  '#f0f8ff', // Alice blue
+  '#fff0f5', // Lavender Blush
+  '#b0e0e6', // Powder Blue
+  '#ccff00', // Electric lime
+  '#fbceb1', // Apricot
+  '#f5deb3', // Wheat
 ];
 
 const showMobileExitToast = (onConfirm) => {
@@ -88,6 +85,7 @@ const ChatBox = () => {
   const partnerIdRef = useRef(null);
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
+  const nextClicksRef = useRef([]); 
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const pendingAction = useRef(null);
@@ -258,7 +256,13 @@ const ChatBox = () => {
   const handleNext = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
-    ensureCaptcha(() => {
+    
+    // Rate limit "Next" clicks: captcha after 3 clicks within a minute
+    const now = Date.now();
+    nextClicksRef.current = nextClicksRef.current.filter((ts) => now - ts < 60000);
+    nextClicksRef.current.push(now);
+
+    const performNext = () => {
       leftManually.current = true;
       setMessages([{ text: 'You left the chat. Searching for a new buddy...', from: 'system' }]);
       setChatState('searching');
@@ -268,8 +272,17 @@ const ChatBox = () => {
       socket.emit('next', { userId, userName, deviceId });
       hasHandledLeave.current = true;
       clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 30000);
-    });
+       searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 60000);
+    };
+
+    if (nextClicksRef.current.length >= 3) {
+      ensureCaptcha(() => {
+        nextClicksRef.current = [];
+        performNext();
+      });
+    } else {
+      performNext();
+    }
   };
 
   const handleNewBuddy = () => {
@@ -283,7 +296,7 @@ const ChatBox = () => {
       sessionStorage.clear();
       socket.emit('find_new_buddy', { userId, userName, deviceId });
       clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 30000);
+      searchTimeout.current = setTimeout(() => setChatState('noBuddy'), 60000);
     });
   };
 
@@ -521,17 +534,14 @@ const ChatBox = () => {
       ">
         {/* Header with logo, partner name and palette icon */}
         <div
-          className="flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] relative"
+          className="flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1]"
           style={{ height: '60px' }}
         >
           <WebbitLogo size={120} style={{ marginTop: '-20px', marginBottom: '-20px' }} />
-
-          <div className="absolute left-1/2 -translate-x-1/2 text-center">
-            <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
-              {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
-            </span>
-          </div>
-          <div className="ml-auto relative z-20">
+<span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+            {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
+          </span>
+          <div className="ml-auto relative z-20 flex items-center">
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
               className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -544,12 +554,12 @@ const ChatBox = () => {
             {showColorPicker && (
               <div
                 ref={colorPopoverRef}
-                className="absolute right-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 flex flex-wrap p-3 z-30"
+                className="absolute right-0 top-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-30"
                 style={{
-                  minWidth: '200px',
+                  minWidth: '140px',
                   marginTop: '8px',
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(5, 36px)',
+                  gridTemplateColumns: 'repeat(3, 36px)',
                   gridTemplateRows: 'repeat(2, 36px)',
                   gap: '12px',
                 }}
@@ -588,7 +598,7 @@ const ChatBox = () => {
         <div
           className="flex-1 overflow-y-auto py-4 px-2 flex flex-col gap-2 bg-repeat relative"
           style={{
-            backgroundImage: `url('/src/assets/doodle-bg.png')`,
+            backgroundImage: `url(${doodleBg})`,
             backgroundRepeat: 'repeat',
             backgroundSize: '400px',
             backgroundColor: bgColor,

@@ -18,9 +18,9 @@ const ChatInput = ({
           e.preventDefault();
           handleSend();
         }}
-        className="sticky bottom-0 left-0 right-0 bg-inherit z-10 p-2"
+        className="sticky bottom-0 left-0 right-0 bg-inherit z-10 p-3"
       >
-        <div className="flex items-center w-full border border-[#ece5dd] rounded-full bg-white dark:bg-gray-700 px-2 shadow-sm">
+        <div className="flex items-center w-full border border-[#ece5dd] rounded-full bg-white dark:bg-gray-700 px-3 py-1 shadow-sm">
           <button
             type="button"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -34,7 +34,7 @@ const ChatInput = ({
             ref={inputRef}
             value={input}
             onChange={handleInputChange}
-            className="flex-1 px-3 py-2 bg-transparent outline-none"
+            className="flex-1 px-3 py-3 bg-transparent outline-none"
             placeholder="Type a message..."
             required
             autoFocus
