@@ -249,13 +249,14 @@ const HomePage = () => {
   };
 
   return (
-    <div className="relative h-screen overflow-auto flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom)+32px)] bg-blue-100 dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
+    <div className="relative h-screen overflow-auto flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
 
       {/* Header */}
       <div
-        className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-green-100 dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
-        style={{ minHeight: 64 }}
-      >
+  className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
+  style={{ minHeight: 64 }}
+>
+
         <WebbitLogo size={130} style={{ marginTop: '-32px', marginBottom: '-32px' }} />
       </div>
 
