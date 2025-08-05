@@ -316,6 +316,10 @@ const HomePage = () => {
 
       <CookieConsent />
       <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
+
+      {/* ✅ Spacer: only on mobile */}
+      <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" />
+
     </div>
   );
 };
