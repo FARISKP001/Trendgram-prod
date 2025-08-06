@@ -255,6 +255,11 @@ const ChatBox = () => {
     }
   }, [showEmojiPicker]);
 
+  const notifyNoBuddy = () => {
+    setMessages([{ text: "Partner's are not available.", from: 'system' }]);
+    setChatState('noBuddy');
+  };
+  
   const handleNext = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
@@ -277,7 +282,7 @@ const ChatBox = () => {
       hasHandledLeave.current = true;
       clearTimeout(searchTimeout.current);
       searchTimeout.current = setTimeout(() => {
-        setChatState('noBuddy');
+        notifyNoBuddy();
         socket.emit('leave_chat', { userId });
       }, 60000);
     };
@@ -304,7 +309,7 @@ const ChatBox = () => {
       socket.emit('find_new_buddy', { userId, userName, deviceId });
       clearTimeout(searchTimeout.current);
       searchTimeout.current = setTimeout(() => {
-        setChatState('noBuddy');
+        notifyNoBuddy();
         socket.emit('leave_chat', { userId });
       }, 60000);
     });
@@ -406,7 +411,7 @@ const ChatBox = () => {
       socket.emit('find_new_buddy', { userId, userName, deviceId });
       clearTimeout(searchTimeout.current);
       searchTimeout.current = setTimeout(() => {
-        setChatState('noBuddy');
+        notifyNoBuddy();
         socket.emit('leave_chat', { userId });
       }, 60000);
       toast.success('Searching for a new buddy...');
@@ -414,7 +419,10 @@ const ChatBox = () => {
     socket.on('partner_found', handlePartnerFound);
     socket.on('partner_left', handlePartnerLeft);
     socket.on('chatMessage', handleChatMessage);
-    socket.on('no_buddy_found', () => setChatState('noBuddy'));
+    socket.on('no_buddy_found', () => {
+      notifyNoBuddy();
+      socket.emit('leave_chat', { userId });
+    });
     socket.on('partner_idle', () =>
       toast.info('⚠️ Your partner seems idle.', { toastId: 'partner-idle' })
     );
