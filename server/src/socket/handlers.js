@@ -56,7 +56,12 @@ module.exports = (io, socket, redis) => {
     try {
       const userRoom = userRoomMap[userId];
       if (userRoom) {
-        const { roomName, partnerId } = userRoom;
+        const { roomName, partnerId, socketId } = userRoom;
+
+        // Fallback to the stored socket if one wasn't explicitly provided.
+        if (!socketInstance && socketId) {
+          socketInstance = io.sockets.sockets.get(socketId);
+        }
         
         // Ensure the current socket leaves the room so that lingering
         // subscriptions do not receive future messages.
@@ -65,10 +70,15 @@ module.exports = (io, socket, redis) => {
         }
 
         if (notifyPartner) {
-          const partnerSocketId = await redis.get(`userSocket:${partnerId}`);
-          if (partnerSocketId) {
-            io.to(partnerSocketId).emit('partner_left');
-            const partnerSocket = io.sockets.sockets.get(partnerSocketId);
+          let partnerSocketId = await redis.get(`userSocket:${partnerId}`);
+          if (!partnerSocketId && userRoomMap[partnerId]?.socketId) {
+            partnerSocketId = userRoomMap[partnerId].socketId;
+          }
+          const partnerSocket = partnerSocketId
+            ? io.sockets.sockets.get(partnerSocketId)
+            : null;
+          if (partnerSocket) {
+            partnerSocket.emit('partner_left');
             // Cleanup partner without triggering another notification back to
             // this user. This prevents both parties from receiving duplicate
             // "partner_left" events when one clicks "Next".
@@ -168,8 +178,12 @@ module.exports = (io, socket, redis) => {
       if (partnerSocket && !userRoomMap[partnerId]) {
         const roomName = [userId, partnerId].sort().join('-');
 
-        userRoomMap[userId] = { roomName, partnerId };
-        userRoomMap[partnerId] = { roomName, partnerId: userId };
+        userRoomMap[userId] = { roomName, partnerId, socketId: socket.id };
+        userRoomMap[partnerId] = {
+          roomName,
+          partnerId: userId,
+          socketId: partnerSocket.id,
+        };
 
         socket.join(roomName);
         partnerSocket.join(roomName);
