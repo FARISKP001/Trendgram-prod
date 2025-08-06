@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import CookieConsent from './components/CookieConsent';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const ChatBox = lazy(() => import('./components/ChatBox'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
