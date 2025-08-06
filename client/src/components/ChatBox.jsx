@@ -144,7 +144,7 @@ const ChatBox = () => {
   // Register user (always send userName)
   const registerUser = () => {
     if (!socket?.connected || !userId || !deviceId) return;
-    socket.emit('register_user', { userId, deviceId });
+    socket.emit('register_user', { userId, deviceId, userName });
     sessionStorage.setItem('userId', userId);
     sessionStorage.setItem('userName', userName);
   };
@@ -170,7 +170,7 @@ const ChatBox = () => {
       if (data.success) {
         setCaptchaVerified(true);
         setShowCaptcha(false);
-        socket.emit('register_user', { userId, deviceId });
+        socket.emit('register_user', { userId, deviceId, userName });
         if (pendingAction.current) {
           const fn = pendingAction.current;
           pendingAction.current = null;
@@ -502,8 +502,8 @@ const ChatBox = () => {
     onBack: () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
-
       }
+      if (socket) socket.disconnect();
       hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
@@ -515,8 +515,8 @@ const ChatBox = () => {
     onRefresh: () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
-
       }
+      if (socket) socket.disconnect();
       hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
@@ -524,8 +524,8 @@ const ChatBox = () => {
     showExitConfirmToast: () => showMobileExitToast(() => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
-
       }
+      if (socket) socket.disconnect();
       hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
@@ -543,6 +543,7 @@ const ChatBox = () => {
 
         trackSessionEnd();
         sessionStorage.clear();
+        if (socket) socket.disconnect();
       }
     };
   }, [socket]);
@@ -562,7 +563,7 @@ const ChatBox = () => {
           {/* Header */}
           <div className="h-[60px] shrink-0 flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
             <WebbitLogo size={52} />
-            <div className="ml-3 mr-6 relative z-30">
+            <div className="ml-3 mr-2 relative z-30" ref={colorPopoverRef}>
               {/* Color Picker Toggle Button */}
               <button
                 onClick={() => setShowColorPicker((prev) => !prev)}
@@ -577,7 +578,6 @@ const ChatBox = () => {
               {/* Color Options Popover */}
               {showColorPicker && (
                 <div
-                  ref={colorPopoverRef}
                   className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-50 grid grid-cols-2 grid-rows-3 gap-2 min-w-[120px]"
                 >
                   {colorOptions.map((color) => (
@@ -607,7 +607,7 @@ const ChatBox = () => {
               )}
             </div>
 
-            <span className="ml-4 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+            <span className="ml-2 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
               {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
             </span>
           </div>

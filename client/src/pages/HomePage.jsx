@@ -11,6 +11,7 @@ import { usePageView } from '../hooks/usePageView';
 import sendAnalyticsEvent from '../utils/analytics.js';
 import { validateText } from '../utils/textFilters';
 import CookieConsent from '../components/CookieConsent.jsx';
+import { getCookie, setCookie } from '../utils/cookies.js';
 
 const HomePage = () => {
   usePageView('HomePage');
@@ -19,7 +20,6 @@ const HomePage = () => {
   const [matching, setMatching] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
-  const [showCookieBar, setShowCookieBar] = useState(() => !localStorage.getItem('cookieAccepted'));
   const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
   const [deviceId, setDeviceId] = useState(null);
   const [suspendedUntil, setSuspendedUntil] = useState(() => {
@@ -27,7 +27,8 @@ const HomePage = () => {
     return stored ? parseInt(stored, 10) : null;
   });
   const [showCaptcha, setShowCaptcha] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
+  // Captcha is considered verified when the cooldown cookie exists
+  const [captchaVerified, setCaptchaVerified] = useState(() => !!getCookie('captchaCooldown'));
   const pendingAction = useRef(null);
   const siteKey = import.meta.env.VITE_CF_SITE_KEY;
 
@@ -66,12 +67,22 @@ const HomePage = () => {
     }
   }, [suspendedUntil]);
 
+  useEffect(() => {
+    if (socket && !socket.connected) {
+      socket.connect();
+    }
+  }, [socket]);
+
   // 📡 Register Socket
   useEffect(() => {
     if (socket && isConnected && userId.current && deviceId) {
-      socket.emit('register_user', { userId: userId.current, deviceId });
+      socket.emit('register_user', {
+        userId: userId.current,
+        deviceId,
+        userName: name || 'Guest',
+      });
     }
-  }, [socket?.id, isConnected, deviceId]);
+  }, [socket?.id, isConnected, deviceId, name]);
 
   // 🧹 Clear timeout on unmount
   useEffect(() => {
@@ -137,6 +148,16 @@ const HomePage = () => {
   useEffect(() => {
     if (!socket) return;
     const handleCaptcha = () => {
+      // Skip showing captcha if cooldown cookie exists
+      if (getCookie('captchaCooldown')) {
+        setCaptchaVerified(true);
+        if (pendingAction.current) {
+          const fn = pendingAction.current;
+          pendingAction.current = null;
+          fn();
+        }
+        return;
+      }
       setCaptchaVerified(false);
       setShowCaptcha(true);
     };
@@ -144,17 +165,15 @@ const HomePage = () => {
     return () => socket.off('captcha_required', handleCaptcha);
   }, [socket]);
 
-  // 🍪 Dismiss Cookie Bar
-  const handleCookieDismiss = () => {
-    localStorage.setItem('cookieAccepted', 'true');
-    setShowCookieBar(false);
-  };
-
   const ensureCaptcha = (action) => {
-    if (!captchaVerified) {
+    // Refresh verification state from cookie each call
+    const hasCookie = !!getCookie('captchaCooldown');
+    if (!hasCookie) {
+      setCaptchaVerified(false);
       pendingAction.current = action;
       setShowCaptcha(true);
     } else {
+      setCaptchaVerified(true);
       action();
     }
   };
@@ -169,9 +188,15 @@ const HomePage = () => {
       });
       const data = await res.json();
       if (data.success) {
+        // Set cooldown cookie for one minute
+        setCookie('captchaCooldown', 'true', { minutes: 1 });
         setCaptchaVerified(true);
         setShowCaptcha(false);
-        socket.emit('register_user', { userId: userId.current, deviceId });
+        socket.emit('register_user', {
+          userId: userId.current,
+          deviceId,
+          userName: name || 'Guest',
+        });
         if (pendingAction.current) {
           const fn = pendingAction.current;
           pendingAction.current = null;
@@ -253,9 +278,9 @@ const HomePage = () => {
 
       {/* Header */}
       <div
-  className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
-  style={{ minHeight: 64 }}
->
+        className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
+        style={{ minHeight: 64 }}
+      >
 
         <WebbitLogo size={130} style={{ marginTop: '-32px', marginBottom: '-32px' }} />
       </div>
@@ -286,8 +311,8 @@ const HomePage = () => {
             </button>
           </div>
         </form>
-
-
+        {/* Cookie consent banner appears here */}
+        <CookieConsent />
         {status && <p className="mt-4 text-green-600 dark:text-emerald-400">{status}</p>}
         {error && <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>}
       </main>
@@ -327,7 +352,6 @@ const HomePage = () => {
         <p className="mt-2 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">© 2025 TrendGram</p>
       </footer>
 
-      <CookieConsent />
       <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
 
       {/* ✅ Spacer: only on mobile */}

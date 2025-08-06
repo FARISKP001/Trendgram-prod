@@ -65,9 +65,9 @@ export const containsBadWords = (text = '') => {
 
 export const containsUrl = (text = '') => urlRegex.test(text);
 
-// ✅ Loosened regex to allow wider Unicode support (including composed emojis)
+// Allow only English, Hindi, and Malayalam characters (plus numbers, punctuation, spaces, symbols, emojis)
 export const isAllowedLanguage = (text = '') => {
-  return /^[\p{L}\p{N}\p{P}\p{Z}\p{S}\p{M}\p{Emoji_Presentation}]*$/u.test(text);
+  return /^[\p{sc=Latin}\p{sc=Devanagari}\p{sc=Malayalam}\p{N}\p{P}\p{Z}\p{S}\p{M}\p{Emoji_Presentation}]*$/u.test(text);
 };
 
 export const sanitizeMessage = (text = '') => {

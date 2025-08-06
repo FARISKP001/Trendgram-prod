@@ -1,56 +1,37 @@
 import React, { useState, useEffect } from "react";
+import { getCookie, setCookie } from "../utils/cookies.js";
 
+// Renders a small consent bar that appears beneath the name input.
+// The consent state is stored in a cookie so the banner is hidden once accepted.
 const CookieConsent = () => {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(() => !getCookie("cookieConsentGiven"));
 
   useEffect(() => {
-    if (!localStorage.getItem("cookieConsentGiven")) {
-      setShow(true);
-    }
+    setShow(!getCookie("cookieConsentGiven"));
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem("cookieConsentGiven", "true");
+    // Persist acceptance for one year
+    setCookie("cookieConsentGiven", "true", { days: 365 });
     setShow(false);
   };
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-start justify-center p-4">
-      {/* Dimmed background */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-
-      {/* Consent box with top safe spacing */}
-      <div
-        className="
-          relative z-10 w-[90vw] max-w-md
-          bg-white dark:bg-gray-900
-          border border-gray-200 dark:border-gray-700
-          rounded-2xl shadow-2xl
-          flex flex-col items-center text-center
-          px-5 py-7
-          mt-[calc(env(safe-area-inset-top,0px)+24px)]
-        "
+    <div className="w-full max-w-[600px] mt-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow p-4 text-sm text-center flex flex-col sm:flex-row items-center gap-4">
+      <span className="text-gray-700 dark:text-gray-300 flex-1">
+        We use cookies to improve your experience. By browsing, you agree to our{' '}
+        <a href="/privacy" className="text-blue-700 dark:text-blue-400 underline">Privacy Policy</a>,{' '}
+        <a href="/cookies" className="text-blue-700 dark:text-blue-400 underline">Cookie Policy</a> and{' '}
+        <a href="/terms" className="text-blue-700 dark:text-blue-400 underline">Terms & Conditions</a>.
+      </span>
+      <button
+        className="px-5 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl font-semibold shadow"
+        onClick={handleAccept}
       >
-        <div className="mb-2 text-lg font-bold text-gray-900 dark:text-white">
-          We use cookies to improve your experience.
-        </div>
-        <div className="text-gray-700 dark:text-gray-300 text-sm mb-5">
-          By browsing, you agree to our{" "}
-          <a href="/privacy" className="text-blue-700 dark:text-blue-400 underline">Privacy Policy</a>
-          {", "}
-          <a href="/cookies" className="text-blue-700 dark:text-blue-400 underline">Cookie Policy</a>
-          {", and "}
-          <a href="/terms" className="text-blue-700 dark:text-blue-400 underline">Terms & Conditions</a>.
-        </div>
-        <button
-          className="mt-2 px-7 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl font-semibold shadow transition w-full sm:w-auto"
-          onClick={handleAccept}
-        >
-          Got it
-        </button>
-      </div>
+        Got it
+      </button>
     </div>
   );
 };
