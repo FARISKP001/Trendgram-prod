@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import WebbitLogo from '../components/WebbitLogo.jsx';
 import CaptchaModal from '../components/CaptchaModal.jsx';
+import CookieConsent from '../components/CookieConsent';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import {
