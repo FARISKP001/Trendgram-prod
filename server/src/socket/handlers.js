@@ -148,16 +148,24 @@ module.exports = (io, socket, redis) => {
   const matchUser = async (userId, userName) => {
     if (!userId) return;
 
+     // If the user is already in a chat, don't attempt to rematch.
+    if (userRoomMap[userId]) return;
+
     await redis.lrem('chat:waitingQueue', 0, userId);
 
     for (let i = 0; i < 50; i++) {
       const partnerId = await redis.lpop('chat:waitingQueue');
       if (!partnerId || partnerId === userId) break;
 
+      // Skip partners that are already engaged in another chat session.
+      if (userRoomMap[partnerId]) {
+        continue;
+      }
+
       const partnerSocketId = await redis.get(`userSocket:${partnerId}`);
       const partnerSocket = io.sockets.sockets.get(partnerSocketId);
 
-      if (partnerSocket) {
+      if (partnerSocket && !userRoomMap[partnerId]) {
         const roomName = [userId, partnerId].sort().join('-');
 
         userRoomMap[userId] = { roomName, partnerId };
@@ -166,7 +174,7 @@ module.exports = (io, socket, redis) => {
         socket.join(roomName);
         partnerSocket.join(roomName);
 
-        const partnerName = await redis.get(`userName:${partnerId}`) || 'Stranger';
+        const partnerName = (await redis.get(`userName:${partnerId}`)) || 'Stranger';
         
         const myName = userName || 'Stranger';
         
