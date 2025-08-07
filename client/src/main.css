@@ -7,9 +7,10 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   font-family: system-ui, sans-serif;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
 }
 
 /* === Viewport Height Fallback for Mobile === */

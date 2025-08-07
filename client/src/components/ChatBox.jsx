@@ -553,7 +553,7 @@ const ChatBox = () => {
   useClickAway(colorPopoverRef, () => setShowColorPicker(false));
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-hidden">
+    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-y-auto">
       <div className="w-full h-full flex flex-col">
         <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
         sm:rounded-2xl bg-[#f8f9fa] dark:bg-[#23272b] shadow-2xl overflow-hidden relative
