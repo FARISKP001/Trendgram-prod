@@ -340,17 +340,8 @@ const HomePage = () => {
 
       {/* Footer */}
       <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 px-2">
-        <p>We use cookies to improve your experience. By browsing, you agree to this.</p>
-        <div className="mt-2 text-center text-sm space-x-2">
-          <a
-            className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400"
-            href="/privacy-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
-          <span className="text-gray-500 dark:text-gray-400">·</span>
+        <p>
+          By continuing to use TrendGram, you agree to our{' '}
           <a
             className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400"
             href="/cookie-policy"
@@ -362,13 +353,23 @@ const HomePage = () => {
           <span className="text-gray-500 dark:text-gray-400">·</span>
           <a
             className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400"
+            href="/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>
+          , and{' '}
+          <a
+            className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400"
             href="/terms-and-conditions"
             target="_blank"
             rel="noopener noreferrer"
           >
             Terms & Conditions
           </a>
-        </div>
+        {' '}— crafted to keep your experience smooth, secure, and transparent.
+        </p>
 
         <p className="mt-2 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">© 2025 TrendGram</p>
       </footer>
