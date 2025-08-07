@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import WebbitLogo from '../components/WebbitLogo.jsx';
 import CaptchaModal from '../components/CaptchaModal.jsx';
-import CookieConsent from '../components/CookieConsent';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import {
@@ -311,8 +310,6 @@ const HomePage = () => {
             </button>
           </div>
         </form>
-        {/* Cookie consent banner appears here */}
-        <CookieConsent />
         {status && <p className="mt-4 text-green-600 dark:text-emerald-400">{status}</p>}
         {error && <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>}
       </main>
