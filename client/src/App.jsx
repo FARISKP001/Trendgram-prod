@@ -5,13 +5,11 @@ const ChatBox = lazy(() => import('./components/ChatBox'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
-import CookieConsent from './components/CookieConsent';
 
 const App = () => {
   return (
     <Router>
-      {/* <-- Render here so it overlays every page */}
-      <CookieConsent />
+
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
           <Route path="/" element={<HomePage />} />
