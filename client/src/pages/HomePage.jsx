@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import WebbitLogo from '../components/WebbitLogo.jsx';
 import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
+import AgeConfirmation from '../components/AgeConfirmation.jsx';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import {
@@ -29,6 +30,8 @@ const HomePage = () => {
   const [showCaptcha, setShowCaptcha] = useState(false);
   // Captcha is considered verified when the cooldown cookie exists
   const [captchaVerified, setCaptchaVerified] = useState(() => !!getCookie('captchaCooldown'));
+  const [ageConfirmed, setAgeConfirmed] = useState(() => localStorage.getItem('ageConfirmed') === 'true');
+  const [showAgeModal, setShowAgeModal] = useState(false);
   const pendingAction = useRef(null);
   const siteKey = import.meta.env.VITE_CF_SITE_KEY;
 
@@ -216,17 +219,7 @@ const HomePage = () => {
     setError(validation.valid ? '' : 'Please follow community guidlines.');
   };
 
-  // 🔍 Start matching
-  const handleFindMatch = (e) => {
-    e.preventDefault();
-
-    const ageConfirmed = window.confirm('Are you 18 years old or above?');
-    if (!ageConfirmed) {
-      setError('You should be minimum 18 to enter to the website.');
-      setMatching(false);
-      return;
-    }
-
+  const startMatch = () => {
     if (!deviceId) {
       setError('Loading device identity...');
       return;
@@ -273,9 +266,37 @@ const HomePage = () => {
     });
   };
 
+   // 🔍 Start matching
+  const handleFindMatch = (e) => {
+    e.preventDefault();
+
+    if (!ageConfirmed) {
+      setShowAgeModal(true);
+      return;
+    }
+
+    startMatch();
+  };
+
+  const handleAgeConfirm = () => {
+    localStorage.setItem('ageConfirmed', 'true');
+    setAgeConfirmed(true);
+    setShowAgeModal(false);
+    startMatch();
+  };
+
+  const handleAgeCancel = () => {
+    setError('You should be minimum 18 to enter to the website.');
+    setMatching(false);
+    setShowAgeModal(false);
+  };
+
   return (
     <div className="relative h-screen overflow-auto flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
-
+{showAgeModal && (
+        <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+      )}
+      
       {/* Header */}
       <div
         className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"

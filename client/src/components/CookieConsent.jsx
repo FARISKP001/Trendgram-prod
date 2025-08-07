@@ -19,15 +19,16 @@ const CookieConsent = () => {
   if (!show) return null;
 
   return (
-    <div className="w-full max-w-[600px] mt-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow p-4 text-sm text-center flex flex-col sm:flex-row items-center gap-4">
+    <div className="w-full max-w-[600px] mt-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 border border-indigo-200 dark:border-gray-700 rounded-2xl shadow-lg p-4 text-sm sm:text-base text-center flex flex-col sm:flex-row items-center gap-4">
       <span className="text-gray-700 dark:text-gray-300 flex-1">
+        <span className="mr-1" role="img" aria-label="cookie">🍪</span>
         We use cookies to improve your experience. By browsing, you agree to our{' '}
         <a href="/privacy" className="text-blue-700 dark:text-blue-400 underline">Privacy Policy</a>,{' '}
         <a href="/cookies" className="text-blue-700 dark:text-blue-400 underline">Cookie Policy</a> and{' '}
         <a href="/terms" className="text-blue-700 dark:text-blue-400 underline">Terms & Conditions</a>.
       </span>
       <button
-        className="px-5 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl font-semibold shadow"
+        className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-semibold shadow transition-colors"
         onClick={handleAccept}
       >
         Got it
