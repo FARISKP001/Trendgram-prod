@@ -266,7 +266,7 @@ const HomePage = () => {
     });
   };
 
-   // 🔍 Start matching
+  // 🔍 Start matching
   const handleFindMatch = (e) => {
     e.preventDefault();
 
@@ -293,10 +293,7 @@ const HomePage = () => {
 
   return (
     <div className="relative h-screen overflow-auto flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
-{showAgeModal && (
-        <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-      )}
-      
+
       {/* Header */}
       <div
         className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
@@ -332,6 +329,9 @@ const HomePage = () => {
             </button>
           </div>
         </form>
+        {showAgeModal && (
+          <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+        )}
         {/* Cookie consent banner appears here */}
         <CookieConsent />
         {status && <p className="mt-4 text-green-600 dark:text-emerald-400">{status}</p>}
