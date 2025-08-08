@@ -561,9 +561,8 @@ const ChatBox = () => {
         >
 
           {/* Header */}
-          <div className="h-12 shrink-0 flex items-center px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
-            <WebbitLogo size={40} />
-            <div className="ml-2 mr-2 relative z-30" ref={colorPopoverRef}>
+          <div className="h-10 shrink-0 flex items-center px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
+            <div className="mr-2 relative z-30" ref={colorPopoverRef}>
               {/* Color Picker Toggle Button */}
               <button
                 onClick={() => setShowColorPicker((prev) => !prev)}
