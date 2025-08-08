@@ -292,21 +292,20 @@ const HomePage = () => {
   };
 
   return (
-    <div className="relative h-screen overflow-auto flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
+    <div className="relative min-h-[100dvh] overflow-hidden sm:overflow-auto flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
 
       {/* Header */}
       <div
-        className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
-        style={{ minHeight: 64 }}
+        className="flex items-center justify-start w-full mb-2 px-4 py-1 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
+        style={{ minHeight: 56 }}
       >
-
-        <WebbitLogo size={130} style={{ marginTop: '-32px', marginBottom: '-32px' }} />
+        <WebbitLogo size={130} style={{ marginTop: '-37px', marginBottom: '-37px' }} />
       </div>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-start mt-12">
+      <main className="flex-1 flex flex-col items-center justify-center mt-0 sm:justify-start sm:mt-12">
         <form onSubmit={handleFindMatch} className="relative z-10 w-full flex justify-center px-2">
-          <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-6 shadow-md max-w-[600px] w-full mt-8 transition-all duration-300">
+          <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-6 shadow-md max-w-[600px] w-full mt-0 sm:mt-8 transition-all duration-300">
             <input
               className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-sky-400 w-72 max-w-full h-[45px] text-lg"
               type="text"
@@ -368,7 +367,7 @@ const HomePage = () => {
           >
             Terms & Conditions
           </a>
-        {' '}— crafted to keep your experience smooth, secure, and transparent.
+          {' '}— crafted to keep your experience smooth, secure, and transparent.
         </p>
 
         <p className="mt-2 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">© 2025 TrendGram</p>
