@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import logo from '../assets/tg_logo.png';
 import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
 import AgeConfirmation from '../components/AgeConfirmation.jsx';
@@ -293,46 +294,57 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-      <header className="h-8 sm:h-10 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm flex items-center px-2 sm:px-4" />
+      <header className="sticky top-0 z-30 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm">
+        <div className="flex items-center h-12 sm:h-14 px-3 sm:px-4">
+          <img
+            id="tg-header-logo"
+            src={logo}
+            alt="TrendGram"
+            className="w-auto object-contain shrink-0"
+            style={{ height: 28 }} // 28px fits in 48px header; becomes ~36px on sm via media CSS below
+          />
+        </div>
+      </header>
+
       {/* Main content */}
-      <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-[520px] mx-auto px-4 py-4 space-y-4">
-          {/* Name input + connect */}
-          <form onSubmit={handleFindMatch}>
-            <div className="flex items-center gap-x-3 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md">
-              <input
-                className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
-                type="text"
-                value={name}
-                onChange={handleNameChange}
-                placeholder="Enter your name"
-                required
-                maxLength={10}
-              />
-              <button
-                type="submit"
-                disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-                className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105 disabled:cursor-not-allowed border-2 border-sky-500"
-              >
-                {matching ? (
-                  <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
-                ) : (
-                  <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
-                )}
-              </button>
-            </div>
-          </form>
+      <main className="flex-1 overflow-auto">
+        {/* 3rem = 48px header on mobile, 3.5rem = 56px on sm+ */}
+        <div className="min-h-[calc(100svh-3rem)] sm:min-h-[calc(100svh-3.5rem)] grid place-items-center px-4">
+          <div className="w-full max-w-[520px] space-y-4">
+            {/* Name input + connect */}
+            <form onSubmit={handleFindMatch}>
+              <div className="flex items-center gap-x-3 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md mx-3 sm:mx-0">
+                <input
+                  className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
+                  type="text"
+                  value={name}
+                  onChange={handleNameChange}
+                  placeholder="Enter your name"
+                  required
+                  maxLength={10}
+                />
+                <button
+                  type="submit"
+                  disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
+                  className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105 disabled:cursor-not-allowed border-2 border-sky-500"
+                >
+                  {matching ? (
+                    <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
+                  ) : (
+                    <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+                  )}
+                </button>
+              </div>
+            </form>
 
-          {/* Age consent */}
-          {showAgeModal && (
-            <AgeConfirmation
-              onConfirm={handleAgeConfirm}
-              onCancel={handleAgeCancel}
-            />
-          )}
+            {/* Age consent */}
+            {showAgeModal && (
+              <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+            )}
 
-          {/* Cookie consent */}
-          <CookieConsent />
+            {/* Cookie consent */}
+            <CookieConsent />
+          </div>
         </div>
       </main>
       {/* Footer */}
@@ -369,8 +381,8 @@ const HomePage = () => {
         </p>
         <p className="mt-2 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">© 2025 TrendGram</p>
       </footer>
-      <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
-      <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" />
+      {/*<CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
+      <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" /> */}
     </div>
   );
 };

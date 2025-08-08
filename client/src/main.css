@@ -70,3 +70,9 @@ html, body, #root {
   margin: 0 !important;
   box-shadow: none !important;
 }
+
+#tg-header-logo { height: 28px !important; }
+@media (min-width: 640px) {
+  #tg-header-logo { height: 36px !important; }
+}
+
