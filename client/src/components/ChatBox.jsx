@@ -13,7 +13,6 @@ import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
 import showConfirmToast from '../utils/showConfirmToast';
 import { sanitizeMessage, validateText } from '../utils/textFilters';
-import WebbitLogo from './WebbitLogo';
 import SpeechBubble from './SpeechBubble';
 import ChatInput from './ChatInput';
 import ChatFooter from './ChatFooter';
