@@ -296,10 +296,10 @@ const HomePage = () => {
 
       {/* Header */}
       <div
-        className="flex items-center justify-start w-full mb-2 px-4 py-1 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative overflow-visible"
-        style={{ minHeight: 56 }}
+        className="flex items-center justify-start w-full mb-2 px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md rounded-2xl relative"
+        style={{ minHeight: 64 }}
       >
-        <WebbitLogo size={130} style={{ marginTop: '-37px', marginBottom: '-37px' }} />
+        <WebbitLogo size={48} style={{ margin: 0 }} />
       </div>
 
       {/* Main content */}
@@ -321,7 +321,9 @@ const HomePage = () => {
               className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-transform transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 border-2 border-sky-500"
             >
               {matching ? (
-                <ArrowPathIcon className="w-5 h-5 text-gray-900 dark:text-white animate-spin" />
+                <div className="animate-spin">
+                  <ArrowPathIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+                </div>
               ) : (
                 <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
               )}
@@ -338,20 +340,20 @@ const HomePage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 px-2">
+      <footer className="text-center text-sm mt-8 px-2 text-[#4169e1]">
         <p>
           By continuing to use TrendGram, you agree to our{' '}
           <a
-            className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400"
+            className="underline text-[#00bfff] hover:text-[#00bfff]"
             href="/cookie-policy"
             target="_blank"
             rel="noopener noreferrer"
           >
             Cookie Policy
           </a>
-          <span className="text-gray-500 dark:text-gray-400">·</span>
+          <span className="text-[#4169e1]">·</span>
           <a
-            className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400"
+            className="underline text-[#00bfff] hover:text-[#00bfff]"
             href="/privacy-policy"
             target="_blank"
             rel="noopener noreferrer"
@@ -360,7 +362,7 @@ const HomePage = () => {
           </a>
           , and{' '}
           <a
-            className="text-green-800 underline hover:text-emerald-500 dark:text-emerald-400"
+            className="underline text-[#00bfff] hover:text-[#00bfff]"
             href="/terms-and-conditions"
             target="_blank"
             rel="noopener noreferrer"

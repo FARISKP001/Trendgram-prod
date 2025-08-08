@@ -6,7 +6,7 @@ const ConfirmToast = ({ message, onConfirm, onCancel }) => {
       style={{
         maxWidth: 300,
         fontFamily: 'system-ui, sans-serif',
-        color: '#111',
+        color: '#3cb371',
       }}
     >
       <div style={{ marginBottom: 12, whiteSpace: 'pre-line' }}>
@@ -17,7 +17,7 @@ const ConfirmToast = ({ message, onConfirm, onCancel }) => {
         <button
           onClick={onCancel}
           style={{
-            background: '#6b7280',
+            background: '#ff7f50',
             border: 'none',
             color: 'white',
             padding: '6px 14px',
@@ -25,12 +25,12 @@ const ConfirmToast = ({ message, onConfirm, onCancel }) => {
             cursor: 'pointer',
           }}
         >
-          Cancel
+          No
         </button>
         <button
           onClick={onConfirm}
           style={{
-            background: '#ef4444',
+            background: '#8fbc8f',
             border: 'none',
             color: 'white',
             padding: '6px 14px',
