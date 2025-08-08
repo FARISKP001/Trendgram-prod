@@ -295,15 +295,19 @@ const HomePage = () => {
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
       <header className="flex items-center w-full px-3 bg-[#d4f7d4] dark:bg-[#203325] shadow-md h-12">
-        <WebbitLogo size={44} style={{ marginTop: '2px' }} />
+        <WebbitLogo size={48} />
       </header>
 
+
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center">
-        <form onSubmit={handleFindMatch} className="relative z-10 w-full flex justify-center px-4 sm:px-0">
-          <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-6 shadow-md w-full max-w-md transition-all duration-300">
+      <main className="flex-1 flex flex-col items-center justify-center px-4">
+        <form
+          onSubmit={handleFindMatch}
+          className="w-full max-w-[500px] mx-auto px-4 sm:px-0"
+        >
+          <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md w-full transition-all duration-300">
             <input
-              className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg"
+              className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-4"
               type="text"
               value={name}
               onChange={handleNameChange}
