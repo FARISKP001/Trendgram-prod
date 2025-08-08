@@ -1,7 +1,7 @@
 import React from 'react';
 import logo from '../assets/tg_logo.png';
 
-const WebbitLogo = ({ size = 48, style = {} }) => (
+const WebbitLogo = ({ size = 64, style = {} }) => (
   <img
     src={logo}
     alt="TrendGram logo"
@@ -12,7 +12,7 @@ const WebbitLogo = ({ size = 48, style = {} }) => (
       display: 'block',
       ...style,
     }}
-    className="bg-white shadow-md rounded-md"
+    className="bg-white"
   />
 );
 

@@ -295,15 +295,15 @@ const HomePage = () => {
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
       <header className="flex items-center w-full px-3 bg-[#d4f7d4] dark:bg-[#203325] shadow-md h-12">
-        <WebbitLogo size={48} />
+        <WebbitLogo size={64} style={{ marginTop: '-4px', marginBottom: '-4px' }} />
       </header>
 
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 w-full">
         <form
           onSubmit={handleFindMatch}
-          className="w-full max-w-[500px] mx-auto px-4 sm:px-0"
+          className="w-full max-w-[500px] px-4 sm:px-0 mx-auto"
         >
           <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md w-full transition-all duration-300">
             <input
