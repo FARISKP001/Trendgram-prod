@@ -294,24 +294,26 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-      <header className="h-10 bg-[#d4f7d4] dark:bg-[#203325] shadow-md flex items-center px-3">
-  {/* h-10 = 40px. The image fills that height. If your PNG has big transparent padding, the scale nudges it */}
-  <img
-    src={logo}
-    alt="TrendGram logo"
-    className="block h-full w-auto object-contain"
-    style={{ transform: 'scale(1.2)', transformOrigin: 'left center' }}
-  />
-</header>
+      <header className="h-10 bg-[#d4f7d4] dark:bg-[#203325] shadow-md flex items-center px-3 overflow-hidden">
+        <img
+          src={logo}
+          alt="TrendGram logo"
+          className="block h-full w-auto object-contain"
+          style={{
+            maxHeight: '100%', // never exceeds header
+            height: '100%',
+            width: 'auto'
+          }}
+        />
+      </header>
       {/* Main content */}
-      <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-[520px] mx-auto px-4 py-4 space-y-4">
-          {/* Name box + connect */}
+      <main className="flex-1 flex justify-center px-4">
+        <div className="w-full max-w-[500px] space-y-4">
+          {/* Name input + connect */}
           <form onSubmit={handleFindMatch}>
             <div className="flex items-center gap-x-3 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md">
               <input
-                className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400
-                     outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
+                className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
                 type="text"
                 value={name}
                 onChange={handleNameChange}
@@ -322,9 +324,7 @@ const HomePage = () => {
               <button
                 type="submit"
                 disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-                className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px]
-                     rounded-full bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105
-                     disabled:cursor-not-allowed border-2 border-sky-500"
+                className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105 disabled:cursor-not-allowed border-2 border-sky-500"
               >
                 {matching ? (
                   <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
@@ -334,15 +334,17 @@ const HomePage = () => {
               </button>
             </div>
           </form>
-          {/* Age consent BELOW name box */}
+
+          {/* Age consent */}
           {showAgeModal && (
             <AgeConfirmation
               onConfirm={handleAgeConfirm}
               onCancel={handleAgeCancel}
             />
           )}
-          {/* Cookie consent BELOW age consent */}
-          <CookieConsent className="cookie-inline" />
+
+          {/* Cookie consent */}
+          <CookieConsent />
         </div>
       </main>
       {/* Footer */}
