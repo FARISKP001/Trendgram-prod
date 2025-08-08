@@ -294,13 +294,13 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-      <header className="h-10 bg-[#d4f7d4] dark:bg-[#203325] shadow-md flex items-center px-3 overflow-hidden">
+      <header className="h-10 bg-[#d4f7d4] dark:bg-[#203325] shadow-md flex items-center px-2 overflow-hidden">
         <img
           src={logo}
           alt="TrendGram logo"
           className="block h-full w-auto object-contain"
           style={{
-            maxHeight: '100%', // never exceeds header
+            maxHeight: '100%', // Always fits the header height
             height: '100%',
             width: 'auto'
           }}
