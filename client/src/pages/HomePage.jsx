@@ -294,9 +294,10 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-      <header className="flex items-center w-full px-2 py-1 bg-[#d4f7d4] dark:bg-[#203325] shadow-md h-12">
-        <WebbitLogo size={40} />
+      <header className="flex items-center w-full px-3 bg-[#d4f7d4] dark:bg-[#203325] shadow-md h-12">
+        <WebbitLogo size={44} style={{ marginTop: '2px' }} />
       </header>
+
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center">
         <form onSubmit={handleFindMatch} className="relative z-10 w-full flex justify-center px-4 sm:px-0">

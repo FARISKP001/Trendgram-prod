@@ -8,10 +8,11 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  overflow-y: auto;
   font-family: system-ui, sans-serif;
-  overscroll-behavior-y: auto;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: auto; /* iOS fallback */
 }
+
 
 /* === Viewport Height Fallback for Mobile === */
 @supports (height: 100dvh) {
@@ -50,4 +51,13 @@ html, body, #root {
 /* === Safe Area Bottom Padding for iOS/Android Bottom Gestures === */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 1rem); /* Fallback to 16px */
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
