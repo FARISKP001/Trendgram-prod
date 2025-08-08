@@ -1,70 +1,65 @@
 import React, { useState, useEffect } from "react";
 import { getCookie, setCookie } from "../utils/cookies.js";
 
-// Renders a small consent bar that appears beneath the name input.
-// The consent state is stored in a cookie so the banner is hidden once accepted.
-const CookieConsent = () => {
-  const [show, setShow] = useState(() => !getCookie("cookieConsentGiven"));
+const COOKIE_NAME = "cookieConsentGiven";
+const COOKIE_MAX_DAYS = 365;
+
+export default function CookieConsent() {
+  // show only if there isn't a stored decision
+  const [show, setShow] = useState(() => !getCookie(COOKIE_NAME));
 
   useEffect(() => {
-    setShow(!getCookie("cookieConsentGiven"));
+    // sync once on mount in case of hydration differences
+    setShow(!getCookie(COOKIE_NAME));
   }, []);
 
-  const handleAccept = () => {
-    // Persist acceptance for one year
-    setCookie("cookieConsentGiven", "true", { days: 365 });
-    setShow(false);
+  const remember = (value) => {
+    // your utils use the `{ days }` shape, so stick to it
+    setCookie(COOKIE_NAME, value, { days: COOKIE_MAX_DAYS });
+    setShow(false); // unmount the whole card
   };
 
-  const handleDecline = () => {
-    setShow(false);
-  };
+  const handleAccept = () => remember("true");
+  const handleDecline = () => remember("false");
 
   if (!show) return null;
 
   return (
-    <div className="w-full max-w-[600px] mt-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 border border-indigo-200 dark:border-gray-700 rounded-2xl shadow-lg p-4 text-sm sm:text-base text-center flex flex-col sm:flex-row items-center gap-4">
-      <span className="flex-1 text-[#9370db]">
-        <span className="mr-1" role="img" aria-label="cookie"></span>
-        Cookies help us serve you better. By using our site, you consent to cookies.{' '}
-        <a
-          href="/privacy-policy"
-          className="underline"
-          style={{ color: '#ff7f50' }}
-        >
+    <div className="cookie-inline" role="region" aria-label="Cookie consent">
+      <p className="text-center text-[15px] leading-6 text-[#6b7280]">
+        Cookies help us serve you better. By using our site, you consent to cookies.{" "}
+        <a href="/privacy-policy" className="underline" style={{ color: "#ff7f50" }}>
           Privacy Policy
-        </a>,{' '}
-        <a
-          href="/cookie-policy"
-          className="underline"
-          style={{ color: '#ff7f50' }}
-        >
+        </a>
+        ,{" "}
+        <a href="/cookie-policy" className="underline" style={{ color: "#ff7f50" }}>
           Cookie Policy
-        </a> and{' '}
-        <a
-          href="/terms-and-conditions"
-          className="underline"
-          style={{ color: '#ff7f50' }}
-        >
+        </a>{" "}
+        and{" "}
+        <a href="/terms-and-conditions" className="underline" style={{ color: "#ff7f50" }}>
           Terms & Conditions
         </a>
-      </span>
-      <div className="flex gap-2">
+        .
+      </p>
+
+      <div className="mt-3 flex justify-center gap-2">
         <button
-          className="px-5 py-2 bg-[#9ab973] hover:bg-[#9ab973]/80 text-white rounded-full font-semibold shadow transition-colors"
+          type="button"
           onClick={handleAccept}
+          className="px-4 py-1.5 rounded-full font-semibold border transition-colors
+                     bg-[#9ab973] hover:bg-[#9ab973]/80 text-white"
         >
           Yes
         </button>
         <button
-          className="px-5 py-2 bg-[#e25822] hover:bg-[#e25822]/80 text-white rounded-full font-semibold shadow transition-colors"
+          type="button"
           onClick={handleDecline}
+          className="px-4 py-1.5 rounded-full font-semibold border transition-colors
+                     bg-[#e25822] hover:bg-[#e25822]/80 text-white"
         >
           No
         </button>
       </div>
     </div>
   );
-};
-
-export default CookieConsent;
+}
