@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import WebbitLogo from '../components/WebbitLogo.jsx';
+import logo from '../assets/tg_logo.png';
 import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
 import AgeConfirmation from '../components/AgeConfirmation.jsx';
