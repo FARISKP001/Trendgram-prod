@@ -294,50 +294,56 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-      <header className="h-12 bg-[#d4f7d4] dark:bg-[#203325] shadow-md flex items-center px-3">
-        <img src={logo} alt="TrendGram logo" className="block h-full w-auto object-contain" />
-      </header>
-
-
+      <header className="h-10 bg-[#d4f7d4] dark:bg-[#203325] shadow-md flex items-center px-3">
+  {/* h-10 = 40px. The image fills that height. If your PNG has big transparent padding, the scale nudges it */}
+  <img
+    src={logo}
+    alt="TrendGram logo"
+    className="block h-full w-auto object-contain"
+    style={{ transform: 'scale(1.2)', transformOrigin: 'left center' }}
+  />
+</header>
       {/* Main content */}
-      <main className="flex-1 flex items-center justify-center px-4">
-        <form onSubmit={handleFindMatch} className="w-full">
-          <div className="mx-auto w-full max-w-[320px] sm:max-w-md
-                    flex items-center gap-x-3 rounded-full px-4 sm:px-6
-                    bg-gray-200 dark:bg-[#111c2f] shadow-md">
-            <input
-              className="flex-1 bg-transparent text-gray-900 dark:text-gray-50
-                   placeholder-gray-500 dark:placeholder-gray-400 outline-none
-                   rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
-              type="text"
-              value={name}
-              onChange={handleNameChange}
-              placeholder="Enter your name"
-              required
-              maxLength={10}
+      <main className="flex-1 flex justify-center">
+        <div className="w-full max-w-[520px] mx-auto px-4 py-4 space-y-4">
+          {/* Name box + connect */}
+          <form onSubmit={handleFindMatch}>
+            <div className="flex items-center gap-x-3 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md">
+              <input
+                className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400
+                     outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
+                type="text"
+                value={name}
+                onChange={handleNameChange}
+                placeholder="Enter your name"
+                required
+                maxLength={10}
+              />
+              <button
+                type="submit"
+                disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
+                className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px]
+                     rounded-full bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105
+                     disabled:cursor-not-allowed border-2 border-sky-500"
+              >
+                {matching ? (
+                  <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
+                ) : (
+                  <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+                )}
+              </button>
+            </div>
+          </form>
+          {/* Age consent BELOW name box */}
+          {showAgeModal && (
+            <AgeConfirmation
+              onConfirm={handleAgeConfirm}
+              onCancel={handleAgeCancel}
             />
-            <button
-              type="submit"
-              disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-              className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px]
-                   rounded-full bg-sky-300 hover:bg-sky-400 transition-transform
-                   hover:scale-105 disabled:cursor-not-allowed border-2 border-sky-500"
-            >
-              {matching ? (
-                <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
-              ) : (
-                <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
-              )}
-            </button>
-          </div>
-        </form>
-        {showAgeModal && (
-          <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-        )}
-        {/* Cookie consent banner appears here */}
-        <CookieConsent />
-        {status && <p className="mt-4 text-green-600 dark:text-emerald-400">{status}</p>}
-        {error && <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>}
+          )}
+          {/* Cookie consent BELOW age consent */}
+          <CookieConsent className="cookie-inline" />
+        </div>
       </main>
       {/* Footer */}
       <footer className="text-center text-sm mt-8 px-2 text-[#4169e1]">
