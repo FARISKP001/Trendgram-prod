@@ -2,6 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { SocketContext } from './SocketContext';
 import { io } from 'socket.io-client';
 
+// Retrieve or create a persistent user ID for the current client.
+const getUserToken = () => {
+  let token = localStorage.getItem('userId');
+  if (!token) {
+    token = crypto.randomUUID();
+    localStorage.setItem('userId', token);
+  }
+  return token;
+};
+
 const socketURL =
   import.meta.env.VITE_SOCKET_URL ||
   (import.meta.env.DEV ? 'http://localhost:5000' : '');
@@ -16,8 +26,10 @@ const SocketProvider = ({ children }) => {
       return;
     }
 
+    const userId = getUserToken();
     const newSocket = io(socketURL, {
       transports: ['websocket'],
+      auth: { userId },
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

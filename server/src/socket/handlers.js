@@ -15,6 +15,7 @@ const REPORT_CAPTCHA_THRESHOLD = 2;
 const REPORT_CAPTCHA_WINDOW = 300;
 // Treat extremely rapid actions as suspicious (e.g. bots)
 const RAPID_ACTION_THRESHOLD_MS = 500;
+const SOCKET_TTL = 24 * 3600;
 
 module.exports = (io, socket, redis) => {
   let currentUserId = null;
@@ -196,8 +197,8 @@ module.exports = (io, socket, redis) => {
         socket.emit('partner_found', { partnerId, partnerName });
         partnerSocket.emit('partner_found', { partnerId: userId, partnerName: myName });
 
-        await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
-        await redis.set(`userSocket:${partnerId}`, partnerSocket.id, 'EX', 600);
+        await redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL);
+        await redis.set(`userSocket:${partnerId}`, partnerSocket.id, 'EX', SOCKET_TTL);
         return;
       } else {
         await redis.del(`userSocket:${partnerId}`);
@@ -206,7 +207,7 @@ module.exports = (io, socket, redis) => {
     }
 
     await redis.rpush('chat:waitingQueue', userId);
-    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+    await redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL);
   };
 
   socket.on('register_user', async ({ userId, deviceId, userName }) => {
@@ -228,10 +229,10 @@ module.exports = (io, socket, redis) => {
     }
 
     await Promise.all([
-      redis.set(`deviceId:${userId}`, deviceId, 'EX', 600),
-      redis.set(`userId:${deviceId}`, userId, 'EX', 600),
-      redis.set(`userSocket:${userId}`, socket.id, 'EX', 600),
-      redis.set(`userName:${userId}`, userName, 'EX', 600),
+      redis.set(`deviceId:${userId}`, deviceId, 'EX', SOCKET_TTL),
+      redis.set(`userId:${deviceId}`, userId, 'EX', SOCKET_TTL),
+      redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL),
+      redis.set(`userName:${userId}`, userName, 'EX', SOCKET_TTL),
     ]);
   });
 
@@ -254,10 +255,10 @@ module.exports = (io, socket, redis) => {
     }
 
     await Promise.all([
-      redis.set(`deviceId:${userId}`, deviceId, 'EX', 600),
-      redis.set(`userId:${deviceId}`, userId, 'EX', 600),
-      redis.set(`userSocket:${userId}`, socket.id, 'EX', 600),
-      redis.set(`userName:${userId}`, userName, 'EX', 600),
+      redis.set(`deviceId:${userId}`, deviceId, 'EX', SOCKET_TTL),
+      redis.set(`userId:${deviceId}`, userId, 'EX', SOCKET_TTL),
+      redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL),
+      redis.set(`userName:${userId}`, userName, 'EX', SOCKET_TTL),
     ]);
 
     const isValid = await ensureRegistered(userId);
@@ -283,7 +284,7 @@ module.exports = (io, socket, redis) => {
     io.to(roomName).emit('chatMessage', msgObj);
     await markActive(userId, socket);
 
-    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+    await redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL);
   });
 
   socket.on('user_idle', async ({ userId }) => {
@@ -293,7 +294,7 @@ module.exports = (io, socket, redis) => {
 
   socket.on('heartbeat', async ({ userId }) => {
     if (!(await ensureRegistered(userId))) return;
-    await redis.set(`userSocket:${userId}`, socket.id, 'EX', 600);
+    await redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL);
     await markActive(userId, socket);
   });
 
@@ -329,10 +330,10 @@ module.exports = (io, socket, redis) => {
     socket.emit('next_ack');
 
     await Promise.all([
-      redis.set(`deviceId:${userId}`, deviceId, 'EX', 600),
-      redis.set(`userId:${deviceId}`, userId, 'EX', 600),
-      redis.set(`userSocket:${userId}`, socket.id, 'EX', 600),
-      redis.set(`userName:${userId}`, userName, 'EX', 600),
+      redis.set(`deviceId:${userId}`, deviceId, 'EX', SOCKET_TTL),
+      redis.set(`userId:${deviceId}`, userId, 'EX', SOCKET_TTL),
+      redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL),
+      redis.set(`userName:${userId}`, userName, 'EX', SOCKET_TTL),
     ]);
 
     if (!(await ensureRegistered(userId))) return;
