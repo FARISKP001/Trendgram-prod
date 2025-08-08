@@ -292,20 +292,17 @@ const HomePage = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden sm:overflow-auto flex flex-col justify-between px-4 pt-8 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
+    <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-      <div
-        className="flex items-center justify-start w-full px-4 py-2 bg-[#d4f7d4] dark:bg-[#203325] shadow-md"
-        style={{ height: 56 }}
-      >
-        <WebbitLogo size={40} style={{ marginLeft: '4px', marginTop: '2px' }} />
-      </div>
+      <header className="flex items-center w-full px-2 py-1 bg-[#d4f7d4] dark:bg-[#203325] shadow-md h-12">
+        <WebbitLogo size={40} />
+      </header>
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-end justify-start mt-4 sm:mt-6">
-        <form onSubmit={handleFindMatch} className="relative z-10 w-full flex justify-end px-2">
-          <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-6 shadow-md mt-0 transition-all duration-300">
+      <main className="flex-1 flex flex-col items-center justify-center">
+        <form onSubmit={handleFindMatch} className="relative z-10 w-full flex justify-center px-4 sm:px-0">
+          <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-6 shadow-md w-full max-w-md transition-all duration-300">
             <input
-              className="bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#a6d608] w-72 max-w-full h-[45px] text-lg"
+              className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg"
               type="text"
               value={name}
               onChange={handleNameChange}
@@ -316,11 +313,10 @@ const HomePage = () => {
             <button
               type="submit"
               disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-              className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-transform transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 border-2 border-sky-500"
+              className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-transform transform hover:scale-105 disabled:cursor-not-allowed border-2 border-sky-500"
             >
               {matching ? (
-                <div className="animate-spin">
-                  <ArrowPathIcon className="w-5 h-5 text-[#da9100]" />
+                <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
                 </div>
               ) : (
                 <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />

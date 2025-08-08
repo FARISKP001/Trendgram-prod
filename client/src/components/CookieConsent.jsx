@@ -25,7 +25,7 @@ const CookieConsent = () => {
   return (
     <div className="w-full max-w-[600px] mt-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 border border-indigo-200 dark:border-gray-700 rounded-2xl shadow-lg p-4 text-sm sm:text-base text-center flex flex-col sm:flex-row items-center gap-4">
       <span className="flex-1 text-[#3cb371]">
-        <span className="mr-1" role="img" aria-label="cookie">🍪</span>
+        <span className="mr-1" role="img" aria-label="cookie"></span>
         Cookies help us serve you better. By using our site, you consent to cookies.{' '}
         <a href="/privacy-policy" className="text-blue-700 dark:text-blue-400 underline">Privacy Policy</a>,{' '}
         <a href="/cookie-policy" className="text-blue-700 dark:text-blue-400 underline">Cookie Policy</a> and{' '}
