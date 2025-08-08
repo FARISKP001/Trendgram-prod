@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import logo from '../assets/tg_logo.png';
 import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
-import { getCookie } from "../utils/cookies.js";
+import { getCookie, setCookie } from "../utils/cookies.js";
 import AgeConfirmation from '../components/AgeConfirmation.jsx';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
@@ -306,11 +306,11 @@ const HomePage = () => {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto bg-white">
-        <div className="min-h-[calc(100dvh-3rem)] sm:min-h-[calc(100svh-3.5rem)] grid place-items-center px-4">
+      <main className="flex-1 bg-white">
+        <div className="min-h-[calc(100svh-3rem)] sm:min-h-[calc(100svh-3.5rem)] flex items-center justify-center px-4">
           <div className="w-full max-w-[520px] space-y-4">
             <form onSubmit={handleFindMatch}>
-              <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md mx-4 sm:mx-0">
+              <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md mx-5 sm:mx-0">
                 <input
                   className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#8fbc8f] h-[40px] text-lg px-3"
                   type="text"

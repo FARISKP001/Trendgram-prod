@@ -9,9 +9,10 @@ html, body, #root {
   padding: 0;
   overflow-x: hidden;
   font-family: system-ui, sans-serif;
-  overscroll-behavior-y: none;
-  -webkit-overflow-scrolling: auto; /* iOS fallback */
+  overscroll-behavior-y: auto;           /* allow pull-to-refresh */
+  -webkit-overflow-scrolling: touch;     /* smooth iOS scrolling */
 }
+
 
 
 /* === Viewport Height Fallback for Mobile === */
