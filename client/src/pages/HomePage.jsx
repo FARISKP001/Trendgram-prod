@@ -294,17 +294,17 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-       <header className="h-14 sm:h-16 px-4 sm:px-6 flex items-center bg-[#e0f5e9] dark:bg-[#203325] shadow-md">
+       <header className="h-12 sm:h-14 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm
+                        flex items-center justify-start px-3 sm:px-4">
         <img
           src={logo}
           alt="TrendGram logo"
-          className="h-10 sm:h-12 w-auto object-contain"
-          style={{ maxWidth: '100%' }}
+          className="h-8 sm:h-10 w-auto object-contain shrink-0"
         />
       </header>
       {/* Main content */}
-      <main className="flex-1 flex justify-center px-4">
-        <div className="w-full max-w-[500px] space-y-4">
+      <main className="flex-1 flex justify-center">
+        <div className="w-full max-w-[520px] mx-auto px-4 py-4 space-y-4">
           {/* Name input + connect */}
           <form onSubmit={handleFindMatch}>
             <div className="flex items-center gap-x-3 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md">
