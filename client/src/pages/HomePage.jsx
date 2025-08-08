@@ -317,7 +317,6 @@ const HomePage = () => {
             >
               {matching ? (
                 <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
-                </div>
               ) : (
                 <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
               )}
