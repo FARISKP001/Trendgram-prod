@@ -294,12 +294,12 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
-       <header className="h-12 sm:h-14 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm
-                        flex items-center justify-start px-3 sm:px-4">
+      <header className="h-10 sm:h-12 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm
+                        flex items-center justify-start px-2 sm:px-4">
         <img
           src={logo}
           alt="TrendGram logo"
-          className="h-8 sm:h-10 w-auto object-contain shrink-0"
+          className="h-6 sm:h-8 w-auto object-contain shrink-0"
         />
       </header>
       {/* Main content */}

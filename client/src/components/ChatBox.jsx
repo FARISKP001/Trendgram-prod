@@ -259,7 +259,7 @@ const ChatBox = () => {
     setMessages([{ text: "Partner's are not available.", from: 'system' }]);
     setChatState('noBuddy');
   };
-  
+
   const handleNext = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
@@ -561,9 +561,9 @@ const ChatBox = () => {
         >
 
           {/* Header */}
-          <div className="h-[60px] shrink-0 flex items-center px-6 py-3 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
-            <WebbitLogo size={52} />
-            <div className="ml-3 mr-2 relative z-30" ref={colorPopoverRef}>
+          <div className="h-12 shrink-0 flex items-center px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
+            <WebbitLogo size={40} />
+            <div className="ml-2 mr-2 relative z-30" ref={colorPopoverRef}>
               {/* Color Picker Toggle Button */}
               <button
                 onClick={() => setShowColorPicker((prev) => !prev)}
