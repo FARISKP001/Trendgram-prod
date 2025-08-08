@@ -1,3 +1,6 @@
+import React from 'react';
+import logo from '../assets/tg_logo.png';
+
 const WebbitLogo = ({ size = 48, style = {} }) => (
   <img
     src={logo}
@@ -12,3 +15,5 @@ const WebbitLogo = ({ size = 48, style = {} }) => (
     className="bg-white shadow-md rounded-md"
   />
 );
+
+export default WebbitLogo;
