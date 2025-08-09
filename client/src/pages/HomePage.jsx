@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import logo from '../assets/tg_logo.png';
+import bgNetwork from '../assets/hp_bg.png';
 import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
 import { getCookie, setCookie } from "../utils/cookies.js";
@@ -7,7 +8,7 @@ import AgeConfirmation from '../components/AgeConfirmation.jsx';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import {
-  ArrowRightIcon,
+  MagnifyingGlassIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/solid';
 import { usePageView } from '../hooks/usePageView';
@@ -292,62 +293,78 @@ const HomePage = () => {
   };
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
-      {/* Header */}
+      {/* === Background layer (tiled) === */}
+      <img
+        src={bgNetwork}
+        alt=""
+        className="absolute inset-0 z-0 w-full h-full object-cover pointer-events-none select-none opacity-50"
+      />
+
+      {/* Header (lift above bg) */}
       <header className="sticky top-0 z-30 bg-[#ffdb58] shadow-sm">
-        <div className="flex items-center h-16 sm:h-20 px-3 sm:px-4">
-          <img
-            id="tg-header-logo"
-            src={logo}
-            alt="TrendGram"
-            className="w-auto object-contain shrink-0"
-          />
+        <div className="relative z-10 flex items-center h-20 sm:h-24 px-3 sm:px-4">
+          <img id="tg-header-logo" src={logo} alt="TrendGram" className="w-auto object-contain shrink-0" />
         </div>
       </header>
-      {/* Main content */}
-      <main className="flex-1 bg-white">
-        <div className="min-h-[calc(100svh-4rem)] sm:min-h-[calc(100svh-5rem)] 
-                  flex justify-center items-start px-4 pt-12 sm:pt-16">
-          <div className="w-full max-w-[520px] space-y-4">
+      {/* Main content (slight white veil so bg shows) */}
+      <main className="relative z-10 flex-1">
+        <div className="
+      grid place-items-center 
+      min-h-[calc(50svh-2rem)] sm:min-h-[calc(50svh-2rem)]
+      px-4
+    ">
+          <div className="w-full max-w-[350px] space-y-2">
             <form onSubmit={handleFindMatch}>
-              <div className="flex items-center gap-x-3 bg-gray-200 dark:bg-[#111c2f]
-                        rounded-full px-3 shadow-md">
-                {/* Bigger input height */}
-                <input
-                  className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 
-                       placeholder-gray-500 dark:placeholder-gray-400 outline-none 
-                       rounded-full border-2 border-[#8fbc8f] h-14 text-lg px-4"
-                  type="text"
-                  value={name}
-                  onChange={handleNameChange}
-                  placeholder="Enter your name"
-                  required
-                  maxLength={10}
-                />
-                {/* Slightly smaller button */}
-                <button
-                  type="submit"
-                  disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-                  className="flex items-center justify-center w-12 h-12 rounded-full 
-                       bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105 
-                       disabled:cursor-not-allowed border-2 border-[#8fbc8f]"
+              <div className="w-full max-w-[400px] ">
+                <div
+                  className="grid grid-cols-[minmax(0,310px)_auto] sm:grid-cols-[minmax(0,350px)_auto]
+                 items-center gap-x-2 bg-gray-200 dark:bg-[#b0e0e6]
+                 rounded-full px-3 py-1 shadow-md"
                 >
-                  {matching ? (
-                    <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
-                  ) : (
-                    <ArrowRightIcon className="w-5 h-5 text-gray-900 dark:text-white" />
-                  )}
-                </button>
+                  {/* Taller name box, normal border */}
+                  <input
+                    className="bg-transparent text-[#1d2951] placeholder:italic placeholder:opacity-40 placeholder:text-sm outline-none
+                   rounded-full border-25 border-[#354230] h-25 px-4 text-center"
+                    type="text"
+                    value={name}
+                    onChange={handleNameChange}
+                    placeholder="name"
+                    required
+                    maxLength={20}
+                    inputMode="text"
+                    enterKeyHint="go"
+                  />
+
+                  {/* Icon-only button (not overlapping) */}
+<button
+  type="submit"
+  disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
+  aria-label="Connect"
+  className="
+             w-12 h-12 rounded-full
+             bg-[#e7feff] text-white
+             shadow-md hover:shadow-lg
+             transition-transform hover:scale-105
+             disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {matching ? (
+    <ArrowPathIcon className="w-6 h-6 animate-spin" />
+  ) : (
+    <MagnifyingGlassIcon className="w-6 h-6" />
+  )}
+</button>
+
+                </div>
               </div>
             </form>
-            {showAgeModal && (
-              <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-            )}
+
+            {showAgeModal && (<AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />)}
             {!getCookie("cookieConsentGiven") && <CookieConsent />}
           </div>
         </div>
       </main>
       {/* Footer */}
-      <footer className="text-center text-sm mt-8 px-2 text-[#4169e1]">
+      <footer className="text-center text-sm mt-8 px-2 text-[#0a7e8c]">
         <p>
           By continuing to use TrendGram, you agree to our{' '}
           <a

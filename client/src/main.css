@@ -13,8 +13,6 @@ html, body, #root {
   -webkit-overflow-scrolling: touch;     /* smooth iOS scrolling */
 }
 
-
-
 /* === Viewport Height Fallback for Mobile === */
 @supports (height: 100dvh) {
   html, body {
@@ -98,13 +96,5 @@ html, body, #root {
   border: 0 !important;
 }
 
-#tg-header-logo {
-  height: 40px !important; /* fits h-16 nicely */
-}
-
-@media (min-width: 640px) {
-  #tg-header-logo {
-    height: 48px !important; /* fits h-20 nicely */
-  }
-}
-
+#tg-header-logo { height: 64px !important; }
+@media (min-width: 640px) { #tg-header-logo { height: 80px !important; } }
