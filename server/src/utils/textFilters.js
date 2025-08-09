@@ -58,20 +58,21 @@ const bannedWords = [
 
 const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
 
-export const containsBadWords = (text = '') => {
+const containsBadWords = (text = '') => {
   const lower = text.toLowerCase();
   return bannedWords.some((word) => lower.includes(word));
 };
 
-export const containsUrl = (text = '') => urlRegex.test(text);
+const containsUrl = (text = '') => urlRegex.test(text);
 
-// Allow only English, Hindi, and Malayalam characters (plus numbers, punctuation, spaces, symbols, emojis)
-export const isAllowedLanguage = (text = '') => {
+// Allow only English, Hindi, and Malayalam characters while supporting numbers,
+// spaces, symbols and all emojis. Most punctuation is allowed except dot and @.
+const isAllowedLanguage = (text = '') => {
   const baseRegex = /^[\p{sc=Latin}\p{sc=Devanagari}\p{sc=Malayalam}\p{N}\p{P}\p{Z}\p{S}\p{M}\p{Extended_Pictographic}\u200d]*$/u;
   return baseRegex.test(text) && !(/[.@]/.test(text));
 };
 
-export const sanitizeMessage = (text = '') => {
+const sanitizeMessage = (text = '') => {
   let result = text;
   result = result.replace(urlRegex, '[link removed]');
   bannedWords.forEach((word) => {
@@ -81,7 +82,7 @@ export const sanitizeMessage = (text = '') => {
   return result;
 };
 
-export const validateText = (text = '') => {
+const validateText = (text = '') => {
   if (!isAllowedLanguage(text)) {
     return { valid: false, reason: 'invalid_language' };
   }
@@ -93,3 +94,5 @@ export const validateText = (text = '') => {
   }
   return { valid: true };
 };
+
+module.exports = { sanitizeMessage, validateText };

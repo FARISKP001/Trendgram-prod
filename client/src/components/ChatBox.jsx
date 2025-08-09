@@ -63,7 +63,7 @@ const ChatBox = () => {
   const leftManually = useRef(false);
   const [deviceId, setDeviceId] = useState(null);
   const [userId, setUserId] = useState(null);
-  const [userName, setUserName] = useState('Guest');
+  const [userName, setUserName] = useState('');
   const [partnerId, setPartnerId] = useState(null);
   const [partnerName, setPartnerName] = useState('');
   const [messages, setMessages] = useState([]);
@@ -121,9 +121,10 @@ const ChatBox = () => {
     const storedId = sessionStorage.getItem('userId');
     const storedName = sessionStorage.getItem('userName');
     const finalId = idFromState || storedId;
-    if (!finalId) return navigate('/', { replace: true });
+    const finalName = nameFromState || storedName;
+    if (!finalId || !finalName) return navigate('/', { replace: true });
     setUserId(finalId);
-    setUserName(nameFromState || storedName || 'Guest');
+    setUserName(finalName);
   }, [location.state, navigate]);
   useEffect(() => { userIdRef.current = userId; }, [userId]);
   useEffect(() => { partnerIdRef.current = partnerId; }, [partnerId]);
@@ -478,6 +479,37 @@ const ChatBox = () => {
       clearInterval(interval);
     };
   }, [socket, userId]);
+
+  // Handle browser tab visibility changes. If the user leaves the tab or
+  // minimizes the browser for more than 30 seconds, end the chat session.
+  useEffect(() => {
+    if (!socket || !userId) return;
+    let hideTimer;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        hideTimer = setTimeout(() => {
+          if (socket) {
+            socket.emit('leave_chat', { userId });
+            socket.disconnect();
+          }
+          hasHandledLeave.current = true;
+          trackSessionEnd();
+          sessionStorage.clear();
+          setChatState('idle');
+          setPartnerId(null);
+          setMessages([]);
+          navigate('/', { replace: true });
+        }, 30000);
+      } else {
+        clearTimeout(hideTimer);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearTimeout(hideTimer);
+    };
+  }, [socket, userId, navigate, trackSessionEnd]);
 
   useEffect(() => {
     const updateHeight = () => {

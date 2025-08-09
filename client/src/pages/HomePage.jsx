@@ -78,11 +78,11 @@ const HomePage = () => {
 
   // 📡 Register Socket
   useEffect(() => {
-    if (socket && isConnected && userId.current && deviceId) {
+    if (socket && isConnected && userId.current && deviceId && name) {
       socket.emit('register_user', {
         userId: userId.current,
         deviceId,
-        userName: name || 'Guest',
+        userName: name,
       });
     }
   }, [socket?.id, isConnected, deviceId, name]);
@@ -182,7 +182,7 @@ const HomePage = () => {
   };
 
   const handleCaptchaSuccess = async (token) => {
-    if (!deviceId) return;
+    if (!deviceId || !name) return;
     try {
       const res = await fetch(`${API_BASE_URL}/api/verify-captcha`, {
         method: 'POST',
@@ -198,7 +198,7 @@ const HomePage = () => {
         socket.emit('register_user', {
           userId: userId.current,
           deviceId,
-          userName: name || 'Guest',
+          userName: name,
         });
         if (pendingAction.current) {
           const fn = pendingAction.current;
@@ -290,29 +290,32 @@ const HomePage = () => {
     setMatching(false);
     setShowAgeModal(false);
   };
-
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-[#ffdb58] shadow-sm">
-        <div className="flex items-center h-12 sm:h-14 px-3 sm:px-4">
+        <div className="flex items-center h-16 sm:h-20 px-3 sm:px-4">
           <img
+            id="tg-header-logo"
             src={logo}
             alt="TrendGram"
             className="w-auto object-contain shrink-0"
-            style={{ height: 28 }}
           />
         </div>
       </header>
-
       {/* Main content */}
       <main className="flex-1 bg-white">
-        <div className="min-h-[calc(100svh-3rem)] sm:min-h-[calc(100svh-3.5rem)] flex items-center justify-center px-4">
+        <div className="min-h-[calc(100svh-4rem)] sm:min-h-[calc(100svh-5rem)] 
+                  flex justify-center items-start px-4 pt-12 sm:pt-16">
           <div className="w-full max-w-[520px] space-y-4">
             <form onSubmit={handleFindMatch}>
-              <div className="flex items-center gap-x-4 bg-gray-200 dark:bg-[#111c2f] rounded-full px-4 shadow-md mx-5 sm:mx-0">
+              <div className="flex items-center gap-x-3 bg-gray-200 dark:bg-[#111c2f]
+                        rounded-full px-3 shadow-md">
+                {/* Bigger input height */}
                 <input
-                  className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400 outline-none rounded-full border-2 border-[#8fbc8f] h-[40px] text-lg px-3"
+                  className="flex-1 bg-transparent text-gray-900 dark:text-gray-50 
+                       placeholder-gray-500 dark:placeholder-gray-400 outline-none 
+                       rounded-full border-2 border-[#8fbc8f] h-14 text-lg px-4"
                   type="text"
                   value={name}
                   onChange={handleNameChange}
@@ -320,10 +323,13 @@ const HomePage = () => {
                   required
                   maxLength={10}
                 />
+                {/* Slightly smaller button */}
                 <button
                   type="submit"
                   disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-                  className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105 disabled:cursor-not-allowed border-2 border-[#8fbc8f]"
+                  className="flex items-center justify-center w-12 h-12 rounded-full 
+                       bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105 
+                       disabled:cursor-not-allowed border-2 border-[#8fbc8f]"
                 >
                   {matching ? (
                     <ArrowPathIcon className="w-5 h-5 text-[#da9100] animate-spin" />
@@ -333,19 +339,13 @@ const HomePage = () => {
                 </button>
               </div>
             </form>
-
-            {/* Age consent */}
             {showAgeModal && (
               <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
             )}
-
-            {/* Cookie consent with space */}
-           {!getCookie("cookieConsentGiven") && <CookieConsent />}
-
+            {!getCookie("cookieConsentGiven") && <CookieConsent />}
           </div>
         </div>
       </main>
-
       {/* Footer */}
       <footer className="text-center text-sm mt-8 px-2 text-[#4169e1]">
         <p>
@@ -380,8 +380,8 @@ const HomePage = () => {
         </p>
         <p className="mt-2 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">© 2025 TrendGram</p>
       </footer>
-      <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
-      <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" />
+      {/*<CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
+      <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" />*/}
     </div>
   );
 };

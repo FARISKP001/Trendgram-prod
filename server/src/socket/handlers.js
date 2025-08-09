@@ -2,6 +2,7 @@ const userRoomMap = {};
 const cleanupInProgress = new Set();
 const idleUsers = new Set();
 const idleDisconnectTimers = {};
+const { sanitizeMessage, validateText } = require('../utils/textFilters');
 const IDLE_MAX = 2 * 60 * 1000;
 const SUSPEND_THRESHOLD = 3;
 const REPORT_WINDOW = 3600;
@@ -211,6 +212,7 @@ module.exports = (io, socket, redis) => {
   };
 
   socket.on('register_user', async ({ userId, deviceId, userName }) => {
+    if (!userName) return;
     currentUserId = userId;
 
     const captchaOk = await checkCaptchaPassed(deviceId);
@@ -218,7 +220,6 @@ module.exports = (io, socket, redis) => {
       socket.emit('captcha_required');
       return;
     }
-
  const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
     if (suspendTtl > 0) {
       socket.emit('suspended', {
@@ -228,16 +229,18 @@ module.exports = (io, socket, redis) => {
       return;
     }
 
+    const cleanName = validateText(userName || '').valid ? sanitizeMessage(userName) : 'Guest';
+
     await Promise.all([
       redis.set(`deviceId:${userId}`, deviceId, 'EX', SOCKET_TTL),
       redis.set(`userId:${deviceId}`, userId, 'EX', SOCKET_TTL),
       redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL),
-      redis.set(`userName:${userId}`, userName, 'EX', SOCKET_TTL),
+      redis.set(`userName:${userId}`, cleanName, 'EX', SOCKET_TTL),
     ]);
   });
 
   socket.on('find_new_buddy', async ({ userId, userName, deviceId }) => {
-    if (!userId) return;
+    if (!userId || !userName) return;
 
     const captchaOk = await checkCaptchaPassed(deviceId);
     if (!captchaOk) {
@@ -254,17 +257,19 @@ module.exports = (io, socket, redis) => {
       return;
     }
 
+    const cleanName = validateText(userName || '').valid ? sanitizeMessage(userName) : 'Guest';
+
     await Promise.all([
       redis.set(`deviceId:${userId}`, deviceId, 'EX', SOCKET_TTL),
       redis.set(`userId:${deviceId}`, userId, 'EX', SOCKET_TTL),
       redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL),
-      redis.set(`userName:${userId}`, userName, 'EX', SOCKET_TTL),
+      redis.set(`userName:${userId}`, cleanName, 'EX', SOCKET_TTL),
     ]);
 
     const isValid = await ensureRegistered(userId);
     if (!isValid) return;
 
-    await matchUser(userId, userName);
+    await matchUser(userId, cleanName);
   });
 
   socket.on('chatMessage', async ({ userId, partnerId, message, timestamp, userName }) => {
@@ -275,7 +280,12 @@ module.exports = (io, socket, redis) => {
       : userRoomMap[userId]?.roomName;
     if (!roomName) return;
 
-    const msgObj = { userId, userName, message, timestamp };
+    if (!validateText(message || '').valid) return;
+
+    const cleanMsg = sanitizeMessage(message);
+    const cleanName = validateText(userName || '').valid ? sanitizeMessage(userName) : 'Guest';
+
+    const msgObj = { userId, userName: cleanName, message: cleanMsg, timestamp };
     const chatKey = `chat:${roomName}`;
     await redis.rpush(chatKey, JSON.stringify(msgObj));
     await redis.ltrim(chatKey, -20, -1);
@@ -303,7 +313,7 @@ module.exports = (io, socket, redis) => {
   });
 
   socket.on('next', async ({ userId, userName, deviceId }) => {
-    if (!userId) return;
+    if (!userId || !userName) return;
 
      const needCaptcha = await shouldRequireCaptcha(
       deviceId,
@@ -329,16 +339,18 @@ module.exports = (io, socket, redis) => {
 
     socket.emit('next_ack');
 
+    const cleanName = validateText(userName || '').valid ? sanitizeMessage(userName) : 'Guest';
+
     await Promise.all([
       redis.set(`deviceId:${userId}`, deviceId, 'EX', SOCKET_TTL),
       redis.set(`userId:${deviceId}`, userId, 'EX', SOCKET_TTL),
       redis.set(`userSocket:${userId}`, socket.id, 'EX', SOCKET_TTL),
-      redis.set(`userName:${userId}`, userName, 'EX', SOCKET_TTL),
+      redis.set(`userName:${userId}`, cleanName, 'EX', SOCKET_TTL),
     ]);
 
     if (!(await ensureRegistered(userId))) return;
 
-    await matchUser(userId, userName);
+    await matchUser(userId, cleanName);
   });
 
 

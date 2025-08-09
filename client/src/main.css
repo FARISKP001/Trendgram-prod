@@ -98,8 +98,13 @@ html, body, #root {
   border: 0 !important;
 }
 
-#tg-header-logo { height: 28px !important; }
+#tg-header-logo {
+  height: 40px !important; /* fits h-16 nicely */
+}
+
 @media (min-width: 640px) {
-  #tg-header-logo { height: 36px !important; }
+  #tg-header-logo {
+    height: 48px !important; /* fits h-20 nicely */
+  }
 }
 
