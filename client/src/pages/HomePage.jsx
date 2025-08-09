@@ -324,7 +324,7 @@ const HomePage = () => {
                   {/* Taller name box, normal border */}
                   <input
                     className="bg-transparent text-[#1d2951] placeholder:italic placeholder:opacity-40 placeholder:text-sm outline-none
-                   rounded-full border-25 border-[#354230] h-25 px-4 text-center"
+                   rounded-full border-10 border-[#367588] h-6 px-4 text-center"
                     type="text"
                     value={name}
                     onChange={handleNameChange}
@@ -336,23 +336,23 @@ const HomePage = () => {
                   />
 
                   {/* Icon-only button (not overlapping) */}
-<button
-  type="submit"
-  disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-  aria-label="Connect"
-  className="
+                  <button
+                    type="submit"
+                    disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
+                    aria-label="Connect"
+                    className="
              w-12 h-12 rounded-full
              bg-[#e7feff] text-white
              shadow-md hover:shadow-lg
              transition-transform hover:scale-105
              disabled:opacity-50 disabled:cursor-not-allowed"
->
-  {matching ? (
-    <ArrowPathIcon className="w-6 h-6 animate-spin" />
-  ) : (
-    <MagnifyingGlassIcon className="w-6 h-6" />
-  )}
-</button>
+                  >
+                    {matching ? (
+                      <ArrowPathIcon className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <MagnifyingGlassIcon className="w-6 h-6" />
+                    )}
+                  </button>
 
                 </div>
               </div>
@@ -364,7 +364,7 @@ const HomePage = () => {
         </div>
       </main>
       {/* Footer */}
-      <footer className="text-center text-sm mt-8 px-2 text-[#0a7e8c]">
+      <footer className="text-center text-sm mt-8 px-2 text-[#800000 ]">
         <p>
           By continuing to use TrendGram, you agree to our{' '}
           <a
@@ -391,14 +391,14 @@ const HomePage = () => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Terms & Conditions
+            Terms
           </a>
           {' '}— crafted to keep your experience smooth, secure, and transparent.
         </p>
-        <p className="mt-2 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">© 2025 TrendGram</p>
+        <p>© 2025 TrendGram</p>
       </footer>
-      {/*<CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
-      <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" />*/}
+      <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
+      <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" />
     </div>
   );
 };
