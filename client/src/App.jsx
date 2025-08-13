@@ -5,6 +5,9 @@ const ChatBox = lazy(() => import('./components/ChatBox'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
+const About = lazy(() => import('./pages/About'));
+const ReviewSuggestions = lazy(() => import('./pages/ReviewSuggestions'));
+const LegalInformation = lazy(() => import('./pages/LegalInformation'));
 
 const App = () => {
   return (
@@ -17,6 +20,9 @@ const App = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/cookie-policy" element={<CookiePolicy />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/reviewsuggestions" element={<ReviewSuggestions />} />
+          <Route path="/legalinformation" element={<LegalInformation />} />
         </Routes>
       </Suspense>
     </Router>

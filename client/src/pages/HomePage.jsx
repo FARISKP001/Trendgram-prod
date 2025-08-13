@@ -1,16 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import logo from '../assets/tg_logo.png';
-import bgNetwork from '../assets/hp_bg.png';
+import bgVideo from '../assets/hp_bg.mp4';
 import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
 import { getCookie, setCookie } from "../utils/cookies.js";
 import AgeConfirmation from '../components/AgeConfirmation.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
-} from '@heroicons/react/24/solid';
+  Bars3Icon} from '@heroicons/react/24/solid';
 import { usePageView } from '../hooks/usePageView';
 import sendAnalyticsEvent from '../utils/analytics.js';
 import { validateText } from '../utils/textFilters';
@@ -35,7 +35,20 @@ const HomePage = () => {
   const [showAgeModal, setShowAgeModal] = useState(false);
   const pendingAction = useRef(null);
   const siteKey = import.meta.env.VITE_CF_SITE_KEY;
+  // state + refs (keep your existing useState/useRef)
+  // state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const menuRef = useRef(null);
+  const kebabRef = useRef(null);
+  //const [menuPos, setMenuPos] = useState({ top: 0, right: 12 });
 
+  // close on Esc / outside
+  useEffect(() => {
+    if (!drawerOpen || !kebabRef.current) return;
+
+  }, [drawerOpen]);
+
+ 
   const navigate = useNavigate();
   const { socket, isConnected } = useSocketContext();
 
@@ -294,18 +307,62 @@ const HomePage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden sm:overflow-auto flex flex-col px-4 pt-0 pb-[calc(env(safe-area-inset-bottom,0px)+32px)] bg-white dark:bg-[#0b1120] text-gray-900 dark:text-gray-50">
       {/* === Background layer (tiled) === */}
-      <img
-        src={bgNetwork}
-        alt=""
+      <video
         className="absolute inset-0 z-0 w-full h-full object-cover pointer-events-none select-none opacity-50"
-      />
-
+        autoPlay
+        loop
+        muted
+        playsInline
+      >
+        <source src={bgVideo} type="video/mp4" />
+      </video>
       {/* Header (lift above bg) */}
-      <header className="sticky top-0 z-30 bg-[#ffdb58] shadow-sm">
-        <div className="relative z-10 flex items-center h-20 sm:h-24 px-3 sm:px-4">
+      <header className="sticky top-0 z-40 shadow-sm">
+        <div className="relative z-10 flex items-center justify-between w-full h-20 sm:h-24 px-3 sm:px-4">
           <img id="tg-header-logo" src={logo} alt="TrendGram" className="w-auto object-contain shrink-0" />
+          <button
+            ref={kebabRef}
+            type="button"
+            onClick={() => setDrawerOpen(v => !v)}
+            aria-haspopup="menu"
+            aria-expanded={drawerOpen}
+            aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
+            className="sidebar"
+          >
+            <Bars3Icon  />
+          </button>
         </div>
-      </header>
+      </header>      
+      <div
+        ref={menuRef}
+        role="menu"
+        aria-label="Header menu"
+        style={{ position: 'fixed', top: 50, right: 30, width: 250 }}
+        className={`menu-card      
+              ${drawerOpen ? 'opacity-100 scale-90' : 'opacity-0 scale-195 pointer-events-none'}`}
+      >
+        {/* dividers handled by Tailwind */}
+        <nav className="py-2 divide-y divide-gray-100">
+          <Link
+            to="/about"
+            onClick={() => setDrawerOpen(false)}            
+          >            
+            <span >About</span>
+          </Link>
+          <Link
+            to="/reviewsuggestions"
+            onClick={() => setDrawerOpen(false)}           
+          >            
+            <span >Review &amp; Suggestions</span>
+          </Link>
+          <Link
+            to="/legal-information"
+            onClick={() => setDrawerOpen(false)}            
+          >            
+            <span >Legal Information</span>
+          </Link>
+        </nav>
+      </div>
       {/* Main content (slight white veil so bg shows) */}
       <main className="relative z-10 flex-1">
         <div className="
@@ -363,40 +420,7 @@ const HomePage = () => {
           </div>
         </div>
       </main>
-      {/* Footer */}
-      <footer className="text-center text-sm mt-8 px-2 text-[#800000 ]">
-        <p>
-          By continuing to use TrendGram, you agree to our{' '}
-          <a
-            className="underline text-[#00bfff] hover:text-[#00bfff]"
-            href="/cookie-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Cookie Policy
-          </a>
-          <span className="text-[#4169e1]">·</span>
-          <a
-            className="underline text-[#00bfff] hover:text-[#00bfff]"
-            href="/privacy-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
-          , and{' '}
-          <a
-            className="underline text-[#00bfff] hover:text-[#00bfff]"
-            href="/terms-and-conditions"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Terms
-          </a>
-          {' '}— crafted to keep your experience smooth, secure, and transparent.
-        </p>
-        <p>© 2025 TrendGram</p>
-      </footer>
+
       <CaptchaModal visible={showCaptcha} onSuccess={handleCaptchaSuccess} siteKey={siteKey} />
       <div className="block sm:hidden h-[calc(env(safe-area-inset-bottom,0px)+24px)]" />
     </div>
