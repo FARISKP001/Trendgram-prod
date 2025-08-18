@@ -588,7 +588,15 @@ const HomePage = () => {
       </footer>
 
       {/* Optional modals */}
-      {showCaptcha && <CaptchaModal siteKey={siteKey} onSuccess={handleCaptchaSuccess} onClose={() => setShowCaptcha(false)} />}
+      {showCaptcha && (
+  <>
+    <div style={{position:"fixed",top:0,left:0,zIndex:9999,background:"red",color:"white"}}>
+      Captcha should be here
+    </div>
+    <CaptchaModal siteKey={siteKey} onSuccess={handleCaptchaSuccess} onClose={() => setShowCaptcha(false)} />
+  </>
+)}
+
       {showAgeModal && <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />}
       <CookieConsent />
     </div>
