@@ -93,6 +93,14 @@ const ChatBox = () => {
   const siteKey = import.meta.env.VITE_CF_SITE_KEY;
   const keyboardVisible = useKeyboardVisible();
 
+  useEffect(() => {
+    const hasCookie = document.cookie.includes('cf_clearance');
+    if (hasCookie) {
+      setCaptchaVerified(true);
+      setShowCaptcha(false);
+    }
+  }, []);
+
   const {
     trackSessionStart,
     trackMessageSent,
@@ -131,6 +139,9 @@ const ChatBox = () => {
 
   useEffect(() => {
     if (!socket) return;
+    socket.on('chat_message', (msg) => {
+      setMessages((prev) => [...prev, { ...msg, sender: 'partner' }]);
+    });
     const handleCaptcha = () => {
       setCaptchaVerified(false);
       setShowCaptcha(true);
@@ -259,7 +270,17 @@ const ChatBox = () => {
     setMessages([{ text: "Partner's are not available.", from: 'system' }]);
     setChatState('noBuddy');
   };
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
+  const handleSendMessage = () => {
+    if (!message.trim() || !partnerId) return;
+    const msg = { text: message, sender: 'me', timestamp: Date.now() };
+    socket.emit('chat_message', { to: partnerId, text: message });
+    setMessages((prev) => [...prev, msg]);
+    setMessage('');
+  };
   const handleNext = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
@@ -416,7 +437,14 @@ const ChatBox = () => {
       }, 60000);
       toast.success('Searching for a new buddy...');
     };
-    socket.on('partner_found', handlePartnerFound);
+    socket.on('partner_found', ({ partnerId, partnerName }) => {
+      setPartnerId(partnerId);
+      setPartnerName(partnerName);
+      sessionStorage.setItem('partnerId', partnerId);
+      sessionStorage.setItem('partnerName', partnerName);
+      toast.success(`✅ Connected with ${partnerName}`);
+    });
+
     socket.on('partner_left', handlePartnerLeft);
     socket.on('chatMessage', handleChatMessage);
     socket.on('no_buddy_found', () => {
@@ -431,10 +459,20 @@ const ChatBox = () => {
     socket.on('report_received', handleReportReceived);
     socket.on('report_warning', handleReportWarning);
     socket.on('next_ack', handleNextAck);
+    socket.on('partner_disconnected', () => {
+      setPartnerId(null);
+      setPartnerName(null);
+      sessionStorage.removeItem('partnerId');
+      sessionStorage.removeItem('partnerName');
+      toast.warn('⚠️ Partner disconnected');
+    });
 
     return () => {
       socket.off('partner_found', handlePartnerFound);
+      socket.off('chat_message');
+      socket.off('partner_disconnected');
       socket.off('partner_left', handlePartnerLeft);
+      socket.off('partner_disconnected');
       socket.off('chatMessage', handleChatMessage);
       socket.off('no_buddy_found');
       socket.off('partner_idle');
@@ -720,17 +758,29 @@ const ChatBox = () => {
               </Suspense>
             </div>
           )}
-
           {/* Toast + Captcha */}
-          <ToastContainer position="bottom-center" />
+          <ToastContainer
+            position="bottom-right"
+            autoClose={3000}
+            theme="dark"
+            closeOnClick
+            pauseOnHover
+          />
+          {/* Captcha Modal */}
           {showCaptcha && !captchaVerified && (
             <CaptchaModal
-              visible
+              visible={captchaVisible}   // ❌ uses `captchaVisible` (undefined)
+              siteKey={import.meta.env.VITE_TURNSTILE_SITEKEY}
               onSuccess={handleCaptchaSuccess}
-              siteKey={siteKey}
-              onClose={() => setShowCaptcha(false)}
+              onClose={() => {
+                setCaptchaVisible(false); // ❌ no such state hook
+                setPendingAction(null);
+                toast.error("⚠️ Captcha failed, please try again");
+              }}
             />
           )}
+
+
 
         </div>
       </div>

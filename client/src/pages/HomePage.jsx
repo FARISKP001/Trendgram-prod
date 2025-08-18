@@ -6,7 +6,7 @@ import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
 import { getCookie, setCookie } from "../utils/cookies.js";
 import AgeConfirmation from '../components/AgeConfirmation.jsx';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
 import {
   Bars3Icon,
@@ -21,7 +21,6 @@ import {
   InformationCircleIcon,
 } from '@heroicons/react/24/solid';
 import { usePageView } from '../hooks/usePageView';
-import sendAnalyticsEvent from '../utils/analytics.js';
 import { validateText } from '../utils/textFilters';
 
 const HomePage = () => {
@@ -31,7 +30,6 @@ const HomePage = () => {
   const [matching, setMatching] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
-  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
   const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com';
   const INSTAGRAM_URL = import.meta.env.VITE_INSTAGRAM_URL || 'https://instagram.com/yourhandle';
   const X_URL = import.meta.env.VITE_X_URL || 'https://x.com/yourhandle';
@@ -45,10 +43,9 @@ const HomePage = () => {
   const [captchaVerified, setCaptchaVerified] = useState(() => !!getCookie('captchaCooldown'));
   const [ageConfirmed, setAgeConfirmed] = useState(() => localStorage.getItem('ageConfirmed') === 'true');
   const [showAgeModal, setShowAgeModal] = useState(false);
-  const [showAnonymous, setShowAnonymous] = useState(false);
-  const pendingAction = useRef(null);
   const siteKey = import.meta.env.VITE_CF_SITE_KEY;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [captchaRetries, setCaptchaRetries] = useState(0);
 
   // === Smooth scroll helpers ===
   const scrollToSection = (id) => {
@@ -125,7 +122,7 @@ const HomePage = () => {
   }, [suspendedUntil]);
 
   useEffect(() => {
-    if (socket && !socket.connected) socket.connect();
+    
   }, [socket]);
 
   // Register user when ready
@@ -155,6 +152,8 @@ const HomePage = () => {
    const handlePartnerFound = ({ partnerId, partnerName }) => {
     clearTimeout(timeoutRef.current);
     setShowCaptcha(false);
+    setStatus('');
+    setError('');
     navigate('/chatbox', {
       state: { userId: userId.current, partnerId, userName: name, partnerName },
     });
@@ -185,11 +184,7 @@ const HomePage = () => {
     const handleCaptcha = () => {
       if (getCookie('captchaCooldown')) {
         setCaptchaVerified(true);
-        if (pendingAction.current) {
-          const fn = pendingAction.current;
-          pendingAction.current = null;
-          fn();
-        }
+        
         return;
       }
       setCaptchaVerified(false);
@@ -199,44 +194,41 @@ const HomePage = () => {
     return () => socket.off('captcha_required', handleCaptcha);
   }, [socket]);
 
-  const ensureCaptcha = (action) => {
-  const hasCookie = !!getCookie('captchaCooldown');
-  console.log("ensureCaptcha", { hasCookie, cookie: getCookie('captchaCooldown') });
-  if (!hasCookie) {
-    console.log("Captcha required, opening modal");
-    setCaptchaVerified(false);
-    pendingAction.current = action;
-    setShowCaptcha(true);
-  } else {
-    console.log("Captcha cookie found, running action directly");
-    setCaptchaVerified(true);
-    action();
-  }
-};
+  const ensureCaptcha = () => {
+    const hasCookie = !!getCookie("captchaCooldown");
+    console.log("ensureCaptcha", { hasCookie });
 
-  const handleCaptchaSuccess = async (token) => {
-    if (!deviceId || !name) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/verify-captcha`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, deviceId }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCookie('captchaCooldown', 'true', { minutes: 1 });
-        setCaptchaVerified(true);
-        setShowCaptcha(false);
-        socket.emit('register_user', { userId: userId.current, deviceId, userName: name });
-        if (pendingAction.current) {
-          const fn = pendingAction.current;
-          pendingAction.current = null;
-          fn();
-        }
-      }
-    } catch (err) {
-      console.error('Captcha verification failed', err);
+    if (!hasCookie) {
+      console.log("Captcha required, opening modal");
+      setShowCaptcha(true);
+      return false;
     }
+    return true;
+  };
+
+  const handleCaptchaSuccess = (token) => {
+    console.log("✅ Captcha success", token);
+
+    setCaptchaVerified(true);
+    setShowCaptcha(false);
+
+    // ✅ Set consistent cookie key
+    setCookie("captchaCooldown", "true", 1);
+
+    startMatch(); // resume matchmaking
+  };
+const handleCaptchaClose = () => {
+    setCaptchaRetries(prev => {
+      if (prev < 1) {
+        console.log("⚠️ Captcha failed, retrying once…");
+        setTimeout(() => setShowCaptcha(true), 500);
+        return prev + 1;
+      } else {
+        console.error("❌ Captcha failed twice, giving up.");
+        setError("Captcha failed to load. Please refresh and try again.");
+        return prev;
+      }
+    });
   };
 
   const handleNameChange = (e) => {
@@ -244,38 +236,38 @@ const HomePage = () => {
     setName(val);
     if (!val) return setError('');
     const validation = validateText(val);
-    setError(validation.valid ? '' : 'Please follow community guidlines.');
+    setError(validation.valid ? '' : 'Please follow community guidelines.');
   };
+
 
   const startMatch = () => {
-    console.log("startMatch called", { deviceId, suspendedUntil, socket, isConnected, name });
+  console.log("startMatch called", { deviceId, suspendedUntil, socket, isConnected, name });
 
-    if (!deviceId) return setError('Loading device identity...');
-    if (suspendedUntil && Date.now() < suspendedUntil) {
-      setError('You are suspended temporarily.');
-      return;
-    }
-    const validation = validateText(name);
-    if (!validation.valid) {
-      console.log("Validation failed", validation);
-      return setError('Please enter a valid name.');
-    }
-    if (!socket || !isConnected) {
-      console.log("Socket issue", { socket, isConnected });
-      return setError('Socket not connected.');
-    }
+  if (!deviceId) return setError('Loading device identity...');
+  if (suspendedUntil && Date.now() < suspendedUntil) {
+    setError('You are suspended. Please try again later.');
+    return;
+  }
+  const validation = validateText(name);
+  if (!validation.valid) {
+    console.log("Validation failed", validation);
+    return setError('Please follow community guidelines.');
+  }
+  if (!socket || !isConnected) {
+    console.log("Socket issue", { socket, isConnected });
+    return setError('Socket not connected.');
+  }
 
-    ensureCaptcha(() => {
-      console.log("Emitting find_new_buddy", { userId: userId.current, userName: name });
-      socket.emit('find_new_buddy', { userId: userId.current, userName: name, deviceId });
-      setMatching(true);
-      timeoutRef.current = setTimeout(() => {
-        setMatching(false);
-        setStatus('No partner is available');
-      }, 60 * 1000);
-    });
-  };
+  if (!ensureCaptcha()) return;
 
+  console.log("Emitting find_new_buddy", { userId: userId.current, userName: name });
+  socket.emit('find_new_buddy', { userId: userId.current, userName: name, deviceId });
+  setMatching(true);
+  timeoutRef.current = setTimeout(() => {
+    setMatching(false);
+    setStatus('No partner is available');
+  }, 60 * 1000);
+};
 
   const handleFindMatch = (e) => {
     e.preventDefault();
@@ -589,12 +581,13 @@ const HomePage = () => {
       </footer>
 
       {showCaptcha && !captchaVerified && (
-  <CaptchaModal
-    siteKey={siteKey}
-    onSuccess={handleCaptchaSuccess}
-    onClose={() => setShowCaptcha(false)}
-  />
-)}
+        <CaptchaModal
+          visible={showCaptcha}
+          siteKey={siteKey}
+          onSuccess={handleCaptchaSuccess}
+          onClose={handleCaptchaClose}
+        />
+      )}
 
 {showAgeModal && (
   <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
