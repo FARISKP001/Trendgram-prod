@@ -594,6 +594,7 @@ const HomePage = () => {
       Captcha should be here
     </div>
     <CaptchaModal siteKey={siteKey} onSuccess={handleCaptchaSuccess} onClose={() => setShowCaptcha(false)} />
+      console.log("Captcha siteKey from env:", siteKey);
   </>
 )}
 
