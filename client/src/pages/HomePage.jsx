@@ -427,7 +427,7 @@ const HomePage = () => {
                 <div className="grid grid-cols-[1fr_auto] items-center gap-3 bg-white/90 rounded-full px-3 py-2 shadow">
                   <input
                     ref={nameInputRef}
-                    className="min-w-0 w/full bg-transparent text-gray-900 placeholder-gray-600 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
+                    className="min-w-0 w-full bg-transparent text-gray-900 placeholder-gray-600 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
                     type="text"
                     value={name}
                     onChange={handleNameChange}
