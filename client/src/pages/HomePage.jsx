@@ -244,32 +244,34 @@ const HomePage = () => {
   };
 
   const startMatch = () => {
+    console.log("startMatch called", { deviceId, suspendedUntil, socket, isConnected, name });
+
     if (!deviceId) return setError('Loading device identity...');
     if (suspendedUntil && Date.now() < suspendedUntil) {
-      setError('You are suspended temperorly. Please be polite in next time.');
+      setError('You are suspended temporarily.');
       return;
     }
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     const validation = validateText(name);
-    if (!validation.valid) return setError('Please enter a valid name.');
-    if (!socket || !isConnected) return setError('Socket not connected.');
+    if (!validation.valid) {
+      console.log("Validation failed", validation);
+      return setError('Please enter a valid name.');
+    }
+    if (!socket || !isConnected) {
+      console.log("Socket issue", { socket, isConnected });
+      return setError('Socket not connected.');
+    }
 
     ensureCaptcha(() => {
-      setMatching(true);
-      setStatus('');
-      setError('');
+      console.log("Emitting find_new_buddy", { userId: userId.current, userName: name });
       socket.emit('find_new_buddy', { userId: userId.current, userName: name, deviceId });
-      sendAnalyticsEvent('user_connected', {
-        user_id: userId.current,
-        user_name: name,
-        timestamp: new Date().toISOString(),
-      });
+      setMatching(true);
       timeoutRef.current = setTimeout(() => {
         setMatching(false);
         setStatus('No partner is available');
       }, 60 * 1000);
     });
   };
+
 
   const handleFindMatch = (e) => {
     e.preventDefault();
