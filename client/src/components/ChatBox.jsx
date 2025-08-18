@@ -723,11 +723,15 @@ const ChatBox = () => {
 
           {/* Toast + Captcha */}
           <ToastContainer position="bottom-center" />
-          <CaptchaModal
-            visible={showCaptcha}
-            onSuccess={handleCaptchaSuccess}
-            siteKey={siteKey}
-          />
+          {showCaptcha && !captchaVerified && (
+            <CaptchaModal
+              visible
+              onSuccess={handleCaptchaSuccess}
+              siteKey={siteKey}
+              onClose={() => setShowCaptcha(false)}
+            />
+          )}
+
         </div>
       </div>
     </div>
