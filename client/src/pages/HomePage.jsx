@@ -199,16 +199,19 @@ const HomePage = () => {
   }, [socket]);
 
   const ensureCaptcha = (action) => {
-    const hasCookie = !!getCookie('captchaCooldown');
-    if (!hasCookie) {
-      setCaptchaVerified(false);
-      pendingAction.current = action;
-      setShowCaptcha(true);
-    } else {
-      setCaptchaVerified(true);
-      action();
-    }
-  };
+  const hasCookie = !!getCookie('captchaCooldown');
+  console.log("ensureCaptcha", { hasCookie, cookie: getCookie('captchaCooldown') });
+  if (!hasCookie) {
+    console.log("Captcha required, opening modal");
+    setCaptchaVerified(false);
+    pendingAction.current = action;
+    setShowCaptcha(true);
+  } else {
+    console.log("Captcha cookie found, running action directly");
+    setCaptchaVerified(true);
+    action();
+  }
+};
 
   const handleCaptchaSuccess = async (token) => {
     if (!deviceId || !name) return;
