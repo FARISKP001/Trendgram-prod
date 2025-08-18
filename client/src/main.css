@@ -1,28 +1,43 @@
+@import "tailwindcss";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* === Global Layout Fix === */
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  font-family: system-ui, sans-serif;
-  overscroll-behavior-y: auto;           /* allow pull-to-refresh */
-  -webkit-overflow-scrolling: touch;     /* smooth iOS scrolling */
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-/* === Viewport Height Fallback for Mobile === */
-@supports (height: 100dvh) {
-  html, body {
-    height: 100dvh;
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
-@supports not (height: 100dvh) {
-  html, body {
-    height: 100vh;
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
   }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
 }
 
 /* === Toastify Override === */
@@ -39,18 +54,7 @@ html, body, #root {
   scrollbar-width: none;     /* Firefox */
 }
 
-/* === Custom Scrollbar Hide Class === */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;  /* IE */
-  scrollbar-width: none;     /* Firefox */
-}
-/* === Safe Area Bottom Padding for iOS/Android Bottom Gestures === */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 1rem); /* Fallback to 16px */
-}
+
 
 .animate-spin {
   animation: spin 1s linear infinite;
@@ -60,111 +64,4 @@ html, body, #root {
     transform: rotate(360deg);
   }
 }
-
-.cookie-inline {
-  position: static !important;
-  inset: auto !important;
-  display: block !important;
-
-  background: #fff !important;
-  margin: 12px auto !important;
-  max-width: 640px !important;
-  width: 100% !important;
-
-  /* Card look */
-  border: 1px solid #5f9ea0 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .06) !important;
-
-  /* Padding for all content */
-  padding: 12px 16px !important;
-}
-
-/* Reset child margins so nothing sticks out */
-.cookie-inline * {
-  margin: 0 !important;
-  box-sizing: border-box;
-}
-
-/* Remove any inner frame border inside the consent card */
-.cookie-inline > div {
-  border: 0 !important;
-}
-
-/* If your component nests another wrapper, this catches it too */
-.cookie-inline > div > div {
-  border: 0 !important;
-}
-
-#tg-header-logo { height: 64px !important; }
-@media (min-width: 640px) { #tg-header-logo { height: 80px !important; } }
-
-.sidebar {
-  position: fixed;
-  top: 30px;
-  right: 150px;
-  width: 3%;
-  height: 4%;
-  background-color: rgba(32, 3, 3, 0.144);
-  z-index: 999;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 170%;
-  padding: 0;
-  
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: transform 0.3s ease-in-out;
-  cursor: pointer;
-  font-size: 1.5rem;
-  font-weight: 60;
-  padding: 10px;
-}
-.menu-card {
-  background: rgba(255,255,255,.95) !important;
-  border-radius: 35px !important;
-  background-color: #9ab973 !important; /* light teal background */
-  box-shadow: 0 10px 16px rgba(0, 0, 0, 0.836), 0 2px 4px rgba(0, 0, 0, 0.06) !important; /* soft shadow */
-  padding: 5px !important; /* consistent padding */
-
-  z-index: 1000 !important; /* ensure it appears above other content */
-  backdrop-filter: blur(10px) !important; /* subtle blur effect */
-  -webkit-backdrop-filter: blur(10px) !important; /* Safari support */  
-  transition: transform 0.3s ease-in-out !important; /* smooth transition */
-  display: flex !important; /* flexbox for layout */
-  flex-direction: column !important; /* column layout for items */
-  align-items: center !important; /* center align items */
-  justify-content: center !important; /* center content vertically */
- 
-  font-family: 'Times New Roman', Times, serif !important; /* serif font for a classic look */
-  font-size: 1.125rem !important; /* larger font size for readability */
-  line-height: 2 !important; /* improved line height for readability */
-  color: #fff !important; /* white text for contrast */
-  border: 2px solid rgba(18, 131, 196, 0.5) !important; /* subtle border */
-  
-  
-}
-
-.menu-card a,
-.menu-card a:visited {
-  
-  text-decoration: none !important;
-  color: inherit !important; /* inherit text color */
-  font-weight: 100 !important; /* medium weight for links */
-  transition: color 0.2s ease-in-out !important; /* smooth color change */
-  padding: 15px 20px !important; /* consistent padding for links */
-  display: table-row-group !important; /* block for clickable area */
- 
-  
-  
-  color: #080808 !important; /* white text for contrast */
-  transition: background-color 0.3s ease, color 0.3s ease !important; /* smooth transitions */
-  font-size: 1.125rem !important; /* larger font size for readability */
-  line-height: 4.5 !important; /* improved line height for readability */
-
-  margin: 10 !important; /* reset margin */
-  
-}
-
 
