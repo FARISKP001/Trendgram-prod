@@ -167,6 +167,8 @@ module.exports = (io, socket, redis) => {
 
     for (let i = 0; i < 50; i++) {
       const partnerId = await redis.lpop('chat:waitingQueue');
+            if (!partnerId) break;
+      if (partnerId === userId) continue;
       if (!partnerId || partnerId === userId) break;
 
       // Skip partners that are already engaged in another chat session.
