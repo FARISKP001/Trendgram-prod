@@ -1,17 +1,30 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const CaptchaModal = ({ onSuccess, siteKey, onClose }) => {
   const ref = useRef(null);
   const widgetId = useRef(null);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
-    if (!siteKey || !window.turnstile || !ref.current) return;
+    // Bail out if no siteKey
+    if (!siteKey) {
+      setLoadError('⚠️ Captcha siteKey not configured. Please check VITE_CF_SITE_KEY.');
+      return;
+    }
 
-    if (!widgetId.current) {
-      widgetId.current = window.turnstile.render(ref.current, {
-        sitekey: siteKey,
-        callback: (token) => onSuccess(token),
-      });
+    // Bail out if Turnstile script not ready
+    if (!window.turnstile || !ref.current) return;
+
+    try {
+      if (!widgetId.current) {
+        widgetId.current = window.turnstile.render(ref.current, {
+          sitekey: siteKey,
+          callback: (token) => onSuccess(token),
+        });
+      }
+    } catch (err) {
+      console.error('Captcha render error:', err);
+      setLoadError('⚠️ Failed to render captcha widget.');
     }
 
     return () => {
@@ -22,26 +35,25 @@ const CaptchaModal = ({ onSuccess, siteKey, onClose }) => {
     };
   }, [siteKey, onSuccess]);
 
+  // 🔄 Auto-fallback after 10 seconds if widget never loads
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!widgetId.current && !loadError) {
+        setLoadError('⚠️ Captcha failed to load. Please refresh and try again.');
+      }
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [loadError]);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full text-center">
-        {/* === Fallback if no siteKey configured === */}
-        {!siteKey && (
-          <p className="text-red-600 font-semibold">
-            ⚠️ Captcha siteKey not configured.<br />
-            Please check <code>VITE_CF_SITE_KEY</code> in your environment.
-          </p>
+        {/* === Error or fallback message === */}
+        {loadError ? (
+          <p className="text-red-600 font-semibold">{loadError}</p>
+        ) : (
+          <div ref={ref} className="flex justify-center" />
         )}
-
-        {/* === Fallback if script not loaded yet === */}
-        {siteKey && !window.turnstile && (
-          <p className="text-yellow-600 font-semibold">
-            ⏳ Loading captcha… please wait
-          </p>
-        )}
-
-        {/* === Actual Captcha widget === */}
-        {siteKey && <div ref={ref} className="flex justify-center" />}
 
         {/* Optional close button */}
         {onClose && (

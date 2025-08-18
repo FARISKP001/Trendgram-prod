@@ -152,22 +152,23 @@ const HomePage = () => {
       setMatching(false);
       setStatus('❌ No partner found. Please try again.');
     };
-    const handlePartnerFound = ({ partnerId, partnerName }) => {
-      clearTimeout(timeoutRef.current);
-      navigate('/chatbox', {
-        state: { userId: userId.current, partnerId, userName: name, partnerName },
-      });
-    };
+   const handlePartnerFound = ({ partnerId, partnerName }) => {
+    clearTimeout(timeoutRef.current);
+    setShowCaptcha(false);
+    navigate('/chatbox', {
+      state: { userId: userId.current, partnerId, userName: name, partnerName },
+    });
+  };
     const handleSuspended = ({ message, expiresAt }) => {
-      clearTimeout(timeoutRef.current);
-      setMatching(false);
-      setStatus('');
-      setError(message);
-      if (expiresAt) {
-        setSuspendedUntil(expiresAt);
-        localStorage.setItem('suspendedUntil', expiresAt);
-      }
-    };
+    clearTimeout(timeoutRef.current);
+    setMatching(false);
+    setStatus('');
+    setError(message);
+    if (expiresAt) {
+      setSuspendedUntil(expiresAt);
+      localStorage.setItem('suspendedUntil', expiresAt);
+    }
+  };
     socket.on('no_buddy_found', handleNoBuddyFound);
     socket.on('partner_found', handlePartnerFound);
     socket.on('suspended', handleSuspended);
@@ -587,19 +588,19 @@ const HomePage = () => {
         </div>
       </footer>
 
-      {/* Optional modals */}
-      {showCaptcha && (
-  <>
-    <div style={{position:"fixed",top:0,left:0,zIndex:9999,background:"red",color:"white"}}>
-      Captcha should be here
-    </div>
-    <CaptchaModal siteKey={siteKey} onSuccess={handleCaptchaSuccess} onClose={() => setShowCaptcha(false)} />
-      console.log("Captcha siteKey from env:", siteKey);
-  </>
+      {showCaptcha && !captchaVerified && (
+  <CaptchaModal
+    siteKey={siteKey}
+    onSuccess={handleCaptchaSuccess}
+    onClose={() => setShowCaptcha(false)}
+  />
 )}
 
-      {showAgeModal && <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />}
-      <CookieConsent />
+{showAgeModal && (
+  <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+)}
+
+<CookieConsent />
     </div>
   );
 };
