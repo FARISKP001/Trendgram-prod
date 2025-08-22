@@ -7,49 +7,10 @@ const IDLE_MAX = 2 * 60 * 1000;
 const SUSPEND_THRESHOLD = 3;
 const REPORT_WINDOW = 3600;
 const SUSPEND_DURATION = 24 * 3600;
-// CAPTCHA related thresholds
-// Require CAPTCHA if a user clicks "Next" more than 3 times in a minute
-const NEXT_CAPTCHA_THRESHOLD = 3;
-const NEXT_CAPTCHA_WINDOW = 60;
-// Require CAPTCHA if a user reports more than twice within 5 minutes  
-const REPORT_CAPTCHA_THRESHOLD = 2;
-const REPORT_CAPTCHA_WINDOW = 300;
-// Treat extremely rapid actions as suspicious (e.g. bots)
-const RAPID_ACTION_THRESHOLD_MS = 500;
 const SOCKET_TTL = 24 * 3600;
 
 module.exports = (io, socket, redis) => {
   let currentUserId = null;
-
-  const checkCaptchaPassed = async (deviceId) => {
-    if (!deviceId) return false;
-    return !!(await redis.get(`captcha:passed:${deviceId}`));
-  };
-
-  const incrementAction = async (key, limit, window) => {
-    const results = await redis
-      .multi()
-      .incr(key)
-      .expire(key, window, 'NX')
-      .exec();
-    const count = results[0][1];
-    return count > limit;
-  };
-
-  const shouldRequireCaptcha = async (deviceId, actionKey, limit, window) => {
-    if (!deviceId) return true;
-    const [exceeded, captchaOk, lastTs] = await Promise.all([
-      incrementAction(actionKey, limit, window),
-      checkCaptchaPassed(deviceId),
-      redis.get(`${actionKey}:last`),
-    ]);
-
-    const now = Date.now();
-    await redis.set(`${actionKey}:last`, now, 'EX', window);
-    const rapid = lastTs && now - Number(lastTs) < RAPID_ACTION_THRESHOLD_MS;
-
-    return !captchaOk || exceeded || rapid;
-  };
 
   const forceCleanup = async (userId, socketInstance, notifyPartner = true) => {
     if (cleanupInProgress.has(userId)) return;
@@ -64,7 +25,7 @@ module.exports = (io, socket, redis) => {
         if (!socketInstance && socketId) {
           socketInstance = io.sockets.sockets.get(socketId);
         }
-        
+
         // Ensure the current socket leaves the room so that lingering
         // subscriptions do not receive future messages.
         if (socketInstance && roomName) {
@@ -95,7 +56,7 @@ module.exports = (io, socket, redis) => {
             // Proceed with cleanup to remove any stale mappings for the partner.
             setTimeout(() => forceCleanup(partnerId, null, false), 100);
           }
-        } 
+        }
 
         await redis.del(`chat:${roomName}`);
       }
@@ -160,14 +121,14 @@ module.exports = (io, socket, redis) => {
   const matchUser = async (userId, userName) => {
     if (!userId) return;
 
-     // If the user is already in a chat, don't attempt to rematch.
+    // If the user is already in a chat, don't attempt to rematch.
     if (userRoomMap[userId]) return;
 
     await redis.lrem('chat:waitingQueue', 0, userId);
 
     for (let i = 0; i < 50; i++) {
       const partnerId = await redis.lpop('chat:waitingQueue');
-            if (!partnerId) break;
+      if (!partnerId) break;
       if (partnerId === userId) continue;
       if (!partnerId || partnerId === userId) break;
 
@@ -193,9 +154,9 @@ module.exports = (io, socket, redis) => {
         partnerSocket.join(roomName);
 
         const partnerName = (await redis.get(`userName:${partnerId}`)) || 'Stranger';
-        
+
         const myName = userName || 'Stranger';
-        
+
 
         socket.emit('partner_found', { partnerId, partnerName });
         partnerSocket.emit('partner_found', { partnerId: userId, partnerName: myName });
@@ -217,12 +178,7 @@ module.exports = (io, socket, redis) => {
     if (!userName) return;
     currentUserId = userId;
 
-    const captchaOk = await checkCaptchaPassed(deviceId);
-    if (!captchaOk) {
-      socket.emit('captcha_required');
-      return;
-    }
- const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
+    const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
     if (suspendTtl > 0) {
       socket.emit('suspended', {
         message: '⚠️ You are suspended. Please try after sometime.',
@@ -244,11 +200,7 @@ module.exports = (io, socket, redis) => {
   socket.on('find_new_buddy', async ({ userId, userName, deviceId }) => {
     if (!userId || !userName) return;
 
-    const captchaOk = await checkCaptchaPassed(deviceId);
-    if (!captchaOk) {
-      socket.emit('captcha_required');
-      return;
-    }
+
 
     const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
     if (suspendTtl > 0) {
@@ -316,18 +268,6 @@ module.exports = (io, socket, redis) => {
 
   socket.on('next', async ({ userId, userName, deviceId }) => {
     if (!userId || !userName) return;
-
-     const needCaptcha = await shouldRequireCaptcha(
-      deviceId,
-      `next:${deviceId}`,
-      NEXT_CAPTCHA_THRESHOLD,
-      NEXT_CAPTCHA_WINDOW
-    );
-    if (needCaptcha) {
-      socket.emit('captcha_required');
-      return;
-    }
-
     const suspendTtl = await redis.ttl(`suspended:${deviceId}`);
     if (suspendTtl > 0) {
       socket.emit('suspended', {
@@ -358,17 +298,6 @@ module.exports = (io, socket, redis) => {
 
   socket.on('report_user', async ({ reporterId, reporterDeviceId, reportedUserId, messages }) => {
     if (!reporterId || !reporterDeviceId || !reportedUserId) return;
-    const needCaptcha = await shouldRequireCaptcha(
-      reporterDeviceId,
-      `report:${reporterDeviceId}`,
-      REPORT_CAPTCHA_THRESHOLD,
-      REPORT_CAPTCHA_WINDOW
-    );
-if (needCaptcha) {
-      socket.emit('captcha_required');
-      return;
-    }
-
     const recentReportKey = `report:recent:${reporterDeviceId}:${reportedUserId}`;
     const abuseKey = `reporter:abuse:${reporterDeviceId}`;
 
@@ -392,7 +321,7 @@ if (needCaptcha) {
       return;
     }
 
-const reportedDeviceId = await redis.get(`deviceId:${reportedUserId}`);
+    const reportedDeviceId = await redis.get(`deviceId:${reportedUserId}`);
     if (!reportedDeviceId) return;
 
     const uniqueKey = `reports:unique:${reportedDeviceId}`;

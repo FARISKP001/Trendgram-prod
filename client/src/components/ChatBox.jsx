@@ -16,7 +16,6 @@ import { sanitizeMessage, validateText } from '../utils/textFilters';
 import SpeechBubble from './SpeechBubble';
 import ChatInput from './ChatInput';
 import ChatFooter from './ChatFooter';
-import CaptchaModal from './CaptchaModal';
 import useKeyboardVisible from '../hooks/useKeyboardVisible';
 
 // Modern Apple Photos style palette icon (SVG)
@@ -85,21 +84,7 @@ const ChatBox = () => {
   const partnerIdRef = useRef(null);
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
-  const nextClicksRef = useRef([]);
-  const [showCaptcha, setShowCaptcha] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
-  const pendingAction = useRef(null);
-  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
-  const siteKey = import.meta.env.VITE_CF_SITE_KEY;
   const keyboardVisible = useKeyboardVisible();
-
-  useEffect(() => {
-    const hasCookie = document.cookie.includes('cf_clearance');
-    if (hasCookie) {
-      setCaptchaVerified(true);
-      setShowCaptcha(false);
-    }
-  }, []);
 
   const {
     trackSessionStart,
@@ -142,10 +127,7 @@ const ChatBox = () => {
     socket.on('chat_message', (msg) => {
       setMessages((prev) => [...prev, { ...msg, sender: 'partner' }]);
     });
-    const handleCaptcha = () => {
-      setCaptchaVerified(false);
-      setShowCaptcha(true);
-    };
+    
     socket.on('captcha_required', handleCaptcha);
     return () => socket.off('captcha_required', handleCaptcha);
   }, [socket]);
@@ -158,39 +140,6 @@ const ChatBox = () => {
     socket.emit('register_user', { userId, deviceId, userName });
     sessionStorage.setItem('userId', userId);
     sessionStorage.setItem('userName', userName);
-  };
-
-  const ensureCaptcha = (action) => {
-    if (!captchaVerified) {
-      pendingAction.current = action;
-      setShowCaptcha(true);
-    } else {
-      action();
-    }
-  };
-
-  const handleCaptchaSuccess = async (token) => {
-    if (!deviceId) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/verify-captcha`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, deviceId }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCaptchaVerified(true);
-        setShowCaptcha(false);
-        socket.emit('register_user', { userId, deviceId, userName });
-        if (pendingAction.current) {
-          const fn = pendingAction.current;
-          pendingAction.current = null;
-          fn();
-        }
-      }
-    } catch (err) {
-      console.error('Captcha verification failed', err);
-    }
   };
 
   const handleInputChange = (e) => {
@@ -285,69 +234,49 @@ const ChatBox = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
 
-    // Rate limit "Next" clicks: captcha after 3 clicks within a minute
-    const now = Date.now();
-    nextClicksRef.current = nextClicksRef.current.filter((ts) => now - ts < 60000);
-    nextClicksRef.current.push(now);
-
-    const performNext = () => {
-      leftManually.current = true;
-      setMessages([{ text: 'You left the chat. Searching for a new buddy...', from: 'system' }]);
-      setChatState('searching');
-      setPartnerId(null);
-      setPartnerName('');
-      sessionStorage.removeItem('partnerId');
-      sessionStorage.removeItem('partnerName');
-      trackSessionEnd();
-      socket.emit('next', { userId, userName, deviceId });
-      hasHandledLeave.current = true;
-      clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => {
-        notifyNoBuddy();
-        socket.emit('leave_chat', { userId });
-      }, 60000);
-    };
-
-    if (nextClicksRef.current.length >= 3) {
-      ensureCaptcha(() => {
-        nextClicksRef.current = [];
-        performNext();
-      });
-    } else {
-      performNext();
-    }
+        leftManually.current = true;
+    setMessages([{ text: 'You left the chat. Searching for a new buddy...', from: 'system' }]);
+    setChatState('searching');
+    setPartnerId(null);
+    setPartnerName('');
+    sessionStorage.removeItem('partnerId');
+    sessionStorage.removeItem('partnerName');
+    trackSessionEnd();
+    socket.emit('next', { userId, userName, deviceId });
+    hasHandledLeave.current = true;
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => {
+      notifyNoBuddy();
+      socket.emit('leave_chat', { userId });
+    }, 60000);
   };
 
   const handleNewBuddy = () => {
     if (chatState === 'chatting' || partnerId || !deviceId) return;
     if (!socket?.connected) return toast.error('Unable to connect to server.');
-    ensureCaptcha(() => {
-      hasHandledLeave.current = false;
-      setChatState('searching');
-      setPartnerId(null);
-      setMessages([]);
-      sessionStorage.clear();
-      socket.emit('find_new_buddy', { userId, userName, deviceId });
-      clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => {
-        notifyNoBuddy();
-        socket.emit('leave_chat', { userId });
-      }, 60000);
-    });
+    hasHandledLeave.current = false;
+    setChatState('searching');
+    setPartnerId(null);
+    setMessages([]);
+    sessionStorage.clear();
+    socket.emit('find_new_buddy', { userId, userName, deviceId });
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => {
+      notifyNoBuddy();
+      socket.emit('leave_chat', { userId });
+    }, 60000);
   };
 
   const handleReport = () => {
     if (!socket || !partnerId || !deviceId) return;
-    ensureCaptcha(() => {
-      const lastMessages = messages.slice(-10);
-      socket.emit('report_user', {
-        reporterId: userId,
-        reporterDeviceId: deviceId,
-        reportedUserId: partnerId,
-        messages: lastMessages,
-      });
-      trackUserReported();
+       const lastMessages = messages.slice(-10);
+    socket.emit('report_user', {
+      reporterId: userId,
+      reporterDeviceId: deviceId,
+      reportedUserId: partnerId,
+      messages: lastMessages,
     });
+    trackUserReported();
   };
 
   // Partner found: expect backend to send partnerName in payload!
@@ -758,7 +687,7 @@ const ChatBox = () => {
               </Suspense>
             </div>
           )}
-          {/* Toast + Captcha */}
+          
           <ToastContainer
             position="bottom-right"
             autoClose={3000}
@@ -766,22 +695,6 @@ const ChatBox = () => {
             closeOnClick
             pauseOnHover
           />
-          {/* Captcha Modal */}
-          {showCaptcha && !captchaVerified && (
-            <CaptchaModal
-              visible={captchaVisible}   // ❌ uses `captchaVisible` (undefined)
-              siteKey={import.meta.env.VITE_TURNSTILE_SITEKEY}
-              onSuccess={handleCaptchaSuccess}
-              onClose={() => {
-                setCaptchaVisible(false); // ❌ no such state hook
-                setPendingAction(null);
-                toast.error("⚠️ Captcha failed, please try again");
-              }}
-            />
-          )}
-
-
-
         </div>
       </div>
     </div>

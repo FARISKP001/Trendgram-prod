@@ -2,9 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import main from '../assets/main.png';
 import { SiInstagram, SiX, SiFacebook } from "react-icons/si";
-import CaptchaModal from '../components/CaptchaModal.jsx';
 import CookieConsent from '../components/CookieConsent';
-import { getCookie, setCookie } from "../utils/cookies.js";
 import AgeConfirmation from '../components/AgeConfirmation.jsx';
 import { useNavigate } from 'react-router-dom';
 import useSocketContext from '../context/useSocketContext';
@@ -39,13 +37,10 @@ const HomePage = () => {
     const stored = localStorage.getItem('suspendedUntil');
     return stored ? parseInt(stored, 10) : null;
   });
-  const [showCaptcha, setShowCaptcha] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(() => !!getCookie('captchaCooldown'));
+  
   const [ageConfirmed, setAgeConfirmed] = useState(() => localStorage.getItem('ageConfirmed') === 'true');
   const [showAgeModal, setShowAgeModal] = useState(false);
-  const siteKey = import.meta.env.VITE_CF_SITE_KEY;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [captchaRetries, setCaptchaRetries] = useState(0);
 
   // === Smooth scroll helpers ===
   const scrollToSection = (id) => {
@@ -149,15 +144,15 @@ const HomePage = () => {
       setMatching(false);
       setStatus('❌ No partner found. Please try again.');
     };
-   const handlePartnerFound = ({ partnerId, partnerName }) => {
-    clearTimeout(timeoutRef.current);
-    setShowCaptcha(false);
-    setStatus('');
-    setError('');
-    navigate('/chatbox', {
-      state: { userId: userId.current, partnerId, userName: name, partnerName },
-    });
-  };
+    const handlePartnerFound = ({ partnerId, partnerName }) => {
+      clearTimeout(timeoutRef.current);
+      setStatus('');
+      setError('');
+      navigate('/chatbox', {
+        state: { userId: userId.current, partnerId, userName: name, partnerName },
+      });
+    };
+
     const handleSuspended = ({ message, expiresAt }) => {
     clearTimeout(timeoutRef.current);
     setMatching(false);
@@ -178,60 +173,7 @@ const HomePage = () => {
     };
   }, [socket, isConnected, name, navigate, suspendedUntil]);
 
-  // Captcha flow
-  useEffect(() => {
-    if (!socket) return;
-    const handleCaptcha = () => {
-      if (getCookie('captchaCooldown')) {
-        setCaptchaVerified(true);
-        
-        return;
-      }
-      setCaptchaVerified(false);
-      setShowCaptcha(true);
-    };
-    socket.on('captcha_required', handleCaptcha);
-    return () => socket.off('captcha_required', handleCaptcha);
-  }, [socket]);
-
-  const ensureCaptcha = () => {
-    const hasCookie = !!getCookie("captchaCooldown");
-    console.log("ensureCaptcha", { hasCookie });
-
-    if (!hasCookie) {
-      console.log("Captcha required, opening modal");
-      setShowCaptcha(true);
-      return false;
-    }
-    return true;
-  };
-
-  const handleCaptchaSuccess = (token) => {
-    console.log("✅ Captcha success", token);
-
-    setCaptchaVerified(true);
-    setShowCaptcha(false);
-
-    // ✅ Set consistent cookie key
-    setCookie("captchaCooldown", "true", 1);
-
-    startMatch(); // resume matchmaking
-  };
-const handleCaptchaClose = () => {
-    setCaptchaRetries(prev => {
-      if (prev < 1) {
-        console.log("⚠️ Captcha failed, retrying once…");
-        setTimeout(() => setShowCaptcha(true), 500);
-        return prev + 1;
-      } else {
-        console.error("❌ Captcha failed twice, giving up.");
-        setError("Captcha failed to load. Please refresh and try again.");
-        return prev;
-      }
-    });
-  };
-
-  const handleNameChange = (e) => {
+    const handleNameChange = (e) => {
     const val = e.target.value;
     setName(val);
     if (!val) return setError('');
@@ -579,15 +521,6 @@ const handleCaptchaClose = () => {
           </div>
         </div>
       </footer>
-
-      {showCaptcha && !captchaVerified && (
-        <CaptchaModal
-          visible={showCaptcha}
-          siteKey={siteKey}
-          onSuccess={handleCaptchaSuccess}
-          onClose={handleCaptchaClose}
-        />
-      )}
 
 {showAgeModal && (
   <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
