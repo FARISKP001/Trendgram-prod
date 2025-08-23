@@ -217,9 +217,7 @@ const ChatBox = () => {
     setMessages([{ text: "Partner's are not available.", from: 'system' }]);
     setChatState('noBuddy');
   };
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+
 
   const handleSendMessage = () => {
     if (!message.trim() || !partnerId) return;
