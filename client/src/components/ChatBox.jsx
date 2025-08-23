@@ -127,9 +127,7 @@ const ChatBox = () => {
     socket.on('chat_message', (msg) => {
       setMessages((prev) => [...prev, { ...msg, sender: 'partner' }]);
     });
-    
-    socket.on('captcha_required', handleCaptcha);
-    return () => socket.off('captcha_required', handleCaptcha);
+
   }, [socket]);
 
   const playSound = (type) => new Audio(type === 'join' ? joinSound : leaveSound).play();
