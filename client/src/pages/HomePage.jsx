@@ -200,8 +200,6 @@ const HomePage = () => {
     return setError('Socket not connected.');
   }
 
-  if (!ensureCaptcha()) return;
-
   console.log("Emitting find_new_buddy", { userId: userId.current, userName: name });
   socket.emit('find_new_buddy', { userId: userId.current, userName: name, deviceId });
   setMatching(true);
