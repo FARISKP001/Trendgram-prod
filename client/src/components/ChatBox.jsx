@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-const EmojiPicker = lazy(() => import('emoji-picker-react'));
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -42,8 +41,6 @@ const ChatBox = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [chatState, setChatState] = useState('idle');
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [emojiPickerLoaded, setEmojiPickerLoaded] = useState(false);
   const [inputError, setInputError] = useState('');
   const searchTimeout = useRef(null);
   const messageListRef = useRef(null);
@@ -65,11 +62,6 @@ const ChatBox = () => {
     trackSessionEnd,
     trackUserReported,
   } = useChatAnalytics({ userId, partnerId, userName, messages });
-
-  // Preload Emoji Picker after mount
-  useEffect(() => {
-    import('emoji-picker-react').then(() => setEmojiPickerLoaded(true));
-  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -121,11 +113,6 @@ const ChatBox = () => {
     }
   };
 
-  const handleEmojiClick = (emojiData) => {
-    setInput((prev) => prev + emojiData.emoji);
-    inputRef.current?.focus();
-  };
-
   const handleSend = () => {
     if (!input.trim() || chatState !== 'chatting' || !partnerId) return;
     const validation = validateText(input);
@@ -143,42 +130,8 @@ const ChatBox = () => {
     });
     trackMessageSent(sanitized);
     setInput('');
-    setShowEmojiPicker(false);
   };
 
-  useEffect(() => {
-    if (showEmojiPicker) {
-      const interval = setInterval(() => {
-        const picker = document.querySelector('emoji-picker');
-        if (!picker || !picker.shadowRoot) return;
-        picker.style.display = 'block';
-        picker.style.width = '100%';
-        picker.style.height = '100%';
-        const input = picker.shadowRoot.querySelector('input');
-        if (input) {
-          input.placeholder = 'Search emojis';
-          input.style.paddingLeft = '2.4em';
-          input.style.height = '36px';
-          input.style.margin = '8px';
-          input.style.borderRadius = '20px';
-          input.style.border = '1px solid #ccc';
-        }
-        const icon = picker.shadowRoot.querySelector('.epr-search-icon-wrapper');
-        if (icon) {
-          icon.style.left = '1em';
-          icon.style.top = '50%';
-          icon.style.transform = 'translateY(-50%)';
-        }
-        const body = picker.shadowRoot.querySelector('.epr-body');
-        if (body) {
-          body.style.overflowY = 'auto';
-          body.style.height = '100%';
-        }
-        clearInterval(interval);
-      }, 100);
-      return () => clearInterval(interval);
-    }
-  }, [showEmojiPicker]);
 
   const notifyNoBuddy = () => {
     setMessages([{ text: "Partner's are not available.", from: 'system' }]);
@@ -452,7 +405,7 @@ const ChatBox = () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
       }
-            if (socket) {
+      if (socket) {
         socket.off('chat_message');
         socket.off('chatMessage');
       }
@@ -477,7 +430,7 @@ const ChatBox = () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
       }
-            if (socket) {
+      if (socket) {
         socket.off('chat_message');
         socket.off('chatMessage');
       }
@@ -512,34 +465,34 @@ const ChatBox = () => {
         >
           {/* Header */}
           {/* Header */}
-<div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
-  <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
-    {partnerName ? partnerName : "Waiting..."}
-  </span>
+          <div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
+            <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+              {partnerName ? partnerName : "Waiting..."}
+            </span>
 
-  {/* Dark/Light Toggle */}
-  <button
-    onClick={toggleTheme}
-    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-  >
-    {theme === "dark" ? (
-      <SunIcon className="w-5 h-5 text-yellow-400" />
-    ) : (
-      <MoonIcon className="w-5 h-5 text-gray-800" />
-    )}
-  </button>
-</div>
+            {/* Dark/Light Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            >
+              {theme === "dark" ? (
+                <SunIcon className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <MoonIcon className="w-5 h-5 text-gray-800" />
+              )}
+            </button>
+          </div>
           {/* Chat area */}
-         <div
-  className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-[#121212]"
-style={{
-  backgroundImage: `url(${doodleBg})`,
-  backgroundRepeat: 'no-repeat',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-}}
+          <div
+            className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-[#121212]"
+            style={{
+              // backgroundImage: `url(${doodleBg})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
 
->
+          >
 
             {/* Scrollable message list */}
             <div className="flex-1 overflow-y-auto px-3 pt-4 pb-2 no-scrollbar" ref={listContainerRef}>
@@ -561,15 +514,13 @@ style={{
               ))}
             </div>
             {/* Input + Footer */}
-            <div className={`shrink-0 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-inherit`}>
+            <div className={`shrink-0 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+26px)] bg-inherit`}>
               <ChatInput
                 input={input}
                 inputError={inputError}
                 chatState={chatState}
                 handleInputChange={handleInputChange}
                 handleSend={handleSend}
-                showEmojiPicker={showEmojiPicker}
-                setShowEmojiPicker={setShowEmojiPicker}
                 inputRef={inputRef}
               />
               {!keyboardVisible && (
@@ -579,33 +530,7 @@ style={{
               )}
             </div>
           </div>
-          {/* Emoji Picker */}
-          {showEmojiPicker && (
-            <div className="emoji-picker-modal fixed left-0 w-full z-50 bg-white dark:bg-gray-800 shadow-2xl rounded-t-2xl transition-transform duration-300 bottom-0 translate-y-0 flex justify-center md:absolute md:rounded-2xl md:w-[340px] md:left-1/2 md:-translate-x-1/2 md:bottom-24 md:opacity-100 pointer-events-auto"
-              style={{
-                height: '320px',
-                maxHeight: '80vh',
-                width: '100%',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.16)',
-                ...(window.innerWidth >= 768 && {
-                  width: '340px',
-                  height: '370px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                })
-              }}
-            >
-              <Suspense fallback={<div className="p-6 text-center">Loading…</div>}>
-                <EmojiPicker
-                  onEmojiClick={handleEmojiClick}
-                  width="100%"
-                  height={window.innerWidth >= 768 ? '370px' : '320px'}
-                  lazyLoadEmojis
-                  skinTonesDisabled
-                />
-              </Suspense>
-            </div>
-          )}
+
           <ToastContainer
             position="bottom-right"
             autoClose={3000}

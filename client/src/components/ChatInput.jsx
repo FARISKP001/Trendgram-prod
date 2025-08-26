@@ -7,8 +7,6 @@ const ChatInput = ({
   chatState,
   handleInputChange,
   handleSend,
-  showEmojiPicker,
-  setShowEmojiPicker,
   inputRef,
 }) => (
   <>
@@ -21,16 +19,7 @@ const ChatInput = ({
         className="w-full bg-inherit p-4"
       >
         <div className="flex items-center w-full h-16 border border-[#ece5dd] rounded-xl bg-white dark:bg-gray-700 px-4 shadow-md">
-          <button
-            type="button"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="text-2xl px-1 emoji-btn"
-            aria-label="Open Emoji Picker"
-            disabled={chatState === 'disconnected'}
-            style={{ minWidth: 38, minHeight: 38 }} // For easier touch
-          >
-            😊
-          </button>
+          
           <textarea
             ref={inputRef}
             value={input}

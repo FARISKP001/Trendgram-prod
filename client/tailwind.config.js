@@ -4,7 +4,6 @@ module.exports = {
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx,css}',
-    './node_modules/emoji-picker-react/**/*.{js,ts}', // for emoji picker styles (optional)
   ],
   theme: {
     extend: {

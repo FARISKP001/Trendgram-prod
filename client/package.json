@@ -13,7 +13,6 @@
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/forms": "^0.5.10",
-    "emoji-picker-react": "^4.13.2",
     "lucide-react": "^0.535.0",
     "marked": "^15.0.12",
     "react": "^18.0.0",

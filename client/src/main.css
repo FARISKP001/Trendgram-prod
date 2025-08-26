@@ -45,17 +45,6 @@
   @apply z-[9999];
 }
 
-/* === Emoji Picker Drawer Scrollbar Hide === */
-.emoji-wrapper::-webkit-scrollbar {
-  display: none;
-}
-.emoji-wrapper {
-  -ms-overflow-style: none;  /* IE */
-  scrollbar-width: none;     /* Firefox */
-}
-
-
-
 .animate-spin {
   animation: spin 1s linear infinite;
 }
