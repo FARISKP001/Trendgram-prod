@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { useClickAway } from 'react-use';
+
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import useSocketContext from '../context/useSocketContext';
 import joinSound from '../assets/join.mp3';
 import leaveSound from '../assets/leave.mp3';
-import doodleBg from '../assets/doodle-bg.png';
+import doodleBg from '../assets/doodle-bg.jpg';
 import useExitProtection from '../hooks/useExitProtection';
 import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
@@ -18,27 +18,7 @@ import ChatInput from './ChatInput';
 import ChatFooter from './ChatFooter';
 import useKeyboardVisible from '../hooks/useKeyboardVisible';
 
-// Modern Apple Photos style palette icon (SVG)
-const ModernPaletteIcon = ({ size = 28 }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40">
-    <circle cx="20" cy="10" r="8" fill="#FF7C2B" fillOpacity="0.90" />
-    <circle cx="31" cy="17" r="8" fill="#97DE00" fillOpacity="0.90" />
-    <circle cx="26" cy="30" r="8" fill="#17C4FF" fillOpacity="0.90" />
-    <circle cx="14" cy="30" r="8" fill="#FF55B2" fillOpacity="0.90" />
-    <circle cx="9" cy="17" r="8" fill="#FFE64D" fillOpacity="0.90" />
-    <circle cx="20" cy="21" r="7" fill="#FFF" fillOpacity="0.9" />
-  </svg>
-);
 
-// Limit the palette to six visible options arranged 3×2
-const colorOptions = [
-  '#f0f8ff', // Alice blue
-  '#fff0f5', // Lavender Blush
-  '#b0e0e6', // Powder Blue
-  '#ccff00', // Electric lime
-  '#fbceb1', // Apricot
-  '#f5deb3', // Wheat
-];
 
 const showMobileExitToast = (onConfirm) => {
   showConfirmToast({
@@ -47,13 +27,6 @@ const showMobileExitToast = (onConfirm) => {
     toastId: 'mobile-exit-confirm',
   });
 };
-
-const toCircleFont = (text) =>
-
-  text.split('').map((c) => {
-    const code = c.toUpperCase().charCodeAt(0);
-    return code >= 65 && code <= 90 ? String.fromCharCode(0x24b6 + (code - 65)) : c;
-  }).join('');
 
 const ChatBox = () => {
   const { socket, isConnected } = useSocketContext();
@@ -71,8 +44,6 @@ const ChatBox = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [emojiPickerLoaded, setEmojiPickerLoaded] = useState(false);
   const [inputError, setInputError] = useState('');
-  const [bgColor, setBgColor] = useState(() => sessionStorage.getItem('chatBgColor') || '#ffffff');
-  const [showColorPicker, setShowColorPicker] = useState(false);
   const searchTimeout = useRef(null);
   const messageListRef = useRef(null);
   const listContainerRef = useRef(null);
@@ -230,7 +201,7 @@ const ChatBox = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
 
-        leftManually.current = true;
+    leftManually.current = true;
     setMessages([{ text: 'You left the chat. Searching for a new buddy...', from: 'system' }]);
     setChatState('searching');
     setPartnerId(null);
@@ -265,7 +236,7 @@ const ChatBox = () => {
 
   const handleReport = () => {
     if (!socket || !partnerId || !deviceId) return;
-       const lastMessages = messages.slice(-10);
+    const lastMessages = messages.slice(-10);
     socket.emit('report_user', {
       reporterId: userId,
       reporterDeviceId: deviceId,
@@ -542,10 +513,6 @@ const ChatBox = () => {
     };
   }, [socket]);
 
-  // For popover click-away
-  const colorPopoverRef = useRef(null);
-  useClickAway(colorPopoverRef, () => setShowColorPicker(false));
-
   return (
     <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-y-auto">
       <div className="w-full h-full flex flex-col">
@@ -553,58 +520,12 @@ const ChatBox = () => {
         sm:rounded-2xl bg-[#f8f9fa] dark:bg-[#23272b] shadow-2xl overflow-hidden relative
         text-[#222e35] dark:text-gray-100 font-[system-ui,sans-serif] text-base border sm:border-0"
         >
-
           {/* Header */}
           <div className="h-10 shrink-0 flex items-center px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
-            <div className="mr-2 relative z-30" ref={colorPopoverRef}>
-              {/* Color Picker Toggle Button */}
-              <button
-                onClick={() => setShowColorPicker((prev) => !prev)}
-                className="p-1 rounded-full bg-white dark:bg-[#2a2f32] hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-                title="Change chat background"
-                aria-label="Change background color"
-                type="button"
-              >
-                <ModernPaletteIcon size={28} />
-              </button>
-
-              {/* Color Options Popover */}
-              {showColorPicker && (
-                <div
-                  className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-indigo-600 p-3 z-50 grid grid-cols-2 grid-rows-3 gap-2 min-w-[120px]"
-                >
-                  {colorOptions.map((color) => (
-                    <button
-                      key={color}
-                      className="w-9 h-9 rounded-full outline-none focus:ring-2 focus:ring-cyan-400 transition hover:scale-110 flex items-center justify-center"
-                      style={{
-                        background: color,
-                        boxShadow: bgColor === color ? '0 0 0 2.5px #17C4FF' : '0 2px 8px 0 #0001',
-                        borderColor: bgColor === color ? '#17C4FF' : 'transparent',
-                        borderWidth: bgColor === color ? '2px' : '0px',
-                        borderStyle: 'solid',
-                      }}
-                      aria-label={`Change background to ${color}`}
-                      onClick={() => {
-                        setBgColor(color);
-                        sessionStorage.setItem('chatBgColor', color);
-                        setShowColorPicker(false);
-                      }}
-                    >
-                      {bgColor === color && (
-                        <span style={{ color: '#222', fontSize: '1.2rem', fontWeight: 900 }}>✓</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <span className="ml-2 font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
-              {partnerName ? toCircleFont(partnerName) : 'Ⓦⓐⓘⓣⓘⓝⓖ...'}
+            <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+              {partnerName ? (partnerName) : 'Waiting...'}
             </span>
           </div>
-
           {/* Chat area */}
           <div
             className="flex-1 flex flex-col overflow-hidden bg-repeat relative"
@@ -612,8 +533,7 @@ const ChatBox = () => {
               backgroundImage: `url(${doodleBg})`,
               backgroundRepeat: 'repeat',
               backgroundSize: '400px',
-              backgroundColor: bgColor,
-              transition: 'background-color 0.3s',
+              backgroundColor: '#ffffff',
             }}
           >
             {/* Scrollable message list */}
@@ -635,7 +555,6 @@ const ChatBox = () => {
                 </div>
               ))}
             </div>
-
             {/* Input + Footer */}
             <div className={`shrink-0 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-inherit`}>
               <ChatInput
@@ -655,7 +574,6 @@ const ChatBox = () => {
               )}
             </div>
           </div>
-
           {/* Emoji Picker */}
           {showEmojiPicker && (
             <div className="emoji-picker-modal fixed left-0 w-full z-50 bg-white dark:bg-gray-800 shadow-2xl rounded-t-2xl transition-transform duration-300 bottom-0 translate-y-0 flex justify-center md:absolute md:rounded-2xl md:w-[340px] md:left-1/2 md:-translate-x-1/2 md:bottom-24 md:opacity-100 pointer-events-auto"
@@ -683,7 +601,6 @@ const ChatBox = () => {
               </Suspense>
             </div>
           )}
-          
           <ToastContainer
             position="bottom-right"
             autoClose={3000}
@@ -696,5 +613,4 @@ const ChatBox = () => {
     </div>
   );
 };
-
 export default ChatBox;
