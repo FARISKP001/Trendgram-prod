@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
@@ -8,6 +7,8 @@ import useSocketContext from '../context/useSocketContext';
 import joinSound from '../assets/join.mp3';
 import leaveSound from '../assets/leave.mp3';
 import doodleBg from '../assets/doodle-bg.jpg';
+import { MoonIcon, SunIcon } from "@heroicons/react/24/solid";
+import useTheme from "../hooks/useTheme";
 import useExitProtection from '../hooks/useExitProtection';
 import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
@@ -56,6 +57,7 @@ const ChatBox = () => {
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
   const keyboardVisible = useKeyboardVisible();
+  const { theme, toggleTheme } = useTheme();
 
   const {
     trackSessionStart,
@@ -93,13 +95,7 @@ const ChatBox = () => {
   useEffect(() => { userIdRef.current = userId; }, [userId]);
   useEffect(() => { partnerIdRef.current = partnerId; }, [partnerId]);
 
-  useEffect(() => {
-    if (!socket) return;
-    socket.on('chat_message', (msg) => {
-      setMessages((prev) => [...prev, { ...msg, sender: 'partner' }]);
-    });
 
-  }, [socket]);
 
   const playSound = (type) => new Audio(type === 'join' ? joinSound : leaveSound).play();
 
@@ -189,14 +185,6 @@ const ChatBox = () => {
     setChatState('noBuddy');
   };
 
-
-  const handleSendMessage = () => {
-    if (!message.trim() || !partnerId) return;
-    const msg = { text: message, sender: 'me', timestamp: Date.now() };
-    socket.emit('chat_message', { to: partnerId, text: message });
-    setMessages((prev) => [...prev, msg]);
-    setMessage('');
-  };
   const handleNext = () => {
     if (chatState === 'searching' || hasHandledLeave.current) return;
     if (!socket?.connected) return toast.error('Unable to connect to server. Please refresh.');
@@ -225,7 +213,8 @@ const ChatBox = () => {
     setChatState('searching');
     setPartnerId(null);
     setMessages([]);
-    sessionStorage.clear();
+    sessionStorage.removeItem('partnerId');
+    sessionStorage.removeItem('partnerName');
     socket.emit('find_new_buddy', { userId, userName, deviceId });
     clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
@@ -270,12 +259,15 @@ const ChatBox = () => {
   useEffect(() => {
     if (!socket || !userId || !userName || !isConnected) return;
     const handlePartnerFound = ({ partnerId, partnerName }) => {
-      console.log("PARTNER FOUND PAYLOAD:", { partnerId, partnerName });
+      console.log('PARTNER FOUND PAYLOAD:', { partnerId, partnerName });
       clearTimeout(searchTimeout.current);
       hasHandledLeave.current = false;
       playSound('join');
       setPartnerId(partnerId);
       setPartnerName(partnerName);
+      sessionStorage.setItem('partnerId', partnerId);
+      sessionStorage.setItem('partnerName', partnerName);
+      toast.success(`✅ Connected with ${partnerName}`);
       setMessages([]);
       setChatState('chatting');
       trackSessionStart();
@@ -333,13 +325,7 @@ const ChatBox = () => {
       }, 60000);
       toast.success('Searching for a new buddy...');
     };
-    socket.on('partner_found', ({ partnerId, partnerName }) => {
-      setPartnerId(partnerId);
-      setPartnerName(partnerName);
-      sessionStorage.setItem('partnerId', partnerId);
-      sessionStorage.setItem('partnerName', partnerName);
-      toast.success(`✅ Connected with ${partnerName}`);
-    });
+    socket.on('partner_found', handlePartnerFound);
 
     socket.on('partner_left', handlePartnerLeft);
     socket.on('chatMessage', handleChatMessage);
@@ -365,10 +351,8 @@ const ChatBox = () => {
 
     return () => {
       socket.off('partner_found', handlePartnerFound);
-      socket.off('chat_message');
       socket.off('partner_disconnected');
       socket.off('partner_left', handlePartnerLeft);
-      socket.off('partner_disconnected');
       socket.off('chatMessage', handleChatMessage);
       socket.off('no_buddy_found');
       socket.off('partner_idle');
@@ -468,7 +452,10 @@ const ChatBox = () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
       }
-      if (socket) socket.disconnect();
+            if (socket) {
+        socket.off('chat_message');
+        socket.off('chatMessage');
+      }
       hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
@@ -490,7 +477,10 @@ const ChatBox = () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
       }
-      if (socket) socket.disconnect();
+            if (socket) {
+        socket.off('chat_message');
+        socket.off('chatMessage');
+      }
       hasHandledLeave.current = true;
       trackSessionEnd();
       sessionStorage.clear();
@@ -521,21 +511,36 @@ const ChatBox = () => {
         text-[#222e35] dark:text-gray-100 font-[system-ui,sans-serif] text-base border sm:border-0"
         >
           {/* Header */}
-          <div className="h-10 shrink-0 flex items-center px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
-            <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
-              {partnerName ? (partnerName) : 'Waiting...'}
-            </span>
-          </div>
+          {/* Header */}
+<div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
+  <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+    {partnerName ? partnerName : "Waiting..."}
+  </span>
+
+  {/* Dark/Light Toggle */}
+  <button
+    onClick={toggleTheme}
+    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+  >
+    {theme === "dark" ? (
+      <SunIcon className="w-5 h-5 text-yellow-400" />
+    ) : (
+      <MoonIcon className="w-5 h-5 text-gray-800" />
+    )}
+  </button>
+</div>
           {/* Chat area */}
-          <div
-            className="flex-1 flex flex-col overflow-hidden bg-repeat relative"
-            style={{
-              backgroundImage: `url(${doodleBg})`,
-              backgroundRepeat: 'repeat',
-              backgroundSize: '400px',
-              backgroundColor: '#ffffff',
-            }}
-          >
+         <div
+  className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-[#121212]"
+style={{
+  backgroundImage: `url(${doodleBg})`,
+  backgroundRepeat: 'no-repeat',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}}
+
+>
+
             {/* Scrollable message list */}
             <div className="flex-1 overflow-y-auto px-3 pt-4 pb-2 no-scrollbar" ref={listContainerRef}>
               {messages.map((msg, index) => (

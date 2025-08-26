@@ -185,6 +185,8 @@ const HomePage = () => {
   const startMatch = () => {
   console.log("startMatch called", { deviceId, suspendedUntil, socket, isConnected, name });
 
+  if (socket?.disconnected) socket.connect();
+
   if (!deviceId) return setError('Loading device identity...');
   if (suspendedUntil && Date.now() < suspendedUntil) {
     setError('You are suspended. Please try again later.');
@@ -195,7 +197,7 @@ const HomePage = () => {
     console.log("Validation failed", validation);
     return setError('Please follow community guidelines.');
   }
-  if (!socket || !isConnected) {
+  if (!socket?.connected) {
     console.log("Socket issue", { socket, isConnected });
     return setError('Socket not connected.');
   }
