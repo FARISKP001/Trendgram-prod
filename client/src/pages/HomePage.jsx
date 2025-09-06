@@ -418,7 +418,7 @@ const HomePage = () => {
               </div>
               <ul className="mt-4 space-y-3 text-gray-700">
                 <li className="flex items-start gap-3">
-                  <<DevicePhoneMobileIcon className="size-5 mt-0.5 text-emerald-600" />
+                  <DevicePhoneMobileIcon className="size-5 mt-0.5 text-emerald-600" />
                   <span>Elegant, fast experience on any device</span>
                 </li>
                 <li className="flex items-start gap-3">
