@@ -10,7 +10,7 @@ import ThemeToggle from "./ThemeToggle";
 import useExitProtection from '../hooks/useExitProtection';
 import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
-import showConfirmToast from '../utils/showConfirmToast';
+import showConfirmToast from '../utils/showConfirmTotheme="dark"ast';
 import { sanitizeMessage, validateText } from '../utils/textFilters';
 import SpeechBubble from './SpeechBubble';
 import ChatInput from './ChatInput';
@@ -455,24 +455,21 @@ const ChatBox = () => {
   }, [socket]);
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-y-auto">
+    <div className="w-full flex justify-center bg-[#ece5dd] h-[100dvh] overflow-y-auto">
       <div className="w-full h-full flex flex-col">
-        <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
-        sm:rounded-2xl bg-[#f8f9fa] dark:bg-[#23272b] shadow-2xl overflow-hidden relative
-        text-[#222e35] dark:text-gray-100 font-[system-ui,sans-serif] text-base border sm:border-0"
-        >
+        <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px] sm:rounded-2xl bg-[#f8f9fa] shadow-2xl overflow-hidden relative text-[#222e35] font-[system-ui,sans-serif] text-base border sm:border-0">
           {/* Header */}
           {/* Header */}
-          <div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
-            <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+         <div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white shadow-sm border-b border-[#f1f1f1] z-20">
+            <span className="font-semibold text-2xl text-[#111] tracking-wide">
               {partnerName ? partnerName : "Waiting..."}
             </span>
 
-            <ThemeToggle />
+         
           </div>
           {/* Chat area */}
           <div
-            className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-[#121212]"
+            className="flex-1 flex flex-col overflow-hidden relative bg-white"
             style={{
               // backgroundImage: `url(${doodleBg})`,
               backgroundRepeat: 'no-repeat',
@@ -522,7 +519,7 @@ const ChatBox = () => {
           <ToastContainer
             position="bottom-right"
             autoClose={3000}
-            theme="dark"
+            theme="light"
             closeOnClick
             pauseOnHover
           />
