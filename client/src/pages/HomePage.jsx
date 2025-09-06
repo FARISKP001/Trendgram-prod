@@ -233,9 +233,9 @@ const HomePage = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900">
+    <div className="bg-white">
       {/* === Header === */}
-      <header className="sticky top-0 z-50 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-50 bg-[#e6f7ec] shadow-sm flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center">
           {/* Brand clicks scroll to Home */}
           <a
@@ -259,7 +259,7 @@ const HomePage = () => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700 dark:text-gray-200"
+              className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
             >
               <span className="sr-only">Open main menu</span>
               <Bars3Icon aria-hidden="true" className="size-6" />
@@ -279,10 +279,10 @@ const HomePage = () => {
                 aria-label={label}
                 title={label}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full
-                 text-gray-900 dark:text-white
-                 hover:bg-black/5 dark:hover:bg-white/10
+                 text-gray-900
+                 hover:bg-black/5
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
-                 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900
+                 focus-visible:ring-offset-2
                  transition"
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />
@@ -299,7 +299,7 @@ const HomePage = () => {
         {/* Mobile menu */}
         <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
           <div className="fixed inset-0 z-50" />
-          <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white p-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 dark:bg-gray-900 dark:sm:ring-gray-100/10">
+         <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white p-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
             <div className="flex items-center justify-between">
               <a href="#" className="-m-1.5 p-1.5">
                 <span className="sr-only">TrendGram</span>
@@ -307,7 +307,7 @@ const HomePage = () => {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="-m-2.5 rounded-md p-2.5 text-gray-700 dark:text-gray-200"
+                className="-m-2.5 rounded-md p-2.5 text-gray-700"
               >
                 <span className="sr-only">Close menu</span>
                 <XMarkIcon aria-hidden="true" className="size-6" />
@@ -315,7 +315,7 @@ const HomePage = () => {
             </div>
 
             <div className="mt-6 flow-root">
-              <div className="-my-6 divide-y divide-gray-500/10 dark:divide-white/10">
+              <div className="-my-6 divide-y divide-gray-500/10">
                 <div className="space-y-2 py-6">
                   {navigation.map((nav) => (
                     <a
@@ -329,7 +329,7 @@ const HomePage = () => {
                           else if (nav.href) navigate(nav.href);
                         }, 50);
                       }}
-                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50 dark:text-white dark:hover:bg-white/5"
+                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50"
                     >
                       {nav.label}
                     </a>
@@ -399,11 +399,11 @@ const HomePage = () => {
       </div>
 
       {/* === About Us (under hero) === */}
-      <section id="about" className="scroll-mt-20 bg-white dark:bg-gray-900">
+      <section id="about" className="scroll-mt-20 bg-white">
         <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
           <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">About Us</h2>
-            <p className="mt-4 text-lg sm:text-xl text-gray-700 dark:text-gray-300">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">About Us</h2>
+            <p className="mt-4 text-lg sm:text-xl text-gray-700">
               <span className="font-semibold">Effortless connections. Thoughtful design.</span><br />
               TrendGram delivers refined, lightweight conversations with people worldwide. Tap{' '}
               <span className="font-semibold">Connect Buddy</span> for instant matching—no public profiles, minimal friction.
@@ -411,61 +411,61 @@ const HomePage = () => {
           </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
+            <div className="rounded-2xl border border-black/10 bg-white/80 p-6 backdrop-blur">
               <div className="flex items-center gap-3">
-                <SparklesIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">What sets us apart</h3>
+                <SparklesIcon className="size-6 text-emerald-600" />
+                <h3 className="text-lg font-semibold text-gray-900">What sets us apart</h3>
               </div>
-              <ul className="mt-4 space-y-3 text-gray-700 dark:text-gray-300">
+              <ul className="mt-4 space-y-3 text-gray-700">
                 <li className="flex items-start gap-3">
-                  <DevicePhoneMobileIcon className="size-5 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+                  <<DevicePhoneMobileIcon className="size-5 mt-0.5 text-emerald-600" />
                   <span>Elegant, fast experience on any device</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <ChatBubbleLeftRightIcon className="size-5 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+                  <ChatBubbleLeftRightIcon className="size-5 mt-0.5 text-emerald-600" />
                   <span>Short, meaningful exchanges—on your terms</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <LockClosedIcon className="size-5 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+                  <LockClosedIcon className="size-5 mt-0.5 text-emerald-600" />
                   <span>Privacy-forward by design</span>
                 </li>
               </ul>
             </div>
 
-            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
+            <div className="rounded-2xl border border-black/10 bg-white/80 p-6 backdrop-blur">
               <div className="flex items-center gap-3">
-                <ShieldCheckIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Trust &amp; safety</h3>
+                <ShieldCheckIcon className="size-6 text-emerald-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Trust &amp; safety</h3>
               </div>
-              <p className="mt-4 text-gray-700 dark:text-gray-300">
+              <p className="mt-4 text-gray-700">
                 18+ access, active moderation, reporting tools, and anti-spam systems. Temporary messaging during chats—no data sales.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
+            <div className="rounded-2xl border border-black/10 bg-white/80 p-6 backdrop-blur">
               <div className="flex items-center gap-3">
-                <SparklesIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Our standard</h3>
+                <SparklesIcon className="size-6 text-emerald-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Our standard</h3>
               </div>
-              <p className="mt-4 text-gray-700 dark:text-gray-300">Respect, reliability, and calm joy in every interaction.</p>
+              <p className="mt-4 text-gray-700">Respect, reliability, and calm joy in every interaction.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* === Footer (Contact) — not cards === */}
-      <footer id="contact" className="scroll-mt-20 bg-gray-50 dark:bg-gray-900 border-t border-black/5 dark:border-white/10">
+      <footer id="contact" className="scroll-mt-20 bg-gray-50 border-t border-black/5">
         <div className="mx-auto max-w-6xl px-6 lg:px-8 py-16">
           {/* Simple text layout, no cards */}
           <div className="grid gap-8 md:grid-cols-2">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Connect with us</h4>
+              <h4 className="text-lg font-semibold text-gray-900">Connect with us</h4>
 
               <div className="mt-4 flex flex-wrap items-center gap-3 md:gap-4">
                 <a
                   href={`mailto:${CONTACT_EMAIL}?subject=Hello%20TrendGram&body=Hi%20TrendGram,%0A%0A`}
                   className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+                             border-gray-300/70 text-gray-800 hover:bg-gray-100"
                 >
                   <EnvelopeIcon className="size-5" />
                   Email
@@ -475,7 +475,7 @@ const HomePage = () => {
                   href={INSTAGRAM_URL}
                   target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+                             border-gray-300/70 text-gray-800 hover:bg-gray-100"
                   aria-label="Instagram"
                 >
                   <SiInstagram size={20} />
@@ -486,7 +486,7 @@ const HomePage = () => {
                   href={X_URL}
                   target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+                             border-gray-300/70 text-gray-800 hover:bg-gray-100"
                   aria-label="X"
                 >
                   <SiX size={20} />
@@ -497,7 +497,7 @@ const HomePage = () => {
                   href={FACEBOOK_URL}
                   target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+                             border-gray-300/70 text-gray-800 hover:bg-gray-100"
                   aria-label="Facebook"
                 >
                   <SiFacebook size={20} />
@@ -507,14 +507,14 @@ const HomePage = () => {
             </div>
           </div>
 
-          <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-black/10 dark:border-white/10 pt-6 md:flex-row">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-black/10 pt-6 md:flex-row">
+            <p className="text-sm text-gray-600">
               © {new Date().getFullYear()} TrendGram
             </p>
             <a
               href="#home"
               onClick={handleHeaderLinkClick('#home')}
-              className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              className="text-sm text-gray-700 hover:text-gray-900"
             >
               Back to top ↑
             </a>
