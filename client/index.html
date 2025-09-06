@@ -19,6 +19,7 @@
   const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
   if (t === 'dark' || (!t && prefersDark)) {
     document.documentElement.classList.add('dark');
+    document.body.classList.add('dark');
   }
 </script>
 </head>
