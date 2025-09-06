@@ -2,7 +2,7 @@ import React from 'react';
 
 const AgeConfirmation = ({ onConfirm, onCancel }) => {
   return (
-    <div className="w-full max-w-[600px] mt-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-2xl shadow-lg p-6 text-center">
+    <div className="w-full max-w-[600px] mt-4 bg-white text-gray-800 rounded-2xl shadow-lg p-6 text-center">
       <h2 className="text-lg font-semibold mb-2 text-[#c46210]">Age Confirmation</h2>
       <p className="text-sm mb-6 text-[#c46210]">
         You must be at least 18 years old to use this site. Are you 18 or older?
