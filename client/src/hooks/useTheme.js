@@ -11,15 +11,11 @@ export default function useTheme() {
   };
 
   const [theme, setTheme] = useState(getInitialTheme);
-  
   useEffect(() => {
-    const root = window.document.documentElement;
-      const body = window.document.body;
-    const isDark = theme === "dark";
-    root.classList.toggle("dark", isDark);
-    body.classList.toggle("dark", isDark);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  const root = document.documentElement;
+  root.classList.toggle('dark', theme === 'dark');
+  localStorage.setItem('theme', theme);
+}, [theme]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
