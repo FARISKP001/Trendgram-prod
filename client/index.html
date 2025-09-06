@@ -19,11 +19,12 @@
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (theme === 'dark' || (!theme && prefersDark)) {
       document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
     }
   </script>
 </head>
 
-<body>
+<body class="bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300">
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
