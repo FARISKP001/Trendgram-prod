@@ -6,8 +6,7 @@ import useSocketContext from '../context/useSocketContext';
 import joinSound from '../assets/join.mp3';
 import leaveSound from '../assets/leave.mp3';
 import doodleBg from '../assets/doodle-bg.jpg';
-import { MoonIcon, SunIcon } from "@heroicons/react/24/solid";
-import useTheme from "../hooks/useTheme";
+import ThemeToggle from "./ThemeToggle";
 import useExitProtection from '../hooks/useExitProtection';
 import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
@@ -54,8 +53,7 @@ const ChatBox = () => {
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
   const keyboardVisible = useKeyboardVisible();
-  const { theme, toggleTheme } = useTheme();
-
+  
   const {
     trackSessionStart,
     trackMessageSent,
@@ -470,17 +468,7 @@ const ChatBox = () => {
               {partnerName ? partnerName : "Waiting..."}
             </span>
 
-            {/* Dark/Light Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              {theme === "dark" ? (
-                <SunIcon className="w-5 h-5 text-yellow-400" />
-              ) : (
-                <MoonIcon className="w-5 h-5 text-gray-800" />
-              )}
-            </button>
+            <ThemeToggle />
           </div>
           {/* Chat area */}
           <div
