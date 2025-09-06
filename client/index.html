@@ -14,17 +14,10 @@
     gtag('js', new Date());
     gtag('config', 'G-C8C48NM4EG');
   </script>
-    <script>
-  const t = localStorage.getItem('theme');
-  const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
-  if (t === 'dark' || (!t && prefersDark)) {
-    document.documentElement.classList.add('dark');
-    document.body.classList.add('dark');
-  }
-</script>
+    
 </head>
 
-<body class="bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300">
+<body class="bg-[#ece5dd]">
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
