@@ -534,7 +534,7 @@ const ChatBox = () => {
           <ToastContainer
             position="bottom-right"
             autoClose={3000}
-            theme="dark"
+            theme={theme}
             closeOnClick
             pauseOnHover
           />
