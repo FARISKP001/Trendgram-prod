@@ -3,6 +3,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tailwind v4: enable the Forms plugin here */
+@plugin "@tailwindcss/forms" {
+  /* choose one */
+  /* strategy: "base";   // global normalize */
+  strategy: "class";      /* generates classes only */
+}
 
 .logo {
   height: 6em;
