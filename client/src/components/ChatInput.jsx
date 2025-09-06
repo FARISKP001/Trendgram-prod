@@ -18,7 +18,7 @@ const ChatInput = ({
         }}
         className="w-full bg-inherit p-4"
       >
-        <div className="flex items-center w-full h-16 border border-[#ece5dd] rounded-xl bg-white dark:bg-gray-700 px-4 shadow-md">
+        <div className="flex items-center w-full h-16 border border-[#ece5dd] rounded-xl bg-white px-4 shadow-md">
           
           <textarea
             ref={inputRef}
