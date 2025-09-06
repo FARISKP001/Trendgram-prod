@@ -16,12 +16,15 @@
   </script>
     <script>
     const theme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (theme === 'dark' || (!theme && prefersDark)) {
-      document.documentElement.classList.add('dark');
-      document.body.classList.add('dark');
-    }
-  </script>
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const wantsDark = theme === 'dark' || (!theme && prefersDark);
+      if (wantsDark) {
+        document.documentElement.classList.add('dark');
+        window.addEventListener('DOMContentLoaded', () => {
+          document.body.classList.add('dark');
+        });
+      }
+    </script>
 </head>
 
 <body class="bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300">
