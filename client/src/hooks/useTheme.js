@@ -10,11 +10,15 @@ export default function useTheme() {
       : "light";
   };
 
-  const [theme, setTheme] = useState(getInitialTheme());
+  const [theme, setTheme] = useState(getInitialTheme);
   
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
+      const body = window.document.body;
+    const isDark = theme === "dark";
+    root.classList.toggle("dark", isDark);
+    body.classList.toggle("dark", isDark);
+    localStorage.setItem("theme", theme);
     localStorage.setItem("theme", theme);
   }, [theme]);
 
