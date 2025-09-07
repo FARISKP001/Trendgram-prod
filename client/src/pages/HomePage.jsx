@@ -523,7 +523,7 @@ const HomePage = () => {
       </footer>
 
 {showAgeModal && (
-  <div className="fixed inset-0 z-50 flex justify-center pt-20 bg-black bg-opacity-50">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
     <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
   </div>
 )}
