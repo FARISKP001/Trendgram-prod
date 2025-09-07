@@ -7,7 +7,7 @@ import joinSound from '../assets/join.mp3';
 import leaveSound from '../assets/leave.mp3';
 import doodleBg from '../assets/doodle-bg.jpg';
 import { MoonIcon, SunIcon } from "@heroicons/react/24/solid";
-import useTheme from "../hooks/useTheme";
+import { useThemeContext } from "../context/ThemeContext";
 import useExitProtection from '../hooks/useExitProtection';
 import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
@@ -54,7 +54,7 @@ const ChatBox = () => {
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
   const keyboardVisible = useKeyboardVisible();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useThemeContext();
 
   const {
     trackSessionStart,
