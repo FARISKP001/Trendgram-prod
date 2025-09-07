@@ -25,7 +25,7 @@
     if (!show) return null;
 
     return (
-      <div className="w-full max-w-[400px] mt-1 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-4xl shadow-lg p-5 text-center">
+      <div className="w-full max-w-[500px] mt-1 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-4xl shadow-lg p-5 text-center">
         <h2 className="text-2xl font-mono font-bold mb-6 text-[#242124]">Cookie Consent</h2>
         <p className="text-md font-mono mb-8 text-[#242124] leading-tight">
           Cookies help us serve you better. By using our site, you consent to cookies.{" "}
