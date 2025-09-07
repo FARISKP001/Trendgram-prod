@@ -1,65 +1,61 @@
-import React, { useState, useEffect } from "react";
-import { getCookie, setCookie } from "../utils/cookies.js";
+  import React, { useState, useEffect } from "react";
+  import { getCookie, setCookie } from "../utils/cookies.js";
 
-const COOKIE_NAME = "cookieConsentGiven";
-const COOKIE_MAX_DAYS = 365;
+  const COOKIE_NAME = "cookieConsentGiven";
+  const COOKIE_MAX_DAYS = 365;
 
-export default function CookieConsent() {
-  // show only if there isn't a stored decision
-  const [show, setShow] = useState(() => !getCookie(COOKIE_NAME));
+  export default function CookieConsent() {
+    // show only if there isn't a stored decision
+    const [show, setShow] = useState(() => !getCookie(COOKIE_NAME));
 
-  useEffect(() => {
-    // sync once on mount in case of hydration differences
-    setShow(!getCookie(COOKIE_NAME));
-  }, []);
+    useEffect(() => {
+      // sync once on mount in case of hydration differences
+      setShow(!getCookie(COOKIE_NAME));
+    }, []);
 
-  const remember = (value) => {
-    // your utils use the `{ days }` shape, so stick to it
-    setCookie(COOKIE_NAME, value, { days: COOKIE_MAX_DAYS });
-    setShow(false); // unmount the whole card
-  };
+    const remember = (value) => {
+      // your utils use the `{ days }` shape, so stick to it
+      setCookie(COOKIE_NAME, value, { days: COOKIE_MAX_DAYS });
+      setShow(false); // unmount the whole card
+    };
 
-  const handleAccept = () => remember("true");
-  const handleDecline = () => remember("false");
+    const handleAccept = () => remember("true");
+    const handleDecline = () => remember("false");
 
-  if (!show) return null;
+    if (!show) return null;
 
-  return (
-    <div className="cookie-inline" role="region" aria-label="Cookie consent">
-      <p className="text-center text-[15px] leading-6 text-[#6b7280]">
-        Cookies help us serve you better. By using our site, you consent to cookies.{" "}
-        <a href="/privacy-policy" className="underline" style={{ color: "#ff7f50" }}>
-          Privacy Policy
-        </a>
-        ,{" "}
-        <a href="/cookie-policy" className="underline" style={{ color: "#ff7f50" }}>
-          Cookie Policy
-        </a>{" "}
-        and{" "}
-        <a href="/terms-and-conditions" className="underline" style={{ color: "#ff7f50" }}>
-          Terms & Conditions
-        </a>
-        .
-      </p>
-
-      <div className="mt-3 flex justify-center gap-2">
-        <button
-          type="button"
-          onClick={handleAccept}
-          className="px-4 py-1.5 rounded-full font-semibold border transition-colors
-                     bg-[#9ab973] hover:bg-[#9ab973]/80 text-white"
-        >
-          Yes
-        </button>
-        <button
-          type="button"
-          onClick={handleDecline}
-          className="px-4 py-1.5 rounded-full font-semibold border transition-colors
-                     bg-[#e25822] hover:bg-[#e25822]/80 text-white"
-        >
-          No
-        </button>
+    return (
+      <div className="w-full max-w-[400px] mt-1 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-4xl shadow-lg p-5 text-center">
+        <h2 className="text-2xl font-mono font-bold mb-6 text-[#242124]">Cookie Consent</h2>
+        <p className="text-md font-mono mb-8 text-[#242124] leading-tight">
+          Cookies help us serve you better. By using our site, you consent to cookies.{" "}
+          <a href="/privacy-policy" className="underline font-mono" style={{ color: "#126180" }}>
+            Privacy Policy
+          </a>
+          ,{" "}
+          <a href="/cookie-policy" className="underline font-mono" style={{ color: "#126180" }}>
+            Cookie Policy
+          </a>{" "}
+          and{" "}
+          <a href="/terms-and-conditions" className="underline font-mono" style={{ color: "#126180" }}>
+            Terms & Conditions
+          </a>
+          .
+        </p>
+        <div className="flex justify-center gap-5">
+          <button
+            className="px-4 py-2 font-mono rounded-full bg-[#00008b] /80 text-white text-sm"
+            onClick={handleAccept}
+          >
+            Accept
+          </button>
+          <button
+            className="px-4 py-2 font-mono rounded-full bg-[#87ceeb] /80 text-white text-sm"
+            onClick={handleDecline}
+          >
+            Decline
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
