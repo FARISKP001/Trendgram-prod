@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
- 
+  darkMode: 'class',
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx,css}',
@@ -8,10 +8,10 @@ module.exports = {
   theme: {
     extend: {
       boxShadow: {
-        neon: '0 0 10px #00ffe1',
+        'neon': '0 0 10px #00ffe1',
       },
       scale: {
-        103: '1.03',
+        '103': '1.03',
       },
     },
   },
