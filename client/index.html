@@ -1,71 +1,32 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/Linkie.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TrendGram</title>
 
-    <!-- ✅ 0) Set theme ASAP to avoid flash -->
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/Linkie.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TrendGram</title>
+  <!-- ✅ Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8C48NM4EG"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-C8C48NM4EG');
+  </script>
     <script>
-      (function () {
-        const root = document.documentElement;
-        const saved = localStorage.getItem('theme'); // "light" | "dark" | null
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const initial = saved || (prefersDark ? 'dark' : 'light');
-        root.setAttribute('data-theme', initial);
-      })();
-    </script>
+    const theme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (theme === 'dark' || (!theme && prefersDark)) {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    }
+  </script>
+</head>
 
-    <!-- ✅ Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8C48NM4EG"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){ dataLayer.push(arguments); }
-      gtag('js', new Date());
-      gtag('config', 'G-C8C48NM4EG');
-    </script>
-  </head>
+<body class="bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
 
-  <!-- Remove fixed light bg class so dark mode can swap colors -->
-  <body>
-    <!-- Simple header bar just to host the toggle (you can style/move this in your app) -->
-    <header style="display:flex;gap:.75rem;align-items:center;justify-content:flex-end;padding:.5rem 1rem;">
-      <!-- 1) Toggle markup -->
-      <input id="theme-toggle" class="theme-toggle__input" type="checkbox" aria-label="Toggle dark mode" />
-      <label class="theme-toggle" for="theme-toggle">
-        <span class="theme-toggle__thumb" aria-hidden="true"></span>
-      </label>
-
-      <!-- Optional badge next to it, like in your screenshot -->
-      <span class="badge">Feedbacks</span>
-    </header>
-
-    <div id="root"></div>
-
-    <!-- 2) Toggle behavior -->
-    <script>
-      (function () {
-        const root = document.documentElement;
-        const sync = () => {
-          const input = document.getElementById('theme-toggle');
-          if (!input) return;
-          input.checked = root.getAttribute('data-theme') === 'dark';
-          input.addEventListener('change', () => {
-            const isDark = input.checked;
-            root.setAttribute('data-theme', isDark ? 'dark' : 'light');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-          });
-        };
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', sync);
-        } else {
-          sync();
-        }
-      })();
-    </script>
-
-    <!-- Your app -->
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
 </html>
