@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import main from '../assets/main.png';
-import { SiInstagram, SiX, SiFacebook } from "react-icons/si";
+import { SiGmail, SiInstagram, SiX, SiFacebook } from "react-icons/si";
 import CookieConsent from '../components/CookieConsent';
 import AgeConfirmation from '../components/AgeConfirmation.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -402,24 +402,24 @@ const HomePage = () => {
           </div>
         </div>
       </div>
-      
+
 
       {/* === About Us (under hero) === */}
-      <section id="about" className="scroll-mt-20 bg-white dark:bg-gray-900">
+      <section id="about" className="scroll-mt-20 bg-[#082A4C]">
         <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
           <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">About Us</h2>
-            <p className="mt-4 text-lg sm:text-xl text-gray-700 dark:text-gray-300">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white"></h2>
+            <p className="mt-4 text-lg sm:text-xl text-[#f5f5f5]">
               <span className="font-semibold">Effortless connections. Thoughtful design.</span><br />
               TrendGram delivers refined, lightweight conversations with people worldwide. Tap{' '}
               <span className="font-semibold">Connect Buddy</span> for instant matching—no public profiles, minimal friction.
             </p>
           </div>
           {showAgeModal && (
-              <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
-                <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-              </div>
-            )}
+            <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
+              <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+            </div>
+          )}
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
@@ -465,67 +465,68 @@ const HomePage = () => {
       </section>
 
       {/* === Footer (Contact) — not cards === */}
-      <footer id="contact" className="scroll-mt-20 bg-gray-50 dark:bg-gray-900 border-t border-black/5 dark:border-white/10">
+      <footer id="contact" className="scroll-mt-20 bg-[#dcdcdc] border-t border-black/5 dark:border-white/10">
         <div className="mx-auto max-w-6xl px-6 lg:px-8 py-16">
           {/* Simple text layout, no cards */}
           <div className="grid gap-8 md:grid-cols-2">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Connect with us</h4>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white"></h4>
 
               <div className="mt-4 flex flex-wrap items-center gap-3 md:gap-4">
                 <a
                   href={`mailto:${CONTACT_EMAIL}?subject=Hello%20TrendGram&body=Hi%20TrendGram,%0A%0A`}
                   className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+             bg-white hover:bg-gray-100 transition"
+                  aria-label="Gmail"
                 >
-                  <EnvelopeIcon className="size-5" />
-                  Email
+                  <SiGmail size={22} className="text-[#EA4335]" /> {/* this will show correct colored Gmail logo */}
                 </a>
+
 
                 <a
                   href={INSTAGRAM_URL}
                   target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2
+                             bg-[linear-gradient(45deg,#F58529,#FEDA77,#DD2A7B,#8134AF,#515BD4)]"
                   aria-label="Instagram"
                 >
                   <SiInstagram size={20} />
-                  Instagram
+
                 </a>
 
                 <a
                   href={X_URL}
                   target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-lg font-bold
+                              text-[#FFFFFF] bg-[#000000] "
                   aria-label="X"
                 >
                   <SiX size={20} />
-                  X
+
                 </a>
 
                 <a
                   href={FACEBOOK_URL}
                   target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-                             border-gray-300/70 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-lg font-bold
+                              text-[#000000] bg-[#1877F2] "
                   aria-label="Facebook"
                 >
                   <SiFacebook size={20} />
-                  Facebook
+
                 </a>
               </div>
             </div>
           </div>
 
           <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-black/10 dark:border-white/10 pt-6 md:flex-row">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-md font-bold text-[#000000]">
               © {new Date().getFullYear()} TrendGram
             </p>
             <a
               href="#home"
               onClick={handleHeaderLinkClick('#home')}
-              className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              className="text-md font-bold text-[#000000]"
             >
               Back to top ↑
             </a>
