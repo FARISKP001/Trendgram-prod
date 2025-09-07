@@ -1,25 +1,71 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/Linkie.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TrendGram</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/Linkie.ico" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TrendGram</title>
-  <!-- ✅ Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8C48NM4EG"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-C8C48NM4EG');
-  </script>
-    
-</head>
+    <!-- ✅ 0) Set theme ASAP to avoid flash -->
+    <script>
+      (function () {
+        const root = document.documentElement;
+        const saved = localStorage.getItem('theme'); // "light" | "dark" | null
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initial = saved || (prefersDark ? 'dark' : 'light');
+        root.setAttribute('data-theme', initial);
+      })();
+    </script>
 
-<body class="bg-[#ece5dd]">
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
+    <!-- ✅ Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8C48NM4EG"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'G-C8C48NM4EG');
+    </script>
+  </head>
 
+  <!-- Remove fixed light bg class so dark mode can swap colors -->
+  <body>
+    <!-- Simple header bar just to host the toggle (you can style/move this in your app) -->
+    <header style="display:flex;gap:.75rem;align-items:center;justify-content:flex-end;padding:.5rem 1rem;">
+      <!-- 1) Toggle markup -->
+      <input id="theme-toggle" class="theme-toggle__input" type="checkbox" aria-label="Toggle dark mode" />
+      <label class="theme-toggle" for="theme-toggle">
+        <span class="theme-toggle__thumb" aria-hidden="true"></span>
+      </label>
+
+      <!-- Optional badge next to it, like in your screenshot -->
+      <span class="badge">Feedbacks</span>
+    </header>
+
+    <div id="root"></div>
+
+    <!-- 2) Toggle behavior -->
+    <script>
+      (function () {
+        const root = document.documentElement;
+        const sync = () => {
+          const input = document.getElementById('theme-toggle');
+          if (!input) return;
+          input.checked = root.getAttribute('data-theme') === 'dark';
+          input.addEventListener('change', () => {
+            const isDark = input.checked;
+            root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          });
+        };
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', sync);
+        } else {
+          sync();
+        }
+      })();
+    </script>
+
+    <!-- Your app -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
