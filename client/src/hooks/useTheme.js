@@ -14,10 +14,8 @@ export default function useTheme() {
   
   useEffect(() => {
     const root = window.document.documentElement;
-     const body = window.document.body;
     const isDark = theme === "dark";
     root.classList.toggle("dark", isDark);
-    body.classList.toggle("dark", isDark);
     localStorage.setItem("theme", theme);
   }, [theme]);
 
