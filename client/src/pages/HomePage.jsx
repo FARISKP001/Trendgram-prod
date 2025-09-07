@@ -239,6 +239,7 @@ const HomePage = () => {
           <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
         </div>
       )}
+      
       {/* === Header === */}
       <header className="sticky top-0 z-40 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center">
@@ -252,7 +253,7 @@ const HomePage = () => {
             TrendGram
           </a>
         </div>
-
+        <CookieConsent />
         <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5">
@@ -527,13 +528,6 @@ const HomePage = () => {
         </div>
       </footer>
 
-{showAgeModal && (
-  <div className="mb-4">
-    <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-  </div>
-)}
-
-<CookieConsent />
     </div>
   );
 };
