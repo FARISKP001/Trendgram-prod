@@ -444,8 +444,8 @@ const ChatBox = () => {
         text-[#222e35] font-[system-ui,sans-serif] text-base border sm:border-0"
         >
           {/* Header */}
-          <div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white shadow-sm border-b border-[#f1f1f1] z-20">
-            <span className="font-semibold text-2xl text-[#111] tracking-wide">
+          <div className="h-16 shrink-0 flex items-center justify-between px-4 py-4 bg-gray-800 shadow-sm border-b border-gray-700 z-20">
+            <span className="font-semibold text-2xl text-white tracking-wide">
               {partnerName ? partnerName : "Waiting..."}
             </span>
           </div>
