@@ -237,13 +237,14 @@ const HomePage = () => {
 
 
       {/* === Header === */}
-      <header className="sticky top-0 z-40 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-40 bg-white/20 backdrop-blur-xl text-gray-100 hover:text-emerald-400
+ dark:bg-[#203325] shadow-sm flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center">
           {/* Brand clicks scroll to Home */}
           <a
             href="#home"
             onClick={handleHeaderLinkClick('#home')}
-            className="text-2xl font-extrabold tracking-wide bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent cursor-pointer"
+            className="text-4xl font-extrabold tracking-wide bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent font-extrabold"
             aria-label="Go to Home"
           >
             TrendGram
@@ -372,7 +373,7 @@ const HomePage = () => {
                 <div className="grid grid-cols-[1fr_auto] items-center gap-3 bg-white/90 rounded-full px-3 py-2 shadow">
                   <input
                     ref={nameInputRef}
-                    className="min-w-0 w-full bg-transparent text-gray-900 placeholder-gray-600 outline-none rounded-full border-2 border-[#a6d608] h-[45px] text-lg px-3"
+                    className="min-w-0 w-full bg-transparent text-gray-900 placeholder-gray-600 outline-none rounded-full border-2 border-[#000000] h-[45px] text-lg px-3"
                     type="text"
                     value={name}
                     onChange={handleNameChange}
@@ -392,10 +393,10 @@ const HomePage = () => {
                 </div>
                 <button
                   type="button"
+                  className="mt-5 text-xl font-bold rounded-full border px-4 py-2 text-[#FFFFFF] bg-[#1877F2]"
                   onClick={() => setShowConnect(false)}
-                  className="mt-3 text-sm text-gray-900 underline decoration-gray-400 hover:decoration-gray-600 dark:text-gray-100 dark:decoration-gray-500 dark:hover:decoration-gray-300"
                 >
-                  ← Back
+                  Cancel
                 </button>
               </form>
             )}
@@ -405,21 +406,24 @@ const HomePage = () => {
 
 
       {/* === About Us (under hero) === */}
-      <section id="about" className="scroll-mt-20 bg-[#082A4C]">
-        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white"></h2>
-            <p className="mt-4 text-lg sm:text-xl text-[#f5f5f5]">
-              <span className="font-semibold">Effortless connections. Thoughtful design.</span><br />
-              TrendGram delivers refined, lightweight conversations with people worldwide. Tap{' '}
-              <span className="font-semibold">Connect Buddy</span> for instant matching—no public profiles, minimal friction.
-            </p>
-          </div>
-          {showAgeModal && (
-            <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
-              <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-            </div>
-          )}
+<section id="about" className="scroll-mt-20 bg-[#082A4C]">
+  <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+
+    {/* ✅ Description moved to very top */}
+    <div className="text-center max-w-3xl mx-auto">
+      <p className="text-lg sm:text-xl text-[#f5f5f5]">
+        <span className="font-semibold">Effortless connections. Thoughtful design.</span><br />
+        TrendGram delivers refined, lightweight conversations with people worldwide. 
+        Tap <span className="font-semibold">Connect Buddy</span> for instant matching—no public profiles, minimal friction.
+      </p>
+    </div>
+
+    {/* Keep Age modal if open */}
+    {showAgeModal && (
+      <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
+        <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+      </div>
+    )}
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
