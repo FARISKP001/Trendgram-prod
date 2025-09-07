@@ -37,7 +37,7 @@ const HomePage = () => {
     const stored = localStorage.getItem('suspendedUntil');
     return stored ? parseInt(stored, 10) : null;
   });
-  
+
   const [ageConfirmed, setAgeConfirmed] = useState(() => localStorage.getItem('ageConfirmed') === 'true');
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -117,7 +117,7 @@ const HomePage = () => {
   }, [suspendedUntil]);
 
   useEffect(() => {
-    
+
   }, [socket]);
 
   // Register user when ready
@@ -154,15 +154,15 @@ const HomePage = () => {
     };
 
     const handleSuspended = ({ message, expiresAt }) => {
-    clearTimeout(timeoutRef.current);
-    setMatching(false);
-    setStatus('');
-    setError(message);
-    if (expiresAt) {
-      setSuspendedUntil(expiresAt);
-      localStorage.setItem('suspendedUntil', expiresAt);
-    }
-  };
+      clearTimeout(timeoutRef.current);
+      setMatching(false);
+      setStatus('');
+      setError(message);
+      if (expiresAt) {
+        setSuspendedUntil(expiresAt);
+        localStorage.setItem('suspendedUntil', expiresAt);
+      }
+    };
     socket.on('no_buddy_found', handleNoBuddyFound);
     socket.on('partner_found', handlePartnerFound);
     socket.on('suspended', handleSuspended);
@@ -173,7 +173,7 @@ const HomePage = () => {
     };
   }, [socket, isConnected, name, navigate, suspendedUntil]);
 
-    const handleNameChange = (e) => {
+  const handleNameChange = (e) => {
     const val = e.target.value;
     setName(val);
     if (!val) return setError('');
@@ -183,33 +183,33 @@ const HomePage = () => {
 
 
   const startMatch = () => {
-  console.log("startMatch called", { deviceId, suspendedUntil, socket, isConnected, name });
+    console.log("startMatch called", { deviceId, suspendedUntil, socket, isConnected, name });
 
-  if (socket?.disconnected) socket.connect();
+    if (socket?.disconnected) socket.connect();
 
-  if (!deviceId) return setError('Loading device identity...');
-  if (suspendedUntil && Date.now() < suspendedUntil) {
-    setError('You are suspended. Please try again later.');
-    return;
-  }
-  const validation = validateText(name);
-  if (!validation.valid) {
-    console.log("Validation failed", validation);
-    return setError('Please follow community guidelines.');
-  }
-  if (!socket?.connected) {
-    console.log("Socket issue", { socket, isConnected });
-    return setError('Socket not connected.');
-  }
+    if (!deviceId) return setError('Loading device identity...');
+    if (suspendedUntil && Date.now() < suspendedUntil) {
+      setError('You are suspended. Please try again later.');
+      return;
+    }
+    const validation = validateText(name);
+    if (!validation.valid) {
+      console.log("Validation failed", validation);
+      return setError('Please follow community guidelines.');
+    }
+    if (!socket?.connected) {
+      console.log("Socket issue", { socket, isConnected });
+      return setError('Socket not connected.');
+    }
 
-  console.log("Emitting find_new_buddy", { userId: userId.current, userName: name });
-  socket.emit('find_new_buddy', { userId: userId.current, userName: name, deviceId });
-  setMatching(true);
-  timeoutRef.current = setTimeout(() => {
-    setMatching(false);
-    setStatus('No partner is available');
-  }, 60 * 1000);
-};
+    console.log("Emitting find_new_buddy", { userId: userId.current, userName: name });
+    socket.emit('find_new_buddy', { userId: userId.current, userName: name, deviceId });
+    setMatching(true);
+    timeoutRef.current = setTimeout(() => {
+      setMatching(false);
+      setStatus('No partner is available');
+    }, 60 * 1000);
+  };
 
   const handleFindMatch = (e) => {
     e.preventDefault();
@@ -234,12 +234,8 @@ const HomePage = () => {
 
   return (
     <div className="bg-white dark:bg-gray-900">
-      {showAgeModal && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
-          <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-        </div>
-      )}
-      
+
+
       {/* === Header === */}
       <header className="sticky top-0 z-40 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center">
@@ -253,7 +249,7 @@ const HomePage = () => {
             TrendGram
           </a>
         </div>
-        <CookieConsent />
+
         <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5">
@@ -347,19 +343,22 @@ const HomePage = () => {
         </Dialog>
       </header>
 
+
       {/* === Hero Section === */}
       <div id="home" className="relative isolate px-0 pt-0">
         <div className="relative h-[32rem] sm:h-[40rem] lg:h-[44rem]">
           <img src={main} alt="TrendGram" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
-            <h1 className="text-4xl sm:text-6xl font-bold text-white drop-shadow-lg leading-tight">
+            <h1 className="text-4xl sm:text-6xl font-bold font-mono  text-white drop-shadow-lg leading-tight">
               Small talk, big laughs
             </h1>
-            <p className="mt-4 max-w-2xl text-lg sm:text-xl text-gray-200">
+            <p className="mt-8 max-w-2xl text-xl sm:text-xl font-mono text-gray-200">
               Light, lively conversations with strangers who feel like friends in minutes.
             </p>
-
+            <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md ">
+              <CookieConsent />
+            </div>
             {!showConnect ? (
               <button
                 type="button"
@@ -394,7 +393,7 @@ const HomePage = () => {
                 <button
                   type="button"
                   onClick={() => setShowConnect(false)}
-                  className="mt-3 text-sm text-white/90 underline decoration-white/40 hover:decoration-white"
+                  className="mt-3 text-sm text-gray-900 underline decoration-gray-400 hover:decoration-gray-600 dark:text-gray-100 dark:decoration-gray-500 dark:hover:decoration-gray-300"
                 >
                   ← Back
                 </button>
@@ -403,6 +402,7 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+      
 
       {/* === About Us (under hero) === */}
       <section id="about" className="scroll-mt-20 bg-white dark:bg-gray-900">
@@ -415,6 +415,11 @@ const HomePage = () => {
               <span className="font-semibold">Connect Buddy</span> for instant matching—no public profiles, minimal friction.
             </p>
           </div>
+          {showAgeModal && (
+              <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
+                <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+              </div>
+            )}
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
