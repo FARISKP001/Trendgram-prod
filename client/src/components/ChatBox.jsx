@@ -6,6 +6,8 @@ import useSocketContext from '../context/useSocketContext';
 import joinSound from '../assets/join.mp3';
 import leaveSound from '../assets/leave.mp3';
 import doodleBg from '../assets/doodle-bg.jpg';
+import { MoonIcon, SunIcon } from "@heroicons/react/24/solid";
+import useTheme from "../hooks/useTheme";
 import useExitProtection from '../hooks/useExitProtection';
 import { FixedSizeList as List } from 'react-window';
 import useChatAnalytics from '../hooks/useChatAnalytics';
@@ -52,7 +54,8 @@ const ChatBox = () => {
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
   const keyboardVisible = useKeyboardVisible();
-  
+  const { theme, toggleTheme } = useTheme();
+
   const {
     trackSessionStart,
     trackMessageSent,
@@ -454,18 +457,34 @@ const ChatBox = () => {
   }, [socket]);
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] h-[100dvh] overflow-y-auto">
+    <div className="w-full flex justify-center bg-[#ece5dd] dark:bg-gray-900 transition-colors duration-300 h-[100dvh] overflow-y-auto">
       <div className="w-full h-full flex flex-col">
-        <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px] sm:rounded-2xl bg-[#f8f9fa] shadow-2xl overflow-hidden relative text-[#222e35] font-[system-ui,sans-serif] text-base border sm:border-0">
+        <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
+        sm:rounded-2xl bg-[#f8f9fa] dark:bg-[#23272b] shadow-2xl overflow-hidden relative
+        text-[#222e35] dark:text-gray-100 font-[system-ui,sans-serif] text-base border sm:border-0"
+        >
           {/* Header */}
-          <div className="h-10 shrink-0 flex items-center justify-center px-4 py-2 bg-white shadow-sm border-b border-[#f1f1f1] z-20">
-            <span className="font-semibold text-2xl text-[#111] tracking-wide">
-              {partnerName ? partnerName : 'Waiting...'}
-            </span>         
+          {/* Header */}
+          <div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white dark:bg-[#2a2f32] shadow-sm border-b border-[#f1f1f1] z-20">
+            <span className="font-semibold text-2xl dark:text-white text-[#111] tracking-wide">
+              {partnerName ? partnerName : "Waiting..."}
+            </span>
+
+            {/* Dark/Light Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            >
+              {theme === "dark" ? (
+                <SunIcon className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <MoonIcon className="w-5 h-5 text-gray-800" />
+              )}
+            </button>
           </div>
           {/* Chat area */}
           <div
-            className="flex-1 flex flex-col overflow-hidden relative bg-white"
+            className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-[#121212]"
             style={{
               // backgroundImage: `url(${doodleBg})`,
               backgroundRepeat: 'no-repeat',
@@ -515,7 +534,7 @@ const ChatBox = () => {
           <ToastContainer
             position="bottom-right"
             autoClose={3000}
-            theme="light"
+            theme={theme}
             closeOnClick
             pauseOnHover
           />
