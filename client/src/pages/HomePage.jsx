@@ -234,8 +234,13 @@ const HomePage = () => {
 
   return (
     <div className="bg-white dark:bg-gray-900">
+      {showAgeModal && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
+          <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+        </div>
+      )}
       {/* === Header === */}
-      <header className="sticky top-0 z-50 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-40 bg-[#e6f7ec] dark:bg-[#203325] shadow-sm flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center">
           {/* Brand clicks scroll to Home */}
           <a
