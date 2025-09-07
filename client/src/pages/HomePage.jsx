@@ -523,7 +523,9 @@ const HomePage = () => {
       </footer>
 
 {showAgeModal && (
-  <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+  <div className="fixed inset-0 z-50 flex justify-center pt-20 bg-black bg-opacity-50">
+    <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+  </div>
 )}
 
 <CookieConsent />
