@@ -458,13 +458,10 @@ const ChatBox = () => {
       <div className="w-full h-full flex flex-col">
         <div className="flex flex-col w-full h-full max-w-full sm:max-w-[450px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px] sm:rounded-2xl bg-[#f8f9fa] shadow-2xl overflow-hidden relative text-[#222e35] font-[system-ui,sans-serif] text-base border sm:border-0">
           {/* Header */}
-          {/* Header */}
-         <div className="h-10 shrink-0 flex items-center justify-between px-4 py-2 bg-white shadow-sm border-b border-[#f1f1f1] z-20">
+          <div className="h-10 shrink-0 flex items-center justify-center px-4 py-2 bg-white shadow-sm border-b border-[#f1f1f1] z-20">
             <span className="font-semibold text-2xl text-[#111] tracking-wide">
-              {partnerName ? partnerName : "Waiting..."}
-            </span>
-
-         
+              {partnerName ? partnerName : 'Waiting...'}
+            </span>         
           </div>
           {/* Chat area */}
           <div
