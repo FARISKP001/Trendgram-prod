@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 
-const ChatFooter = ({ handleNext, handleReport }) => (
-  <div className="w-full flex justify-center gap-6 py-3 bg-white border-t border-gray-200">
+const ChatFooter = ({ handleNext, handleReport, theme = 'light' }) => (
+  <div className={`w-full flex justify-center gap-6 py-3 ${theme === 'dark' ? 'bg-[#1e1e1e] border-gray-800' : 'bg-white border-gray-200'} border-t`}>
     <button
       onClick={handleNext}
       title="Next"
