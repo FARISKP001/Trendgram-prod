@@ -10,6 +10,7 @@ const ChatInput = ({
   handleInputChange,
   handleSend,
   inputRef,
+  theme = 'light',
 }) => {
   // Auto-resize textarea up to 3 lines, then scroll
   const autoResize = () => {
@@ -54,7 +55,7 @@ const ChatInput = ({
       {/* Row: input pill + separate send button (like WhatsApp) */}
       <div className="flex items-end gap-2">
         {/* Input pill */}
-        <div className="flex-1 rounded-2xl border border-black bg-white dark:bg-gray-700 shadow-md px-3 py-1">
+        <div className={`flex-1 rounded-2xl border ${theme === 'dark' ? 'border-gray-600' : 'border-black'} bg-white dark:bg-gray-700 shadow-md px-3 py-1`}>
           <textarea
             ref={inputRef}
             value={input}
@@ -85,15 +86,15 @@ const ChatInput = ({
         <button
           type="submit"
           disabled={!input.trim() || !!inputError || chatState === 'disconnected'}
-          className="
+          className={`
     shrink-0 rounded-full flex items-center justify-center
     w-11 h-11
     bg-green-500 text-white
-    border border-black    /* 👈 thin black border */
+    border ${theme === 'dark' ? 'border-gray-600' : 'border-black'}
     shadow-[0_0_8px_rgba(34,197,94,0.7)]
     hover:bg-green-600
     disabled:opacity-40 disabled:cursor-not-allowed
-  "
+  `}
           tabIndex={input.trim() && chatState !== 'disconnected' ? 0 : -1}
           aria-label="Send"
         >
