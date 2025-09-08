@@ -72,7 +72,7 @@ const ChatInput = ({
                 overflow-y-hidden
                 placeholder:text-gray-400
               "
-              placeholder="Type a message..."
+              placeholder="Message"
               required
               autoFocus
               disabled={chatState === 'disconnected'}
@@ -81,19 +81,19 @@ const ChatInput = ({
 
             {/* Send button (tight circle, smaller icon) */}
             <button
-              type="submit"
-              disabled={!input.trim() || !!inputError || chatState === 'disconnected'}
-              className="
-                ml-2 rounded-full flex items-center justify-center
-                w-12 h-12
-                bg-green-500 text-white
-                transition shadow-[0_0_8px_#22c55e]
-                hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed
-              "
-              tabIndex={input.trim() && chatState !== 'disconnected' ? 0 : -1}
-            >
-              <Send className="w-5 h-5" /> {/* reduced size */}
-            </button>
+  type="submit"
+  disabled={!input.trim() || !!inputError || chatState === 'disconnected'}
+  className="
+    ml-2 rounded-full flex items-center justify-center
+    w-10 h-10   /* tighter circle */
+    bg-green-500 text-white
+    transition shadow-[0_0_6px_#22c55e]
+    hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed
+  "
+  tabIndex={input.trim() && chatState !== 'disconnected' ? 0 : -1}
+>
+  <Send className="w-4.5 h-4.5" /> {/* slightly reduced icon */}
+</button>
           </div>
 
           {inputError && (
