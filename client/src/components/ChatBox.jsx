@@ -417,48 +417,116 @@ const ChatBox = () => {
     }
   }, [messages]);
 
+  // Cleanup effect when component unmounts
+  useEffect(() => {
+    return () => {
+      // Ensure chat session is properly closed when component unmounts
+      if (socket && userIdRef.current && partnerIdRef.current && !hasHandledLeave.current) {
+        socket.emit('leave_chat', { userId: userIdRef.current });
+        hasHandledLeave.current = true;
+        trackSessionEnd();
+      }
+    };
+  }, []);
+
+  // Handle browser navigation and page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (chatState === 'chatting' && socket && userId && partnerId && !hasHandledLeave.current) {
+        socket.emit('leave_chat', { userId });
+        hasHandledLeave.current = true;
+        trackSessionEnd();
+        // For modern browsers, we can show a confirmation
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    const handleUnload = () => {
+      if (chatState === 'chatting' && socket && userId && partnerId && !hasHandledLeave.current) {
+        socket.emit('leave_chat', { userId });
+        hasHandledLeave.current = true;
+        trackSessionEnd();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+    };
+  }, [chatState, socket, userId, partnerId, trackSessionEnd]);
+
   useExitProtection({
     enabled: chatState === 'chatting',
     onBack: () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
+        // Add a small delay to ensure the message is sent before navigation
+        setTimeout(() => {
+          socket.off('chat_message');
+          socket.off('chatMessage');
+          hasHandledLeave.current = true;
+          trackSessionEnd();
+          sessionStorage.clear();
+          setChatState('idle');
+          setPartnerId(null);
+          setMessages([]);
+          navigate('/', { replace: true });
+        }, 100);
+      } else {
+        hasHandledLeave.current = true;
+        trackSessionEnd();
+        sessionStorage.clear();
+        setChatState('idle');
+        setPartnerId(null);
+        setMessages([]);
+        navigate('/', { replace: true });
       }
-      if (socket) {
-        socket.off('chat_message');
-        socket.off('chatMessage');
-      }
-      hasHandledLeave.current = true;
-      trackSessionEnd();
-      sessionStorage.clear();
-      setChatState('idle');
-      setPartnerId(null);
-      setMessages([]);
-      navigate('/', { replace: true });
     },
     onRefresh: () => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
+        // Give time for the leave message to be sent
+        setTimeout(() => {
+          socket.disconnect();
+          hasHandledLeave.current = true;
+          trackSessionEnd();
+          sessionStorage.clear();
+        }, 100);
+      } else {
+        if (socket) socket.disconnect();
+        hasHandledLeave.current = true;
+        trackSessionEnd();
+        sessionStorage.clear();
       }
-      if (socket) socket.disconnect();
-      hasHandledLeave.current = true;
-      trackSessionEnd();
-      sessionStorage.clear();
     },
     showExitConfirmToast: () => showMobileExitToast(() => {
       if (socket && userId && partnerId) {
         socket.emit('leave_chat', { userId });
+        // Add delay for mobile
+        setTimeout(() => {
+          socket.off('chat_message');
+          socket.off('chatMessage');
+          hasHandledLeave.current = true;
+          trackSessionEnd();
+          sessionStorage.clear();
+          setChatState('idle');
+          setPartnerId(null);
+          setMessages([]);
+          navigate('/', { replace: true });
+        }, 100);
+      } else {
+        hasHandledLeave.current = true;
+        trackSessionEnd();
+        sessionStorage.clear();
+        setChatState('idle');
+        setPartnerId(null);
+        setMessages([]);
+        navigate('/', { replace: true });
       }
-      if (socket) {
-        socket.off('chat_message');
-        socket.off('chatMessage');
-      }
-      hasHandledLeave.current = true;
-      trackSessionEnd();
-      sessionStorage.clear();
-      setChatState('idle');
-      setPartnerId(null);
-      setMessages([]);
-      navigate('/', { replace: true });
     }),
   });
 
