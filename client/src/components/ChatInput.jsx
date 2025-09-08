@@ -54,7 +54,7 @@ const ChatInput = ({
       {/* Row: input pill + separate send button (like WhatsApp) */}
       <div className="flex items-end gap-2">
         {/* Input pill */}
-        <div className="flex-1 rounded-2xl border border-[#ece5dd] bg-white dark:bg-gray-700 shadow-md px-3 py-1">
+        <div className="flex-1 rounded-2xl border border-black bg-white dark:bg-gray-700 shadow-md px-3 py-1">
           <textarea
             ref={inputRef}
             value={input}
@@ -64,41 +64,42 @@ const ChatInput = ({
             }}
             onKeyDown={onKeyDown}
             rows={1}
-            placeholder="Message"
+            placeholder="Type a message..."
             required
             autoFocus
             disabled={chatState === 'disconnected'}
             className="
       block w-full bg-transparent outline-none
-      text-[15px] leading-[20px]   /* tighter line height */
+      text-[15px] leading-[20px]
       resize-none
-      min-h-[36px]                 /* one-line height */
-      max-h-[96px]                 /* grows up to ~3 lines */
+      min-h-[36px]
+      max-h-[96px]
       overflow-y-hidden
       placeholder:text-gray-400
     "
-            style={{ height: '36px' }} /* force initial one-line height */
+            style={{ height: '36px' }}
           />
         </div>
 
-        {/* Tight circular Send button outside the pill */}
+        {/* Send button */}
         <button
           type="submit"
           disabled={!input.trim() || !!inputError || chatState === 'disconnected'}
           className="
-            shrink-0 rounded-full flex items-center justify-center
-            w-11 h-11    /* 44px: comfortable, tight circle */
-            bg-green-500 text-white
-            shadow-[0_0_8px_rgba(34,197,94,0.7)]
-            hover:bg-green-600
-            disabled:opacity-40 disabled:cursor-not-allowed
-          "
+    shrink-0 rounded-full flex items-center justify-center
+    w-11 h-11
+    bg-green-500 text-white
+    border border-black    /* 👈 thin black border */
+    shadow-[0_0_8px_rgba(34,197,94,0.7)]
+    hover:bg-green-600
+    disabled:opacity-40 disabled:cursor-not-allowed
+  "
           tabIndex={input.trim() && chatState !== 'disconnected' ? 0 : -1}
           aria-label="Send"
         >
-          {/* Slightly smaller plane, lightly tilted like WhatsApp */}
           <Send className="w-[18px] h-[18px] rotate-[12deg]" />
         </button>
+
       </div>
 
       {inputError && (
