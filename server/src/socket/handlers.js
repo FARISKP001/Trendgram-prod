@@ -3,7 +3,7 @@ const cleanupInProgress = new Set();
 const idleUsers = new Set();
 const idleDisconnectTimers = {};
 const { sanitizeMessage, validateText } = require('../utils/textFilters');
-const IDLE_MAX = 2 * 60 * 1000;
+const IDLE_MAX = 5 * 60 * 1000;
 const SUSPEND_THRESHOLD = 3;
 const REPORT_WINDOW = 3600;
 const SUSPEND_DURATION = 24 * 3600;
@@ -61,11 +61,14 @@ module.exports = (io, socket, redis) => {
         await redis.del(`chat:${roomName}`);
       }
 
+      const deviceId = await redis.get(`deviceId:${userId}`);
       await Promise.all([
         redis.lrem('chat:waitingQueue', 0, userId),
         redis.del(`userSocket:${userId}`),
         redis.del(`userName:${userId}`),
         redis.del(`userIdle:${userId}`),
+        redis.del(`deviceId:${userId}`),
+        ...(deviceId ? [redis.del(`userId:${deviceId}`)] : []),
       ]);
 
       delete userRoomMap[userId];
