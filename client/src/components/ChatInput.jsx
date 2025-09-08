@@ -11,29 +11,29 @@ const ChatInput = ({
   handleSend,
   inputRef,
 }) => {
-  // Auto-resize textarea (up to 3 lines)
+  // Auto-resize textarea up to 3 lines, then scroll
   const autoResize = () => {
     const el = inputRef?.current;
     if (!el) return;
-
     const cs = window.getComputedStyle(el);
-    const lineHeight = parseFloat(cs.lineHeight) || 24;
-    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-    const borderY = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
-    const maxHeight = MAX_LINES * lineHeight + padY + borderY;
+    const lineHeight = parseFloat(cs.lineHeight) || 22; // px
+    const padY =
+      parseFloat(cs.paddingTop || '0') + parseFloat(cs.paddingBottom || '0');
+    const borderY =
+      parseFloat(cs.borderTopWidth || '0') + parseFloat(cs.borderBottomWidth || '0');
+    const maxH = MAX_LINES * lineHeight + padY + borderY;
 
     el.style.height = 'auto';
-    el.style.overflowY = 'hidden';
-    const newH = Math.min(el.scrollHeight, maxHeight);
+    const newH = Math.min(el.scrollHeight, maxH);
     el.style.height = `${newH}px`;
-    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
   };
 
   useEffect(() => { autoResize(); }, []);
   useEffect(() => { autoResize(); }, [input]);
 
   const onKeyDown = (e) => {
-    // Enter = send, Shift+Enter = newline
+    // WhatsApp: Enter sends; Shift+Enter makes a newline
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (!input.trim() || inputError || chatState === 'disconnected') return;
@@ -41,67 +41,70 @@ const ChatInput = ({
     }
   };
 
+  if (!(chatState === 'chatting' || chatState === 'disconnected')) return null;
+
   return (
-    <>
-      {(chatState === 'chatting' || chatState === 'disconnected') && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="w-full bg-inherit p-4"
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSend();
+      }}
+      className="w-full bg-inherit p-4"
+    >
+      {/* Row: input pill + separate send button (like WhatsApp) */}
+      <div className="flex items-end gap-2">
+        {/* Input pill */}
+        <div className="flex-1 rounded-2xl border border-[#ece5dd] bg-white dark:bg-gray-700 shadow-md px-3 py-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => {
+              handleInputChange(e);
+              autoResize();
+            }}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder="Type a message..."
+            required
+            autoFocus
+            disabled={chatState === 'disconnected'}
+            className="
+              block w-full bg-transparent outline-none
+              text-[15px] leading-6
+              resize-none
+              min-h-[44px]   /* one-line height */
+              max-h-[180px]  /* just a safety cap; JS enforces 3 lines */
+              overflow-y-hidden
+              placeholder:text-gray-400
+            "
+            style={{ height: '44px' }}
+          />
+        </div>
+
+        {/* Tight circular Send button outside the pill */}
+        <button
+          type="submit"
+          disabled={!input.trim() || !!inputError || chatState === 'disconnected'}
+          className="
+            shrink-0 rounded-full flex items-center justify-center
+            w-11 h-11    /* 44px: comfortable, tight circle */
+            bg-green-500 text-white
+            shadow-[0_0_8px_rgba(34,197,94,0.7)]
+            hover:bg-green-600
+            disabled:opacity-40 disabled:cursor-not-allowed
+          "
+          tabIndex={input.trim() && chatState !== 'disconnected' ? 0 : -1}
+          aria-label="Send"
         >
-          {/* Input box */}
-          <div className="flex items-end w-full rounded-xl bg-white dark:bg-gray-700 px-3 py-2 border border-[#ece5dd] shadow-md">
-            {/* Auto-growing textarea */}
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => {
-                handleInputChange(e);
-                autoResize();
-              }}
-              onKeyDown={onKeyDown}
-              rows={1}
-              className="
-                flex-1 bg-transparent outline-none text-base
-                leading-6 resize-none
-                min-h-[44px]
-                max-h-[calc(3*1.5rem)]
-                py-2 pr-2
-                overflow-y-hidden
-                placeholder:text-gray-400
-              "
-              placeholder="Message"
-              required
-              autoFocus
-              disabled={chatState === 'disconnected'}
-              style={{ height: '44px' }}
-            />
+          {/* Slightly smaller plane, lightly tilted like WhatsApp */}
+          <Send className="w-[18px] h-[18px] rotate-[12deg]" />
+        </button>
+      </div>
 
-            {/* Send button (tight circle, smaller icon) */}
-            <button
-  type="submit"
-  disabled={!input.trim() || !!inputError || chatState === 'disconnected'}
-  className="
-    ml-2 rounded-full flex items-center justify-center
-    w-10 h-10   /* tighter circle */
-    bg-green-500 text-white
-    transition shadow-[0_0_6px_#22c55e]
-    hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed
-  "
-  tabIndex={input.trim() && chatState !== 'disconnected' ? 0 : -1}
->
-  <Send className="w-4.5 h-4.5" /> {/* slightly reduced icon */}
-</button>
-          </div>
-
-          {inputError && (
-            <div className="text-red-500 text-xs mt-1 px-1">{inputError}</div>
-          )}
-        </form>
+      {inputError && (
+        <div className="text-red-500 text-xs mt-1 px-1">{inputError}</div>
       )}
-    </>
+    </form>
   );
 };
 
