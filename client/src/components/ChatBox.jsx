@@ -437,16 +437,16 @@ const ChatBox = () => {
   });
 
   return (
-    <div className="w-full flex justify-center bg-[#ece5dd] transition-colors duration-300 h-[100dvh] overflow-y-auto">
+    <div className="w-full flex justify-center bg-[#EAF6FF] transition-colors duration-300 h-[100dvh] overflow-y-auto">
       <div className="w-full h-full flex flex-col">
 <div className="flex flex-col w-full h-full max-w-full sm:max-w-[90vw] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
         sm:rounded-2xl bg-[#f8f9fa] shadow-2xl overflow-hidden relative
         text-[#222e35] font-[system-ui,sans-serif] text-base border sm:border-0"
         >
           {/* Header */}
-          <div className="h-16 shrink-0 flex items-center justify-between px-4 py-4 bg-gray-800 shadow-sm border-b border-gray-700 z-20">
-            <span className="font-semibold text-2xl text-white tracking-wide">
-              {partnerName ? partnerName : "Waiting..."}
+          <div className="h-16 shrink-0 flex items-center justify-between px-4 py-4 bg-[#BFE8FF] shadow-sm border-b border-[#A7D8F5] z-20">
+  <span className="font-semibold text-2xl text-[#0b3a5b] tracking-wide">
+              {partnerName ? partnerName : "Waiting for partner.."}
             </span>
           </div>
           {/* Chat area */}
