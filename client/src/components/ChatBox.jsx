@@ -38,6 +38,7 @@ const ChatBox = () => {
   const [input, setInput] = useState('');
   const [chatState, setChatState] = useState('idle');
   const [inputError, setInputError] = useState('');
+  const [theme, setTheme] = useState('light');
   const searchTimeout = useRef(null);
   const messageListRef = useRef(null);
   const listContainerRef = useRef(null);
@@ -50,6 +51,29 @@ const ChatBox = () => {
   const idleTimer = useRef(null);
   const isIdle = useRef(false);
   const keyboardVisible = useKeyboardVisible();
+
+  // Load theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  // Save theme to localStorage and update document body class
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  // Toggle theme handler
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   const {
     trackSessionStart,
@@ -439,30 +463,28 @@ const ChatBox = () => {
   });
 
   return (
-    <div className="w-full flex justify-center bg-[#EAF6FF] transition-colors duration-300 h-[100dvh] overflow-y-auto">
+    <div className={`w-full flex justify-center ${theme === 'dark' ? 'bg-gray-900' : 'bg-[#EAF6FF]'} transition-colors duration-300 h-[100dvh] overflow-y-auto`}>
       <div className="w-full h-full flex flex-col">
-        <div className="flex flex-col w-full h-full max-w-full sm:max-w-[90vw] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px]
-        sm:rounded-2xl bg-[#f8f9fa] shadow-2xl overflow-hidden relative
-        text-[#222e35] font-[system-ui,sans-serif] text-base border sm:border-0"
-        >
+        <div className={`flex flex-col w-full h-full max-w-full sm:max-w-[90vw] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[900px] sm:rounded-2xl ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-[#f8f9fa] text-[#222e35]'} shadow-2xl overflow-hidden relative font-[system-ui,sans-serif] text-base border sm:border-0`}>
           {/* Header */}
-          <div className="h-16 shrink-0 flex items-center justify-between px-4 py-4 bg-[#BFE8FF] shadow-sm border-b border-[#A7D8F5] z-20">
-            <span className="font-semibold text-2xl text-[#0b3a5b] tracking-wide">
+          <div className={`h-16 shrink-0 flex items-center justify-between px-4 py-4 ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-[#BFE8FF] text-[#0b3a5b]'} shadow-sm border-b ${theme === 'dark' ? 'border-gray-600' : 'border-[#A7D8F5]'} z-20`}>
+            <span className="font-semibold text-2xl tracking-wide">
               {partnerName ? partnerName : "Waiting for partner"}
             </span>
+            <button onClick={toggleTheme} className={`ml-auto p-2 rounded-full hover:bg-opacity-20 ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-black hover:bg-opacity-20'}`}>
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
           </div>
           {/* Chat area */}
           <div
-            className="flex-1 flex flex-col overflow-hidden relative bg-white"
+            className={`flex-1 flex flex-col overflow-hidden relative ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
             style={{
               // backgroundImage: `url(${doodleBg})`,
               backgroundRepeat: 'no-repeat',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
-
           >
-
             {/* Scrollable message list */}
             <div className="flex-1 overflow-y-auto px-3 pt-4 pb-2 no-scrollbar" ref={listContainerRef}>
               {messages.map((msg, index) => (
@@ -472,12 +494,12 @@ const ChatBox = () => {
                     msg.userId === userId ? 'flex justify-end mt-1 mb-1' : 'flex justify-start mt-1 mb-1'}
                 >
                   {msg.message?.trim() && (
-                    <SpeechBubble isSender={msg.userId === userId}>
+                    <SpeechBubble isSender={msg.userId === userId} theme={theme}>
                       {msg.message}
                     </SpeechBubble>
                   )}
                   {msg.from === 'system' && (
-                    <div className="italic text-sm text-gray-500">{msg.text}</div>
+                    <div className={`italic text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{msg.text}</div>
                   )}
                 </div>
               ))}
@@ -491,10 +513,11 @@ const ChatBox = () => {
                 handleInputChange={handleInputChange}
                 handleSend={handleSend}
                 inputRef={inputRef}
+                theme={theme}
               />
               {!keyboardVisible && (
                 <div className="mt-2">
-                  <ChatFooter handleNext={handleNext} handleReport={handleReport} />
+                  <ChatFooter handleNext={handleNext} handleReport={handleReport} theme={theme} />
                 </div>
               )}
             </div>
