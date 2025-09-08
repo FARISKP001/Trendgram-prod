@@ -69,15 +69,15 @@ const ChatInput = ({
             required
             autoFocus
             disabled={chatState === 'disconnected'}
-            className="
+            className={`
       block w-full bg-transparent outline-none
       text-[15px] leading-[20px]
       resize-none
       min-h-[36px]
       max-h-[96px]
       overflow-y-hidden
-      placeholder:text-gray-400
-    "
+      ${theme === 'dark' ? 'text-white placeholder:text-gray-400' : 'text-black placeholder:text-gray-400'}
+    `}
             style={{ height: '36px' }}
           />
         </div>
