@@ -41,7 +41,6 @@ const useExitProtection = ({
         const confirmLeave = window.confirm('⚠️ Are you sure you want to leave the chat?');
         if (confirmLeave && onBack) {
           onBack();
-
         }
       }
     };
