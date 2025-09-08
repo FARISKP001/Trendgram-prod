@@ -54,7 +54,7 @@ const ChatInput = ({
       {/* Row: input pill + separate send button (like WhatsApp) */}
       <div className="flex items-end gap-2">
         {/* Input pill */}
-        <div className="flex-1 rounded-2xl border border-[#ece5dd] bg-white dark:bg-gray-700 shadow-md px-3 py-2">
+        <div className="flex-1 rounded-2xl border border-[#ece5dd] bg-white dark:bg-gray-700 shadow-md px-3 py-1">
           <textarea
             ref={inputRef}
             value={input}
@@ -64,20 +64,20 @@ const ChatInput = ({
             }}
             onKeyDown={onKeyDown}
             rows={1}
-            placeholder="Type a message..."
+            placeholder="Message"
             required
             autoFocus
             disabled={chatState === 'disconnected'}
             className="
-              block w-full bg-transparent outline-none
-              text-[15px] leading-6
-              resize-none
-              min-h-[44px]   /* one-line height */
-              max-h-[180px]  /* just a safety cap; JS enforces 3 lines */
-              overflow-y-hidden
-              placeholder:text-gray-400
-            "
-            style={{ height: '44px' }}
+      block w-full bg-transparent outline-none
+      text-[15px] leading-[20px]   /* tighter line height */
+      resize-none
+      min-h-[36px]                 /* one-line height */
+      max-h-[96px]                 /* grows up to ~3 lines */
+      overflow-y-hidden
+      placeholder:text-gray-400
+    "
+            style={{ height: '36px' }} /* force initial one-line height */
           />
         </div>
 
