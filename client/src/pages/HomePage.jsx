@@ -72,7 +72,7 @@ const HomePage = () => {
   // === Header nav (Home → About Us → Contact Us) ===
   const navigation = [
     { name: 'Home', href: '#home', Icon: HomeIcon, label: 'Home' },
-    { name: 'About Us', href: '#about', Icon: InformationCircleIcon, label: 'About Us' },
+    { name: 'Vision', href: '#vision', Icon: InformationCircleIcon, label: 'Vision' },
     { name: 'Contact Us', href: '#contact', Icon: EnvelopeIcon, label: 'Contact Us' },
   ];
 
@@ -345,132 +345,268 @@ const HomePage = () => {
       </header>
 
 
-      {/* === Hero Section === */}
-      <div id="home" className="relative isolate px-0 pt-0">
-        <div className="relative h-[32rem] sm:h-[40rem] lg:h-[44rem]">
-          <img src={main} alt="TrendGram" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
-            <h1 className="text-4xl sm:text-6xl font-bold font-mono  text-white drop-shadow-lg leading-tight">
-              Small talk, big laughs
-            </h1>
-            <p className="mt-8 max-w-2xl text-xl sm:text-xl font-mono text-gray-200">
-              Light, lively conversations with strangers who feel like friends in minutes.
-            </p>
-            <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md ">
-              <CookieConsent />
-            </div>
-            {!showConnect ? (
-              <button
-                type="button"
-                onClick={() => setShowConnect(true)}
-                className="mt-8 inline-flex items-center rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-gray-900 shadow hover:bg-white"
-              >
-                Connect Buddy
-              </button>
-            ) : (
-              <form onSubmit={handleFindMatch} className="mt-8 w-full max-w-[360px] mx-auto">
-                <div className="grid grid-cols-[1fr_auto] items-center gap-3 bg-white/90 rounded-full px-3 py-2 shadow">
-                  <input
-                    ref={nameInputRef}
-                    className="min-w-0 w-full bg-transparent text-gray-900 placeholder-gray-600 outline-none rounded-full border-2 border-[#000000] h-[45px] text-lg px-3"
-                    type="text"
-                    value={name}
-                    onChange={handleNameChange}
-                    placeholder="Enter your name"
-                    required
-                    maxLength={10}
-                    inputMode="text"
-                    enterKeyHint="go"
-                  />
-                  <button
-                    type="submit"
-                    disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-                    className="inline-flex items-center justify-center h-[45px] px-5 rounded-full bg-sky-300 hover:bg-sky-400 transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-sky-500 font-semibold"
-                  >
-                    {matching ? 'Connecting…' : 'Connect'}
-                  </button>
+      {/* === Hero Section (screenshot-style) === */}
+      <div id="home" className="relative isolate">
+        <div className="relative h-[34rem] sm:h-[40rem] lg:h-[44rem]">
+          <img
+            src={main}
+            alt="TrendGram"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-emerald-900/35 md:bg-emerald-900/25 mix-blend-multiply" />
+          {/* Content */}
+          <div className="relative z-10 h-full">
+            <div className="mx-auto h-full max-w-6xl px-6 lg:px-8">
+              <div className="flex h-full items-center">
+                <div className="w-full max-w-2xl text-left text-white">
+                  <h1 className="font-sans font-extrabold leading-tight text-4xl sm:text-5xl lg:text-6xl">
+                    small talk
+                    <br /> big laughs
+                  </h1>
+
+                  <p className="mt-6 text-base sm:text-lg opacity-95">
+                    Lively conversations with strangers who feel like friends
+                  </p>
+
+                  {/* If not clicked, show CTA */}
+                  {!showConnect ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowConnect(true)}
+                      className="mt-8 inline-flex items-center rounded-md
+                           bg-emerald-500 px-5 py-3 text-base font-semibold
+                           text-white shadow hover:bg-emerald-600
+                           focus-visible:outline-none focus-visible:ring-2
+                           focus-visible:ring-white/80 focus-visible:ring-offset-2
+                           focus-visible:ring-offset-emerald-700"
+                    >
+                      Connect Now
+                    </button>
+                  ) : (
+                    // When clicked, show input form in same place
+                    <form
+                      onSubmit={handleFindMatch}
+                      className="mt-8 flex flex-col gap-4 w-full max-w-md"
+                    >
+                      <div className="flex items-center gap-3 bg-white/80 rounded-full px-3 py-2 shadow">
+                        <input
+                          ref={nameInputRef}
+                          className="flex-1 h-[45px] rounded-full border border-gray-300
+                               bg-transparent px-3 text-gray-900 text-lg
+                               placeholder-gray-600 outline-none"
+                          type="text"
+                          value={name}
+                          onChange={handleNameChange}
+                          placeholder="Enter your name"
+                          required
+                          maxLength={10}
+                        />
+                        <button
+                          type="submit"
+                          disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
+                          className="h-[45px] px-5 rounded-full bg-emerald-500 border border-emerald-600
+                               text-white font-semibold hover:bg-emerald-600
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {matching ? 'Connecting…' : 'Connect'}
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowConnect(false)}
+                        className="self-start rounded-full px-4 py-2 text-sm font-medium
+                             text-white bg-emerald-700/80"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="mt-5 text-xl font-bold rounded-full border px-4 py-2 text-[#FFFFFF] bg-[#1877F2]"
-                  onClick={() => setShowConnect(false)}
-                >
-                  Cancel
-                </button>
-              </form>
-            )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* === Our Vision (floating card) === */}
+      <div className="mx-auto max-w-5xl mt-12">
+        <div
+          className="rounded-2xl 
+               bg-gradient-to-br from-emerald-50/90 via-teal-50/80 to-white/90
+               dark:from-emerald-900/60 dark:via-teal-800/60 dark:to-gray-900/80
+               shadow-xl ring-1 ring-black/5 dark:ring-white/10
+               backdrop-blur-md p-6 sm:p-8 md:p-10"
+        >
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight 
+                   text-gray-900 dark:text-white text-center font-sans">
+            Our Vision
+          </h2>
+
+          <div className="mt-5 space-y-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300 font-sans">
+            <p>
+              At <span className="">TrendGram</span>, we believe in the timeless power of conversation.
+              In today’s digital world, social networks are often dominated by filters, likes, endless scrolling feeds,
+              and overwhelming noise. What gets buried under all this is the most human thing of all —
+              the simple joy of talking. The kind of unplanned, genuine, and heartfelt exchange that can brighten someone’s day,
+              spark a new idea, or make a stranger feel like a friend.
+            </p>
+
+            <p>
+              Our vision is to bring conversations back to the center. We are building a platform where authentic human
+              interaction is just one click away — quick, spontaneous, and barrier-free. A digital <em>adda</em>, much like
+              India’s street corners, chai stalls, and park benches where strangers often strike up the most unexpected yet
+              meaningful chats.
+            </p>
+
+            <p>
+              <span className="">TrendGram</span> is more than an app — it’s a new-age meeting ground for India’s
+              youth and beyond. From Delhi to Mumbai, from Chennai to Kolkata, from small towns to metro cities, it’s a space
+              where voices from different languages, cultures, and perspectives can connect without borders, without judgment,
+              and without pressure.
+            </p>
+
+            <p>
+              We want <span className="">TrendGram</span> to feel lightweight, safe, and stylish, built for today’s
+              generation that values speed, privacy, and fun — yet designed with a timeless purpose: to remind us all that
+              sometimes, a simple conversation can change your mood, your perspective, and maybe even your life.
+            </p>
+
+            <p>
+              In a world where attention spans are shrinking and interactions are often reduced to emojis and likes,
+              <span className="">TrendGram</span> stands for something different — a reminder that India’s
+              strength has always been its conversations. Conversations over chai, conversations in trains,
+              conversations in classrooms, and now, conversations in a digital space designed with the same spirit of openness
+              and warmth.
+            </p>
+
+            <p>
+              Because at the end of the day, no matter who you are or where you’re from,
+              <span className=""> a good conversation can change everything.</span>
+            </p>
           </div>
         </div>
       </div>
 
 
-      {/* === About Us (under hero) === */}
-<section id="about" className="scroll-mt-20 bg-[#082A4C]">
-  <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+      <div className="mx-auto max-w-5xl mt-12">
+        <div
+          className="rounded-2xl 
+             bg-gradient-to-br from-emerald-50/90 via-teal-50/80 to-white/90
+             dark:from-emerald-900/60 dark:via-teal-800/60 dark:to-gray-900/80
+             shadow-xl ring-1 ring-black/5 dark:ring-white/10
+             backdrop-blur-md p-6 sm:p-8 md:p-10"
+        >
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight 
+                 text-gray-900 dark:text-white text-center font-sans">
+            Our Mission
+          </h2>
+          <div className="mt-5 space-y-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300 font-sans">
+            <p>
+              At <span className="">TrendGram</span>, our mission is to make human connection effortless,
+              safe, and meaningful in a digital age where genuine conversations are often overshadowed by noise.
+              We believe that every voice matters, and that true connections are built not through profiles or algorithms,
+              but through simple, honest conversations.
+            </p>
 
-    {/* ✅ Description moved to very top */}
-    <div className="text-center max-w-3xl mx-auto">
-      <p className="text-lg sm:text-xl text-[#f5f5f5]">
-        <span className="font-semibold">Effortless connections. Thoughtful design.</span><br />
-        TrendGram delivers refined, lightweight conversations with people worldwide. 
-        Tap <span className="font-semibold">Connect Buddy</span> for instant matching—no public profiles, minimal friction.
-      </p>
-    </div>
+            <p>
+              In India — a land of extraordinary diversity, where over a billion people speak in hundreds of languages
+              and dialects, practice different cultures, and carry unique stories — connecting meaningfully can often
+              feel complicated. <span className="">TrendGram</span> is here to change that. With just one tap,
+              you can talk to someone new, whether they are from your own city or a different corner of the world.
+              No lengthy sign-ups, no complicated profiles, no filters deciding who you meet — only real people,
+              real voices, and real conversations.
+            </p>
 
-    {/* Keep Age modal if open */}
-    {showAgeModal && (
-      <div className="fixed top-30 left-1/2 -translate-x-1/2 z-50 shadow-lg rounded-md">
-        <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
-      </div>
-    )}
+            <p>
+              Privacy is at the heart of <span className="">TrendGram</span>. Your identity remains yours,
+              and your freedom to stay anonymous is always protected. In a country where digital growth is rapid and
+              online presence is deeply personal, we make sure your safety and security are never compromised.
+              A safe and respectful environment is our foundation — supported by strong moderation tools, spam detection
+              systems, and reporting features that empower users to take control of their experience.
+            </p>
 
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
-              <div className="flex items-center gap-3">
-                <SparklesIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">What sets us apart</h3>
-              </div>
-              <ul className="mt-4 space-y-3 text-gray-700 dark:text-gray-300">
-                <li className="flex items-start gap-3">
-                  <DevicePhoneMobileIcon className="size-5 mt-0.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Elegant, fast experience on any device</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <ChatBubbleLeftRightIcon className="size-5 mt-0.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Short, meaningful exchanges—on your terms</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <LockClosedIcon className="size-5 mt-0.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Privacy-forward by design</span>
-                </li>
-              </ul>
-            </div>
+            <p>
+              <span className="">TrendGram</span> celebrates inclusion at its core. From metros like Mumbai,
+              Delhi, and Bengaluru to smaller towns and villages, everyone has a place here. We connect India to the world —
+              from Chennai to Cairo, from Kolkata to New York, from Jaipur to Dubai — breaking down borders and creating
+              a global community that respects and values every perspective.
+            </p>
 
-            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
-              <div className="flex items-center gap-3">
-                <ShieldCheckIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Trust &amp; safety</h3>
-              </div>
-              <p className="mt-4 text-gray-700 dark:text-gray-300">
-                18+ access, active moderation, reporting tools, and anti-spam systems. Temporary messaging during chats—no data sales.
-              </p>
-            </div>
+            <p>
+              Our design is crafted for today’s generation — fresh, stylish, and Gen-Z-friendly. With an interface that
+              feels alive, modern, and joyful, <span className="">TrendGram</span> reflects the energy of India’s
+              young, tech-savvy population who are leading the world in digital conversations.
+            </p>
 
-            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 backdrop-blur">
-              <div className="flex items-center gap-3">
-                <SparklesIcon className="size-6 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Our standard</h3>
-              </div>
-              <p className="mt-4 text-gray-700 dark:text-gray-300">Respect, reliability, and calm joy in every interaction.</p>
-            </div>
+            <p>
+              But we don’t stop there. <span className="">TrendGram</span> is built to evolve continuously —
+              learning from our users, adapting to their needs, and refining every detail to create an experience that
+              grows richer over time. Because connection is not static — it’s living, dynamic, and ever-changing,
+              just like the people of India.
+            </p>
+
+            <p>
+              At <span className="">TrendGram</span>, we’re not just building a chat platform. We’re building
+              a space where India — and the world — can speak freely, connect meaningfully, and discover that sometimes,
+              one simple conversation is all it takes to create something extraordinary.
+            </p>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* === Footer (Contact) — not cards === */}
+      <div className="mx-auto max-w-5xl mt-12 mb-16">
+        <div
+          className="rounded-2xl 
+               bg-gradient-to-br from-sky-50/90 via-emerald-50/80 to-white/90
+               dark:from-sky-900/60 dark:via-emerald-900/60 dark:to-gray-900/80
+               shadow-xl ring-1 ring-black/5 dark:ring-white/10
+               backdrop-blur-md p-6 sm:p-8 md:p-10">
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight 
+                   text-gray-900 dark:text-white text-center font-sans">
+            Our Services
+          </h2>
+
+          <div className="mt-5 space-y-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300 font-sans">
+            <p>
+              At <span className="">TrendGram</span>, our services are designed with one goal in mind —
+              to bring back the joy of genuine conversations in the simplest way possible. At the heart of our
+              platform lies instant random matchmaking, where with just one tap you are paired with a new buddy
+              from anywhere in the world. No lengthy profiles, no bios to judge, and no pressure to perform —
+              just two people connected by curiosity and conversation.
+            </p>
+
+            <p>
+              We believe privacy is non-negotiable, which is why <span className="">TrendGram</span>
+              never asks for your personal details. You stay anonymous, secure, and completely in control of
+              your identity while enjoying the freedom to chat openly and confidently. Our smart queue system,
+              powered by advanced technology, ensures fair and fast matching even when thousands of people are
+              online at once, making the experience smooth and responsive at any scale.
+            </p>
+
+            <p>
+              Safety is at the core of our community. Users have the ability to report or block abusive behavior,
+              and our automated systems actively detect spam and repeated violations. This helps us nurture a safe,
+              respectful, and welcoming space where everyone feels comfortable. To make chats more expressive,
+              <span className=""> TrendGram</span> also offers a modern emoji picker designed with ease
+              in mind — quick categories, search options, and recents that make sharing emotions as effortless as words.
+            </p>
+
+            <p>
+              Our service adapts seamlessly across devices, whether you are chatting on your phone during a chai break,
+              using your tablet while traveling on the train, or connecting on your laptop at home.
+              <span className=""> TrendGram</span> is lightweight, responsive, and built to feel natural
+              wherever you are. Most importantly, we remove unnecessary barriers. Unlike traditional apps that burden
+              you with endless steps before you can even talk, <span className="">TrendGram</span> is
+              designed for spontaneity — so that meeting someone new feels instant, natural, and fun.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <footer id="contact" className="scroll-mt-20 bg-[#dcdcdc] border-t border-black/5 dark:border-white/10">
-        <div className="mx-auto max-w-6xl px-6 lg:px-8 py-16">
+        <div className="mx-auto max-w-6xl px-6 lg:px-8 py-8">
           {/* Simple text layout, no cards */}
           <div className="grid gap-8 md:grid-cols-2">
             <div>
