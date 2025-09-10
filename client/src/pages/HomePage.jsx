@@ -42,22 +42,31 @@ const HomePage = () => {
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // === Smooth scroll helpers ===
+  // React Router hook
+  const navigate = useNavigate();
+
+  // Smooth scroll helpers
   const scrollToSection = (id) => {
     const el = document.getElementById(id.replace('#', ''));
     if (!el) return;
     const headerEl = document.querySelector('header');
     const headerOffset = headerEl ? headerEl.offsetHeight : 64; // fallback
-    const y = el.getBoundingClientRect().top + window.scrollY - headerOffset - 8; // tiny breathing room
+    const y = el.getBoundingClientRect().top + window.scrollY - headerOffset - 8;
     window.scrollTo({ top: y, behavior: 'smooth' });
   };
 
-  const navigate = useNavigate();
   const handleHeaderLinkClick = (href) => (e) => {
     e.preventDefault();
-    if (href?.startsWith('#')) scrollToSection(href.slice(1));
-    else if (href) navigate(href);
+    if (href?.startsWith('#')) {
+      const id = href.replace('#', '');
+      scrollToSection(id);
+      setActive(id); // 🔥 always highlight immediately on click
+    } else if (href) {
+      navigate(href);
+    }
   };
+
+
 
   // Handle any deep link like #home, #about, #contact (StrictMode-safe)
   const didHashScroll = useRef(false);
@@ -69,16 +78,13 @@ const HomePage = () => {
     requestAnimationFrame(() => scrollToSection(hash));
   }, []);
 
-  // === Header nav (Home → About Us → Contact Us) ===
   const navigation = [
     { name: 'Home', href: '#home', Icon: HomeIcon, label: 'Home' },
-    { name: 'Vision', href: '#vision', Icon: InformationCircleIcon, label: 'Vision' },
-    { name: 'Mission', href: '#mission', Icon: ShieldCheckIcon, label: 'Mission' },
-    { name: 'Services', href: '#services', Icon: ChatBubbleLeftRightIcon, label: 'Our Services' },
+    { name: 'About Us', href: '#vision', Icon: InformationCircleIcon, label: 'About Us' },
     { name: 'Contact', href: '#contact', Icon: EnvelopeIcon, label: 'Contact Us' },
   ];
 
-  // === Active link highlight ===
+
   const [active, setActive] = useState('home');
 
   useEffect(() => {
@@ -89,8 +95,13 @@ const HomePage = () => {
       const el = document.getElementById(id);
       if (!el) return;
       const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActive(id); },
-        { rootMargin: '-45% 0px -50% 0px', threshold: [0, 0.2, 0.6] }
+        ([entry]) => {
+          if (entry.isIntersecting) setActive(id);
+        },
+        {
+          rootMargin: "-10% 0px -10% 0px", // 👈 looser margins so top & bottom sections count
+          threshold: 0.05,                 // very small threshold to catch even small intersections
+        }
       );
       obs.observe(el);
       observers.push(obs);
@@ -98,6 +109,8 @@ const HomePage = () => {
 
     return () => observers.forEach(o => o.disconnect());
   }, [navigation]);
+
+
 
   const navItemClass = (isActive) =>
     `inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition
@@ -423,33 +436,43 @@ const HomePage = () => {
             className="absolute inset-0 h-full w-full object-cover"
           />
 
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-emerald-900/35 md:bg-emerald-900/25 mix-blend-multiply" />
+          {/* Darker Overlay for contrast */}
+          <div className="absolute inset-0 bg-black/50 md:bg-black/40 mix-blend-multiply" />
 
           {/* Content */}
           <div className="relative z-10 flex items-center justify-center h-full">
             <div className="mx-auto max-w-6xl px-6 lg:px-8 text-center sm:text-left">
               <div className="w-full max-w-2xl text-white">
-                <h1 className="font-sans font-extrabold leading-tight text-4xl sm:text-5xl lg:text-6xl">
+                <h1
+                  className="font-sans font-extrabold leading-tight text-4xl sm:text-5xl lg:text-6xl"
+                  style={{
+                    textShadow: '0 3px 8px rgba(0,0,0,0.8)', // 🔥 strong shadow
+                  }}
+                >
                   small talk
                   <br /> big laughs
                 </h1>
 
-                <p className="mt-6 text-base sm:text-lg opacity-95">
+                <p
+                  className="mt-6 text-base sm:text-lg opacity-95"
+                  style={{
+                    textShadow: '0 2px 6px rgba(0,0,0,0.7)', // subtle shadow for subtext
+                  }}
+                >
                   Lively conversations with strangers who feel like friends
                 </p>
 
-                {/* Connect Form (with mobile-friendly layout from last fix) */}
+                {/* Connect Form */}
                 {!showConnect ? (
                   <button
                     type="button"
                     onClick={() => setShowConnect(true)}
                     className="mt-8 inline-flex items-center justify-center rounded-md
-                         bg-emerald-500 px-5 py-3 text-base font-semibold
-                         text-white shadow hover:bg-emerald-600
-                         focus-visible:outline-none focus-visible:ring-2
-                         focus-visible:ring-white/80 focus-visible:ring-offset-2
-                         focus-visible:ring-offset-emerald-700"
+                     bg-emerald-500 px-5 py-3 text-base font-semibold
+                     text-white shadow hover:bg-emerald-600
+                     focus-visible:outline-none focus-visible:ring-2
+                     focus-visible:ring-white/80 focus-visible:ring-offset-2
+                     focus-visible:ring-offset-emerald-700"
                   >
                     Connect Now
                   </button>
@@ -461,8 +484,8 @@ const HomePage = () => {
                     <input
                       ref={nameInputRef}
                       className="flex-1 h-[45px] rounded-full border border-gray-300
-                           bg-transparent px-3 text-gray-900 text-base
-                           placeholder-gray-600 outline-none w-full"
+                         bg-transparent px-3 text-gray-900 text-base
+                         placeholder-gray-600 outline-none w-full"
                       type="text"
                       value={name}
                       onChange={handleNameChange}
@@ -474,8 +497,8 @@ const HomePage = () => {
                       type="submit"
                       disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
                       className="h-[45px] px-6 rounded-full bg-emerald-500 border border-emerald-600
-                           text-white font-semibold hover:bg-emerald-600
-                           disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                         text-white font-semibold hover:bg-emerald-600
+                         disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                     >
                       {matching ? 'Connecting…' : 'Connect'}
                     </button>
@@ -484,7 +507,7 @@ const HomePage = () => {
                       type="button"
                       onClick={() => setShowConnect(false)}
                       className="h-[40px] rounded-full px-4 py-2 text-sm font-medium
-                           text-white bg-emerald-700/80 w-full sm:w-auto"
+                         text-white bg-emerald-700/80 w-full sm:w-auto"
                     >
                       Cancel
                     </button>
@@ -496,9 +519,8 @@ const HomePage = () => {
         </div>
       </div>
 
-
       {/* === Our Vision (floating card) === */}
-      <div className="mx-auto max-w-5xl mt-12">
+      <section id="vision" className="mx-auto max-w-5xl mt-12">
         <div
           className="rounded-2xl 
                bg-gradient-to-br from-emerald-50/90 via-teal-50/80 to-white/90
@@ -554,8 +576,8 @@ const HomePage = () => {
             </p>
           </div>
         </div>
-      </div>
 
+      </section>
 
       <div className="mx-auto max-w-5xl mt-12">
         <div
@@ -672,75 +694,76 @@ const HomePage = () => {
         </div>
       </div>
 
-      <footer id="contact" className="scroll-mt-20 bg-[#dcdcdc] border-t border-black/5 dark:border-white/10">
-        <div className="mx-auto max-w-6xl px-6 lg:px-8 py-8">
-          {/* Simple text layout, no cards */}
-          {/* Social Media */}
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-              Follow us on
-            </p>
-            <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              <a
-                href={`mailto:${CONTACT_EMAIL}?subject=Hello%20TrendGram&body=Hi%20TrendGram,%0A%0A`}
-                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
+      <section id="contact" className="scroll-mt-20">
+        <footer className="bg-[#dcdcdc] border-t border-black/5 dark:border-white/10">
+          <div className="mx-auto max-w-6xl px-6 lg:px-8 py-8">
+            {/* Simple text layout, no cards */}
+            {/* Social Media */}
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                Follow us on
+              </p>
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <a
+                  href={`mailto:${CONTACT_EMAIL}?subject=Hello%20TrendGram&body=Hi%20TrendGram,%0A%0A`}
+                  className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
                  bg-white hover:bg-gray-100 transition"
-                aria-label="Gmail"
-              >
-                <SiGmail size={18} className="text-[#EA4335]" />
-              </a>
+                  aria-label="Gmail"
+                >
+                  <SiGmail size={18} className="text-[#EA4335]" />
+                </a>
 
-              <a
-                href={INSTAGRAM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5
+                <a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-full border px-3 py-1.5
                  bg-[linear-gradient(45deg,#F58529,#FEDA77,#DD2A7B,#8134AF,#515BD4)]"
-                aria-label="Instagram"
-              >
-                <SiInstagram size={18} />
-              </a>
+                  aria-label="Instagram"
+                >
+                  <SiInstagram size={18} />
+                </a>
 
-              <a
-                href={X_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
+                <a
+                  href={X_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
                  text-white bg-black"
-                aria-label="X"
-              >
-                <SiX size={16} />
-              </a>
+                  aria-label="X"
+                >
+                  <SiX size={16} />
+                </a>
 
-              <a
-                href={FACEBOOK_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
+                <a
+                  href={FACEBOOK_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
                  text-white bg-[#1877F2]"
-                aria-label="Facebook"
+                  aria-label="Facebook"
+                >
+                  <SiFacebook size={18} />
+                </a>
+              </div>
+            </div>
+
+
+            <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-black/10 dark:border-white/10 pt-6 md:flex-row">
+              <p className="text-md font-bold text-[#000000]">
+                © {new Date().getFullYear()} TrendGram
+              </p>
+              <a
+                href="#home"
+                onClick={handleHeaderLinkClick('#home')}
+                className="text-md font-bold text-[#000000]"
               >
-                <SiFacebook size={18} />
+                Back to top ↑
               </a>
             </div>
           </div>
-
-
-          <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-black/10 dark:border-white/10 pt-6 md:flex-row">
-            <p className="text-md font-bold text-[#000000]">
-              © {new Date().getFullYear()} TrendGram
-            </p>
-            <a
-              href="#home"
-              onClick={handleHeaderLinkClick('#home')}
-              className="text-md font-bold text-[#000000]"
-            >
-              Back to top ↑
-            </a>
-          </div>
-        </div>
-      </footer>
-
+        </footer>
+      </section>
     </div>
   );
 };
