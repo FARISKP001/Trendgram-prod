@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { usePageView } from '../hooks/usePageView';
 import { validateText } from '../utils/textFilters';
+import { getCookie } from '../utils/cookies';
 
 const HomePage = () => {
   usePageView('HomePage');
@@ -38,8 +39,43 @@ const HomePage = () => {
     return stored ? parseInt(stored, 10) : null;
   });
 
+  // Cookie + Age flow
+  const [cookieDone, setCookieDone] = useState(() => !!getCookie('cookieConsentGiven'));
   const [ageConfirmed, setAgeConfirmed] = useState(() => localStorage.getItem('ageConfirmed') === 'true');
-  const [showAgeModal, setShowAgeModal] = useState(false);
+  // When true, we show the gate (cookie/age) UI in the hero
+  const [showGate, setShowGate] = useState(false);
+
+  // Cookie handlers - these are called by CookieConsent component
+  const handleCookieAccept = () => {
+    setCookieDone(true);
+    // If user clicked Connect and age already confirmed, proceed
+    if (showGate && ageConfirmed) {
+      setShowGate(false);
+      startMatch();
+    }
+  };
+  const handleCookieDecline = () => {
+    setCookieDone(true);
+    if (showGate && ageConfirmed) {
+      setShowGate(false);
+      startMatch();
+    }
+  };
+
+  // Age handlers
+  const handleAgeConfirm = () => {
+    localStorage.setItem('ageConfirmed', 'true');
+    setAgeConfirmed(true);
+    if (showGate) {
+      setShowGate(false);
+      startMatch();
+    }
+  };
+  const handleAgeCancel = () => {
+    setShowGate(false);
+    setError('You should be minimum 18 to enter to the website.');
+  };
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // React Router hook
@@ -125,7 +161,7 @@ const HomePage = () => {
     if (showConnect) nameInputRef.current?.focus();
   }, [showConnect]);
 
-  const { socket, isConnected } = useSocketContext();
+  const { socket, isConnected, setUserContext } = useSocketContext();
   const storedUserId = localStorage.getItem('userId') || crypto.randomUUID();
   localStorage.setItem('userId', storedUserId);
   const userId = useRef(storedUserId);
@@ -139,6 +175,13 @@ const HomePage = () => {
     };
     init();
   }, []);
+
+  // Update socket context when name and deviceId are available
+  useEffect(() => {
+    if (name && deviceId && setUserContext) {
+      setUserContext({ userName: name, deviceId });
+    }
+  }, [name, deviceId, setUserContext]);
 
   useEffect(() => {
     if (suspendedUntil && Date.now() >= suspendedUntil) {
@@ -239,7 +282,7 @@ const HomePage = () => {
       console.log("Validation failed", validation);
       return setError('Please follow community guidelines.');
     }
-    if (!socket?.connected) {
+    if (!isConnected) {
       console.log("Socket issue", { socket, isConnected });
       return setError('Socket not connected.');
     }
@@ -255,24 +298,17 @@ const HomePage = () => {
 
   const handleFindMatch = (e) => {
     e.preventDefault();
-    if (!ageConfirmed) {
-      setShowAgeModal(true);
-      return;
+    // Open the gating UI in the hero, then only start after both gates are satisfied
+    setShowGate(true);
+
+    // If both already satisfied (e.g., returning user), start immediately
+    if (cookieDone && ageConfirmed) {
+      setShowGate(false);
+      startMatch();
     }
-    startMatch();
   };
 
-  const handleAgeConfirm = () => {
-    localStorage.setItem('ageConfirmed', 'true');
-    setAgeConfirmed(true);
-    setShowAgeModal(false);
-    startMatch();
-  };
-  const handleAgeCancel = () => {
-    setError('You should be minimum 18 to enter to the website.');
-    setMatching(false);
-    setShowAgeModal(false);
-  };
+
 
   return (
     <div className="bg-white dark:bg-gray-900">
@@ -436,7 +472,7 @@ const HomePage = () => {
             className="absolute inset-0 h-full w-full object-cover"
           />
 
-          {/* Darker Overlay for contrast */}
+          {/* Dark overlay for contrast */}
           <div className="absolute inset-0 bg-black/50 md:bg-black/40 mix-blend-multiply" />
 
           {/* Content */}
@@ -445,9 +481,7 @@ const HomePage = () => {
               <div className="w-full max-w-2xl text-white">
                 <h1
                   className="font-sans font-extrabold leading-tight text-4xl sm:text-5xl lg:text-6xl"
-                  style={{
-                    textShadow: '0 3px 8px rgba(0,0,0,0.8)', // 🔥 strong shadow
-                  }}
+                  style={{ textShadow: '0 3px 8px rgba(0,0,0,0.8)' }}
                 >
                   small talk
                   <br /> big laughs
@@ -455,9 +489,7 @@ const HomePage = () => {
 
                 <p
                   className="mt-6 text-base sm:text-lg opacity-95"
-                  style={{
-                    textShadow: '0 2px 6px rgba(0,0,0,0.7)', // subtle shadow for subtext
-                  }}
+                  style={{ textShadow: '0 2px 6px rgba(0,0,0,0.7)' }}
                 >
                   Lively conversations with strangers who feel like friends
                 </p>
@@ -468,11 +500,11 @@ const HomePage = () => {
                     type="button"
                     onClick={() => setShowConnect(true)}
                     className="mt-8 inline-flex items-center justify-center rounded-md
-                     bg-emerald-500 px-5 py-3 text-base font-semibold
-                     text-white shadow hover:bg-emerald-600
-                     focus-visible:outline-none focus-visible:ring-2
-                     focus-visible:ring-white/80 focus-visible:ring-offset-2
-                     focus-visible:ring-offset-emerald-700"
+                         bg-emerald-500 px-5 py-3 text-base font-semibold
+                         text-white shadow hover:bg-emerald-600
+                         focus-visible:outline-none focus-visible:ring-2
+                         focus-visible:ring-white/80 focus-visible:ring-offset-2
+                         focus-visible:ring-offset-emerald-700"
                   >
                     Connect Now
                   </button>
@@ -484,8 +516,8 @@ const HomePage = () => {
                     <input
                       ref={nameInputRef}
                       className="flex-1 h-[45px] rounded-full border border-gray-300
-                         bg-transparent px-3 text-gray-900 text-base
-                         placeholder-gray-600 outline-none w-full"
+                           bg-transparent px-3 text-gray-900 text-base
+                           placeholder-gray-600 outline-none w-full"
                       type="text"
                       value={name}
                       onChange={handleNameChange}
@@ -497,8 +529,8 @@ const HomePage = () => {
                       type="submit"
                       disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
                       className="h-[45px] px-6 rounded-full bg-emerald-500 border border-emerald-600
-                         text-white font-semibold hover:bg-emerald-600
-                         disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                           text-white font-semibold hover:bg-emerald-600
+                           disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                     >
                       {matching ? 'Connecting…' : 'Connect'}
                     </button>
@@ -507,7 +539,7 @@ const HomePage = () => {
                       type="button"
                       onClick={() => setShowConnect(false)}
                       className="h-[40px] rounded-full px-4 py-2 text-sm font-medium
-                         text-white bg-emerald-700/80 w-full sm:w-auto"
+                           text-white bg-emerald-700/80 w-full sm:w-auto"
                     >
                       Cancel
                     </button>
@@ -516,6 +548,19 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+
+          {/* Cookie → Age gate (shown only after user clicks Connect) */}
+          {showGate && (!cookieDone || !ageConfirmed) && (
+            <div className="absolute bottom-4 left-0 right-0 z-20 flex flex-col items-center gap-3 font-sans">
+              {!cookieDone ? (
+                <CookieConsent onAccept={handleCookieAccept} onDecline={handleCookieDecline} />
+              ) : !ageConfirmed ? (
+                <AgeConfirmation onConfirm={handleAgeConfirm} onCancel={handleAgeCancel} />
+              ) : null}
+            </div>
+          )}
+
+
         </div>
       </div>
 
