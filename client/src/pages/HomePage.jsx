@@ -73,8 +73,37 @@ const HomePage = () => {
   const navigation = [
     { name: 'Home', href: '#home', Icon: HomeIcon, label: 'Home' },
     { name: 'Vision', href: '#vision', Icon: InformationCircleIcon, label: 'Vision' },
-    { name: 'Contact Us', href: '#contact', Icon: EnvelopeIcon, label: 'Contact Us' },
+    { name: 'Mission', href: '#mission', Icon: ShieldCheckIcon, label: 'Mission' },
+    { name: 'Services', href: '#services', Icon: ChatBubbleLeftRightIcon, label: 'Our Services' },
+    { name: 'Contact', href: '#contact', Icon: EnvelopeIcon, label: 'Contact Us' },
   ];
+
+  // === Active link highlight ===
+  const [active, setActive] = useState('home');
+
+  useEffect(() => {
+    const ids = navigation.map(n => n.href.replace('#', ''));
+    const observers = [];
+
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActive(id); },
+        { rootMargin: '-45% 0px -50% 0px', threshold: [0, 0.2, 0.6] }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach(o => o.disconnect());
+  }, [navigation]);
+
+  const navItemClass = (isActive) =>
+    `inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition
+     ${isActive
+      ? 'bg-emerald-600 text-white shadow'
+      : 'text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/10'}`;
 
   // Show input only after clicking Connect Buddy
   const [showConnect, setShowConnect] = useState(false);
@@ -277,20 +306,16 @@ const HomePage = () => {
                 onClick={(e) => {
                   e.preventDefault();
                   handleHeaderLinkClick(href)(e);
-                  e.currentTarget.blur(); // remove focus so ring doesn't stay
+                  e.currentTarget.blur();
                 }}
                 aria-label={label}
                 title={label}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full
-                 text-gray-900 dark:text-white
-                 hover:bg-black/5 dark:hover:bg-white/10
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
-                 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900
-                 transition"
+                className={navItemClass(active === href.slice(1))}
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />
-                <span className="sr-only">{label}</span>
+                <span>{name}</span>
               </a>
+
             ))}
           </div>
 
@@ -302,43 +327,88 @@ const HomePage = () => {
         {/* Mobile menu */}
         <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
           <div className="fixed inset-0 z-50" />
-          <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white p-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 dark:bg-gray-900 dark:sm:ring-gray-100/10">
-            <div className="flex items-center justify-between">
-              <a href="#" className="-m-1.5 p-1.5">
-                <span className="sr-only">TrendGram</span>
-              </a>
+          <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full max-w-sm overflow-y-auto
+                        bg-white dark:bg-gray-900 sm:ring-1 sm:ring-gray-900/10">
+            {/* Header / Brand */}
+            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700
+                  text-white px-6 py-5 flex items-center justify-between">
+              <div>
+                <p className="text-lg font-extrabold tracking-wide">TrendGram</p>
+                <p className="text-xs/relaxed opacity-90">Light, lively conversations</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="-m-2.5 rounded-md p-2.5 text-gray-700 dark:text-gray-200"
+                className="rounded-full p-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               >
+                <XMarkIcon className="h-6 w-6" />
                 <span className="sr-only">Close menu</span>
-                <XMarkIcon aria-hidden="true" className="size-6" />
               </button>
             </div>
 
-            <div className="mt-6 flow-root">
-              <div className="-my-6 divide-y divide-gray-500/10 dark:divide-white/10">
-                <div className="space-y-2 py-6">
-                  {navigation.map((nav) => (
-                    <a
-                      key={nav.label}
-                      href={nav.href}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setMobileMenuOpen(false);
-                        setTimeout(() => {
-                          if (nav.href?.startsWith('#')) scrollToSection(nav.href.slice(1));
-                          else if (nav.href) navigate(nav.href);
-                        }, 50);
-                      }}
-                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50 dark:text-white dark:hover:bg-white/5"
-                    >
-                      {nav.label}
-                    </a>
-                  ))}
+            {/* Nav items */}
+            <nav className="px-4 py-4">
+              <ul className="space-y-2">
+                {navigation.map(({ name, href, Icon }) => {
+                  const isActive = active === href.slice(1);
+                  return (
+                    <li key={name}>
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setTimeout(() => scrollToSection(href.slice(1)), 60);
+                        }}
+                        className={`w-full text-left ${navItemClass(isActive)} px-4 py-3`}
+                      >
+
+                        <Icon className="h-5 w-5" />
+                        <span>{name}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Divider */}
+              <div className="my-5 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent
+                    dark:via-white/15" />
+
+              {/* Sidebar blurb / CTA */}
+              <div className="rounded-xl p-4 bg-emerald-50/70 dark:bg-white/5 ring-1 ring-emerald-200/60 dark:ring-white/10">
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  Connect in seconds — no profiles, no pressure. Tap <span className="font-semibold">Connect Now</span> to start chatting.
+                </p>
+                <button
+                  onClick={() => { setMobileMenuOpen(false); setShowConnect(true); scrollToSection('home'); }}
+                  className="mt-3 w-full rounded-lg bg-emerald-600 text-white font-semibold py-2 hover:bg-emerald-700"
+                >
+                  Connect Now
+                </button>
+              </div>
+
+              {/* Social / Follow us */}
+              <div className="mt-6">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Follow us on</p>
+                <div className="flex items-center gap-2">
+                  <a href={`mailto:${CONTACT_EMAIL}?subject=Hello%20TrendGram`} className="rounded-full p-2 bg-white ring-1 ring-gray-200 hover:bg-gray-50">
+                    <SiGmail size={16} className="text-[#EA4335]" />
+                  </a>
+                  <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="rounded-full p-2 ring-1 ring-gray-200 bg-white">
+                    <SiInstagram size={16} />
+                  </a>
+                  <a href={X_URL} target="_blank" rel="noopener noreferrer" className="rounded-full p-2 bg-black text-white">
+                    <SiX size={14} />
+                  </a>
+                  <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="rounded-full p-2 bg-[#1877F2] text-white">
+                    <SiFacebook size={16} />
+                  </a>
                 </div>
               </div>
+            </nav>
+
+            {/* Tiny footer inside drawer */}
+            <div className="px-6 py-4 text-[11px] text-gray-500 dark:text-gray-400">
+              © {new Date().getFullYear()} TrendGram
             </div>
           </DialogPanel>
         </Dialog>
@@ -605,56 +675,56 @@ const HomePage = () => {
       <footer id="contact" className="scroll-mt-20 bg-[#dcdcdc] border-t border-black/5 dark:border-white/10">
         <div className="mx-auto max-w-6xl px-6 lg:px-8 py-8">
           {/* Simple text layout, no cards */}
-          <div className="grid gap-8 md:grid-cols-2">
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white"></h4>
+          {/* Social Media */}
+          <div className="mt-4">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+              Follow us on
+            </p>
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              <a
+                href={`mailto:${CONTACT_EMAIL}?subject=Hello%20TrendGram&body=Hi%20TrendGram,%0A%0A`}
+                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
+                 bg-white hover:bg-gray-100 transition"
+                aria-label="Gmail"
+              >
+                <SiGmail size={18} className="text-[#EA4335]" />
+              </a>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3 md:gap-4">
-                <a
-                  href={`mailto:${CONTACT_EMAIL}?subject=Hello%20TrendGram&body=Hi%20TrendGram,%0A%0A`}
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold
-             bg-white hover:bg-gray-100 transition"
-                  aria-label="Gmail"
-                >
-                  <SiGmail size={22} className="text-[#EA4335]" /> {/* this will show correct colored Gmail logo */}
-                </a>
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5
+                 bg-[linear-gradient(45deg,#F58529,#FEDA77,#DD2A7B,#8134AF,#515BD4)]"
+                aria-label="Instagram"
+              >
+                <SiInstagram size={18} />
+              </a>
 
+              <a
+                href={X_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
+                 text-white bg-black"
+                aria-label="X"
+              >
+                <SiX size={16} />
+              </a>
 
-                <a
-                  href={INSTAGRAM_URL}
-                  target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2
-                             bg-[linear-gradient(45deg,#F58529,#FEDA77,#DD2A7B,#8134AF,#515BD4)]"
-                  aria-label="Instagram"
-                >
-                  <SiInstagram size={20} />
-
-                </a>
-
-                <a
-                  href={X_URL}
-                  target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-lg font-bold
-                              text-[#FFFFFF] bg-[#000000] "
-                  aria-label="X"
-                >
-                  <SiX size={20} />
-
-                </a>
-
-                <a
-                  href={FACEBOOK_URL}
-                  target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-lg font-bold
-                              text-[#000000] bg-[#1877F2] "
-                  aria-label="Facebook"
-                >
-                  <SiFacebook size={20} />
-
-                </a>
-              </div>
+              <a
+                href={FACEBOOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 
+                 text-white bg-[#1877F2]"
+                aria-label="Facebook"
+              >
+                <SiFacebook size={18} />
+              </a>
             </div>
           </div>
+
 
           <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-black/10 dark:border-white/10 pt-6 md:flex-row">
             <p className="text-md font-bold text-[#000000]">
