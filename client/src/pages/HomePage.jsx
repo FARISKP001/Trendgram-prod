@@ -344,10 +344,9 @@ const HomePage = () => {
         </Dialog>
       </header>
 
-
-      {/* === Hero Section (screenshot-style) === */}
+      {/* === Hero Section === */}
       <div id="home" className="relative isolate">
-        <div className="relative h-[34rem] sm:h-[40rem] lg:h-[44rem]">
+        <div className="relative min-h-screen sm:h-[40rem] lg:h-[44rem]">
           <img
             src={main}
             alt="TrendGram"
@@ -356,79 +355,77 @@ const HomePage = () => {
 
           {/* Overlay */}
           <div className="absolute inset-0 bg-emerald-900/35 md:bg-emerald-900/25 mix-blend-multiply" />
+
           {/* Content */}
-          <div className="relative z-10 h-full">
-            <div className="mx-auto h-full max-w-6xl px-6 lg:px-8">
-              <div className="flex h-full items-center">
-                <div className="w-full max-w-2xl text-left text-white">
-                  <h1 className="font-sans font-extrabold leading-tight text-4xl sm:text-5xl lg:text-6xl">
-                    small talk
-                    <br /> big laughs
-                  </h1>
+          <div className="relative z-10 flex items-center justify-center h-full">
+            <div className="mx-auto max-w-6xl px-6 lg:px-8 text-center sm:text-left">
+              <div className="w-full max-w-2xl text-white">
+                <h1 className="font-sans font-extrabold leading-tight text-4xl sm:text-5xl lg:text-6xl">
+                  small talk
+                  <br /> big laughs
+                </h1>
 
-                  <p className="mt-6 text-base sm:text-lg opacity-95">
-                    Lively conversations with strangers who feel like friends
-                  </p>
+                <p className="mt-6 text-base sm:text-lg opacity-95">
+                  Lively conversations with strangers who feel like friends
+                </p>
 
-                  {/* If not clicked, show CTA */}
-                  {!showConnect ? (
+                {/* Connect Form (with mobile-friendly layout from last fix) */}
+                {!showConnect ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowConnect(true)}
+                    className="mt-8 inline-flex items-center justify-center rounded-md
+                         bg-emerald-500 px-5 py-3 text-base font-semibold
+                         text-white shadow hover:bg-emerald-600
+                         focus-visible:outline-none focus-visible:ring-2
+                         focus-visible:ring-white/80 focus-visible:ring-offset-2
+                         focus-visible:ring-offset-emerald-700"
+                  >
+                    Connect Now
+                  </button>
+                ) : (
+                  <form
+                    onSubmit={handleFindMatch}
+                    className="mt-8 w-full max-w-md bg-white/80 rounded-2xl shadow p-3 flex flex-col sm:flex-row gap-3 mx-auto sm:mx-0"
+                  >
+                    <input
+                      ref={nameInputRef}
+                      className="flex-1 h-[45px] rounded-full border border-gray-300
+                           bg-transparent px-3 text-gray-900 text-base
+                           placeholder-gray-600 outline-none w-full"
+                      type="text"
+                      value={name}
+                      onChange={handleNameChange}
+                      placeholder="Enter your name"
+                      required
+                      maxLength={10}
+                    />
+                    <button
+                      type="submit"
+                      disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
+                      className="h-[45px] px-6 rounded-full bg-emerald-500 border border-emerald-600
+                           text-white font-semibold hover:bg-emerald-600
+                           disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                    >
+                      {matching ? 'Connecting…' : 'Connect'}
+                    </button>
+
                     <button
                       type="button"
-                      onClick={() => setShowConnect(true)}
-                      className="mt-8 inline-flex items-center rounded-md
-                           bg-emerald-500 px-5 py-3 text-base font-semibold
-                           text-white shadow hover:bg-emerald-600
-                           focus-visible:outline-none focus-visible:ring-2
-                           focus-visible:ring-white/80 focus-visible:ring-offset-2
-                           focus-visible:ring-offset-emerald-700"
+                      onClick={() => setShowConnect(false)}
+                      className="h-[40px] rounded-full px-4 py-2 text-sm font-medium
+                           text-white bg-emerald-700/80 w-full sm:w-auto"
                     >
-                      Connect Now
+                      Cancel
                     </button>
-                  ) : (
-                    // When clicked, show input form in same place
-                    <form
-                      onSubmit={handleFindMatch}
-                      className="mt-8 flex flex-col gap-4 w-full max-w-md"
-                    >
-                      <div className="flex items-center gap-3 bg-white/80 rounded-full px-3 py-2 shadow">
-                        <input
-                          ref={nameInputRef}
-                          className="flex-1 h-[45px] rounded-full border border-gray-300
-                               bg-transparent px-3 text-gray-900 text-lg
-                               placeholder-gray-600 outline-none"
-                          type="text"
-                          value={name}
-                          onChange={handleNameChange}
-                          placeholder="Enter your name"
-                          required
-                          maxLength={10}
-                        />
-                        <button
-                          type="submit"
-                          disabled={matching || !name || (suspendedUntil && Date.now() < suspendedUntil)}
-                          className="h-[45px] px-5 rounded-full bg-emerald-500 border border-emerald-600
-                               text-white font-semibold hover:bg-emerald-600
-                               disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {matching ? 'Connecting…' : 'Connect'}
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowConnect(false)}
-                        className="self-start rounded-full px-4 py-2 text-sm font-medium
-                             text-white bg-emerald-700/80"
-                      >
-                        Cancel
-                      </button>
-                    </form>
-                  )}
-                </div>
+                  </form>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* === Our Vision (floating card) === */}
       <div className="mx-auto max-w-5xl mt-12">
