@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.901.0",
+    "@aws-sdk/lib-storage": "^3.903.0",
+    "node-fetch": "^2.7.0",
+    "react-media-recorder": "^1.7.2",
+    "socket.io-client": "^4.8.1"
+  }
+}

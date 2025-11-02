@@ -1,16 +1,21 @@
 import React from 'react';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 
-const ChatFooter = ({ handleNext, handleReport }) => (
-  <div className="w-full flex justify-center gap-6 py-3 bg-white dark:bg-[#1e1e1e] border-t border-gray-200 dark:border-gray-800">
+const ChatFooter = ({ handleNext, handleReport, theme = 'light', nextDisabled = false }) => (
+  <div className={`w-full flex justify-center gap-4 py-3 ${theme === 'dark' ? 'bg-[#1e1e1e] border-gray-800' : 'bg-white border-gray-200'} border-t`}>
     <button
       onClick={handleNext}
-      title="Next"
+      disabled={nextDisabled}
+      title={nextDisabled ? "Please wait..." : "Next"}
       aria-label="Next"
-      className="flex items-center gap-2 px-6 py-2 rounded-full text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 transition-transform transform shadow-md hover:brightness-110"
+      className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-semibold text-white transition-transform transform shadow-md ${
+        nextDisabled 
+          ? 'bg-gray-400 cursor-not-allowed opacity-60' 
+          : 'bg-blue-500 hover:bg-blue-600 hover:brightness-110 active:scale-95'
+      }`}
     >
       <ArrowRight className="w-5 h-5" />
-      Next
+      {nextDisabled ? 'Searching...' : 'Next'}
     </button>
 
     <button

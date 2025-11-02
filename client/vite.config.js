@@ -5,10 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/socket.io': {
-        target: 'https://ceremony-ecological-tt-birth.trycloudflare.com',
+      '/api': {
+        target: 'http://localhost:5000',
         changeOrigin: true,
-        ws: true,
       },
     },
   },

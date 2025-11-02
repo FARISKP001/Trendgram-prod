@@ -54,3 +54,20 @@
   }
 }
 
+/* Global dark mode background for entire page */
+/* Removed dark mode background styles as per request */
+/* html.dark, body.dark {
+  background-color: #121212;
+  transition: background-color 0.3s ease;
+} */
+
+/* Mobile touch optimization */
+button, a, [role="button"], input, textarea {
+  touch-action: manipulation;
+}
+
+/* Prevent text selection on tap (mobile) */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}

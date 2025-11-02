@@ -1,0 +1,17 @@
+{
+  "name": "trendgram-chat-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker + Durable Objects for Trendgram chat",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "wrangler": "^4.45.3"
+  }
+}

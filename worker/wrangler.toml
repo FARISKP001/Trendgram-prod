@@ -1,0 +1,35 @@
+name = "trendgram-chat"
+main = "src/index.js"
+compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
+
+[durable_objects]
+bindings = [
+  { name = "CHAT_ROOM", class_name = "ChatRoom", script_name = "trendgram-chat" }
+]
+
+[[durable_objects.migrations]]
+tag = "v1"
+new_classes = ["ChatRoom"]
+
+[[kv_namespaces]]
+binding = "MATCH_QUEUE"
+id = "YOUR_KV_NAMESPACE_ID"
+preview_id = "YOUR_KV_PREVIEW_ID"
+
+[vars]
+# Set in Cloudflare Dashboard or via wrangler secret
+# MATCH_QUEUE_TTL = "30"
+
+[env.production]
+name = "trendgram-chat"
+
+[env.production.durable_objects]
+bindings = [
+  { name = "CHAT_ROOM", class_name = "ChatRoom", script_name = "trendgram-chat" }
+]
+
+[[env.production.kv_namespaces]]
+binding = "MATCH_QUEUE"
+id = "YOUR_KV_NAMESPACE_ID"
+

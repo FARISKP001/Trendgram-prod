@@ -1,9 +1,14 @@
 import React from 'react';
 
-const SpeechBubble = ({ children, isSender }) => {
-  const fillColor = isSender ? '#d9fdd3' : '#ffffff';
-  const textColor = '#222e35';
-  const borderColor = isSender ? '#17C4FF' : '#ccc';
+const SpeechBubble = ({ children, isSender, theme = 'light' }) => {
+  const isDark = theme === 'dark';
+  const fillColor = isSender
+    ? (isDark ? '#2d5a2d' : '#d9fdd3')
+    : (isDark ? '#374151' : '#ffffff');
+  const textColor = isDark ? '#f3f4f6' : '#222e35';
+  const borderColor = isSender
+    ? (isDark ? '#3b82f6' : '#17C4FF')
+    : (isDark ? '#6b7280' : '#ccc');
 
   const containerStyle = {
     display: 'inline-block',
@@ -18,7 +23,7 @@ const SpeechBubble = ({ children, isSender }) => {
     minWidth: '40px',
     wordBreak: 'break-word',
     whiteSpace: 'pre-wrap',
-    boxShadow: '0 1px 1.5px rgba(0,0,0,0.1)',
+    boxShadow: isDark ? '0 1px 1.5px rgba(0,0,0,0.3)' : '0 1px 1.5px rgba(0,0,0,0.1)',
   };
 
   return <div style={containerStyle}>{children}</div>;
