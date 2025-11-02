@@ -9,17 +9,17 @@ const ConfirmModal = ({ onConfirm, onCancel }) => {
       aria-labelledby="confirm-title"
       aria-describedby="confirm-desc"
     >
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-xl">
-        <h2 id="confirm-title" className="text-lg font-bold text-gray-800 dark:text-white mb-3">
+         <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+        <h2 id="confirm-title" className="text-lg font-bold text-gray-800 mb-3">
           Leave Chat?
         </h2>
-        <p id="confirm-desc" className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+       <p id="confirm-desc" className="text-sm text-gray-600 mb-6">
           You'll be disconnected. Are you sure?
         </p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 transition"
+            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 transition"
           >
             No
           </button>
