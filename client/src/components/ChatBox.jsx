@@ -742,7 +742,7 @@ const ChatBox = () => {
               try {
                 const workerUrlObj = new URL(fallbackWorker);
                 const protocol = workerUrlObj.protocol === 'https:' ? 'wss:' : 'ws:';
-                wsUrl = `${protocol}//${workerUrlObj.host}/chat/${sessionIdFromState}?userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
+                wsUrl = `${protocol}//${workerUrlObj.host}/chat?sessionId=${encodeURIComponent(sessionIdFromState)}&userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
               } catch (error) {
                 console.error('🔴 [ChatBox] Failed to build WebSocket URL:', error, { fallbackWorker, sessionIdFromState });
               }

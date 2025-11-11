@@ -44,7 +44,11 @@ const getWorkerURL = () => {
   // Priority 3: Production - use worker URL or fallback to origin
   if (typeof window !== 'undefined' && window?.location?.origin) {
     const prodUrl = window.location.origin;
-    logWarn('[SocketProvider] Production mode, using origin as worker URL (may be incorrect):', prodUrl);
+    if (!import.meta.env.DEV) {
+      logWarn('[SocketProvider] Production mode without VITE_WORKER_URL set. Falling back to window.origin:', prodUrl);
+    } else {
+      log('[SocketProvider] Using origin as worker URL:', prodUrl);
+    }
     return prodUrl;
   }
   logWarn('[SocketProvider] Production mode in non-window environment, no worker URL available');
@@ -78,7 +82,7 @@ const buildWsUrl = (base, roomId, userId, userName, queueKey) => {
   const protocol = urlObj.protocol === 'https:' ? 'wss:' : 'ws:';
   const encodedName = userName ? `&userName=${encodeURIComponent(userName)}` : '';
   const queueKeyParam = queueKey ? `&queueKey=${encodeURIComponent(queueKey)}` : '';
-  return `${protocol}//${urlObj.host}/chat/${roomId}?userId=${encodeURIComponent(userId)}${encodedName}${queueKeyParam}`;
+  return `${protocol}//${urlObj.host}/chat?sessionId=${encodeURIComponent(roomId)}&userId=${encodeURIComponent(userId)}${encodedName}${queueKeyParam}`;
 };
 
 const extractRoomId = (wsUrl) => {
@@ -563,6 +567,17 @@ const SocketProvider = ({ children, telemetry }) => {
             timestamp: data.timestamp,
             reason: data.reason || 'Partner left',
             autoRequeue: data.autoRequeue || false
+          }
+        }));
+      } else if (data.type === 'partner_disconnected') {
+        // Map Worker 'partner_disconnected' to existing UI 'partner_left' event
+        window.dispatchEvent(new CustomEvent('partner_left', {
+          detail: {
+            userId: data.userId,
+            userName: data.userName,
+            timestamp: data.timestamp,
+            reason: data.reason || 'Partner disconnected',
+            autoRequeue: false
           }
         }));
       } else if (data.type === 'partner_connected') {
