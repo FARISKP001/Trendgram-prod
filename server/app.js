@@ -7,13 +7,33 @@ const compression = require('compression');
 const helmet = require('helmet');
 
 const registerSocketHandlers = require('./src/socket');
-const redis = require('./src/config/redisClient');
+const { getSocketByUserId } = require('./src/socket/state');
 const connectMongoDB = require('./src/config/mongoClient');
 const { corsOptions, socketCorsOptions } = require('./src/config/corsOptions');
-const crypto = require('crypto');
-const User = require('./src/models/User');
 const Feedback = require('./src/models/Feedback');
 const FAQ = require('./src/models/FAQ');
+
+const emotionStore = new Map();
+let feedbackSequenceCounter = null;
+let faqSequenceCounter = null;
+
+async function nextFeedbackId() {
+  if (feedbackSequenceCounter === null) {
+    const lastFeedback = await Feedback.findOne({}, { _id: 1 }).sort({ _id: -1 }).lean();
+    feedbackSequenceCounter = lastFeedback ? Number(lastFeedback._id) || 0 : 0;
+  }
+  feedbackSequenceCounter += 1;
+  return feedbackSequenceCounter;
+}
+
+async function nextFaqId() {
+  if (faqSequenceCounter === null) {
+    const lastFaq = await FAQ.findOne({}, { _id: 1 }).sort({ _id: -1 }).lean();
+    faqSequenceCounter = lastFaq ? Number(lastFaq._id) || 0 : 0;
+  }
+  faqSequenceCounter += 1;
+  return faqSequenceCounter;
+}
 
 // Create Express app
 const app = express();
@@ -55,18 +75,15 @@ app.post('/emotion-result', async (req, res) => {
   }
 
   try {
-    // Store emotion for user
-    await redis.set(`emotion:${userId}`, emotion, 'EX', 24 * 3600);
-    // Add to emotion queue
-    await redis.rpush(`chat:waitingQueue:${emotion}`, userId);
+    emotionStore.set(userId, {
+      emotion,
+      storedAt: Date.now(),
+      expiresAt: Date.now() + 24 * 3600 * 1000,
+    });
 
-    // Notify user if connected
-    const socketId = await redis.get(`userSocket:${userId}`);
-    if (socketId) {
-      const socket = io.sockets.sockets.get(socketId);
-      if (socket) {
-        socket.emit('emotion_result', { emotion });
-      }
+    const socket = getSocketByUserId(io, userId);
+    if (socket) {
+      socket.emit('emotion_result', { emotion });
     }
 
     res.json({ success: true });
@@ -79,145 +96,9 @@ app.post('/emotion-result', async (req, res) => {
 // Connect to MongoDB
 connectMongoDB();
 
-// API endpoint to generate sequential user_sequence_id
-app.post('/api/generate-sequence-id', async (req, res) => {
-  try {
-    const sequenceId = await redis.incr('user_sequence_counter');
-    await redis.set(`user_sequence:${sequenceId}`, sequenceId, 'EX', 24 * 3600); // Store for session tracking
-    res.json({ sequenceId });
-  } catch (error) {
-    console.error('Sequence ID generation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // Simple health check
 app.get('/api/health', (req, res) => {
   res.json({ ok: true });
-});
-
-// Get a user by public ID (limited fields)
-app.get('/api/users/:id', async (req, res) => {
-  try {
-    const id = (req.params.id || '').toString();
-    if (!id) return res.status(400).json({ error: 'id is required' });
-    const user = await User.findOne({ ID: id }, { _id: 0, ID: 1, Name: 1, Username: 1 }).lean();
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    return res.json({ user });
-  } catch (err) {
-    console.error('Get user error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Search users by name or username
-app.get('/api/users/search', async (req, res) => {
-  try {
-    const q = (req.query.q || '').toString().trim();
-    if (!q) return res.json({ users: [] });
-
-    // Case-insensitive partial match on Name or Username
-    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    const users = await User.find(
-      { $or: [{ Name: regex }, { Username: regex }] },
-      { _id: 0, ID: 1, Name: 1, Username: 1 }
-    )
-      .limit(10)
-      .lean();
-
-    return res.json({ users });
-  } catch (err) {
-    console.error('User search error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Sign Up endpoint
-app.post('/api/signup', async (req, res) => {
-  try {
-    const { name, email, age, gender, password } = req.body || {};
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'name, email, password are required' });
-    }
-
-    const normalizedEmail = String(email).trim().toLowerCase();
-
-    // Check if email exists
-    const existing = await User.findOne({ Email_Id: normalizedEmail });
-    if (existing) return res.status(409).json({ error: 'Email already exists' });
-
-    // Generate sequential numeric ID (string stored)
-    const nextId = await redis.incr('user_sequence_counter');
-    const ID = String(nextId);
-
-    // Hash password with PBKDF2
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
-
-    const userDoc = new User({
-      ID,
-      Name: name,
-      Email_Id: normalizedEmail,
-      Age: typeof age !== 'undefined' ? Number(age) : undefined,
-      Gender: gender || undefined,
-      Password_Hash: hash,
-      Password_Salt: salt,
-    });
-    await userDoc.save();
-
-    return res.json({ success: true, userId: ID });
-  } catch (err) {
-    console.error('Signup error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Email existence check
-app.get('/api/check-email', async (req, res) => {
-  try {
-    const email = (req.query.email || '').toString().trim();
-    if (!email) return res.status(400).json({ error: 'email is required' });
-    const exists = await User.exists({ Email_Id: email });
-    return res.json({ exists: !!exists });
-  } catch (err) {
-    console.error('Check email error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Sign In endpoint
-app.post('/api/signin', async (req, res) => {
-  try {
-    const { identifier, password } = req.body || {};
-    if (!identifier || !password) {
-      return res.status(400).json({ error: 'identifier and password are required' });
-    }
-
-    const idTrim = String(identifier).trim();
-    const pwdTrim = String(password);
-
-    // Try email (case-insensitive) first, then Name as fallback
-    let user = idTrim.includes('@')
-      ? await User.findOne({ Email_Id: idTrim.toLowerCase() })
-      : await User.findOne({ Name: idTrim });
-    if (!user) {
-      user = await User.findOne({ Name: idTrim });
-    }
-    if (!user || !user.Password_Salt || !user.Password_Hash) {
-      return res.status(401).json({ error: 'username/password is incorrect' });
-    }
-
-    const calc = crypto.pbkdf2Sync(pwdTrim, user.Password_Salt, 100000, 64, 'sha512');
-    const stored = Buffer.from(user.Password_Hash, 'hex');
-    if (stored.length !== calc.length || !crypto.timingSafeEqual(stored, calc)) {
-      return res.status(401).json({ error: 'username/password is incorrect' });
-    }
-
-    return res.json({ success: true, userId: user.ID, name: user.Name, email: user.Email_Id });
-  } catch (err) {
-    console.error('Signin error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
 });
 
 // Feedback submission endpoint
@@ -240,32 +121,8 @@ app.post('/api/feedback', async (req, res) => {
       return res.status(400).json({ error: 'Rating must be an integer between 1 and 5' });
     }
     
-    // Get next available sequential ID from Redis
-    let feedbackId;
-    let retries = 0;
-    const maxRetries = 10;
-    
-    while (retries < maxRetries) {
-      // Get next sequence number
-      feedbackId = await redis.incr('feedback_sequence_counter');
-      
-      // Validate that this ID is not already used (handle edge cases)
-      const existing = await Feedback.findById(feedbackId).lean();
-      if (!existing) {
-        // ID is available, use it
-        break;
-      }
-      
-      // ID already exists (shouldn't happen, but handle it)
-      console.warn(`⚠️ Feedback ID ${feedbackId} already exists, trying next number...`);
-      retries++;
-      
-      if (retries >= maxRetries) {
-        return res.status(500).json({ error: 'Failed to generate unique feedback ID. Please try again.' });
-      }
-    }
-    
-    // Create feedback document with sequential numeric ID
+    const feedbackId = await nextFeedbackId();
+
     const feedback = new Feedback({
       _id: feedbackId,
       feedbackText: feedbackText.trim(),
@@ -283,29 +140,6 @@ app.post('/api/feedback', async (req, res) => {
     });
   } catch (err) {
     console.error('Feedback submission error:', err);
-    
-    // Handle duplicate key error (race condition)
-    if (err.code === 11000 || err.code === 11001) {
-      // Retry once
-      try {
-        const retryId = await redis.incr('feedback_sequence_counter');
-        const feedback = new Feedback({
-          _id: retryId,
-          feedbackText: req.body.feedbackText.trim(),
-          rating: req.body.rating || null,
-        });
-        await feedback.save();
-        console.log(`✅ Feedback saved (retry): ID=${retryId}`);
-        return res.json({ 
-          success: true, 
-          message: 'Thank you for your feedback!',
-          feedbackId: retryId 
-        });
-      } catch (retryErr) {
-        console.error('Feedback retry error:', retryErr);
-      }
-    }
-    
     return res.status(500).json({ error: 'Failed to submit feedback. Please try again later.' });
   }
 });
@@ -413,28 +247,8 @@ app.post('/api/faqs', async (req, res) => {
       ? category.trim().toLowerCase() 
       : 'general';
     
-    // Get next available sequential ID from Redis
-    let faqId;
-    let retries = 0;
-    const maxRetries = 10;
-    
-    while (retries < maxRetries) {
-      faqId = await redis.incr('faq_sequence_counter');
-      
-      const existing = await FAQ.findById(faqId).lean();
-      if (!existing) {
-        break;
-      }
-      
-      console.warn(`⚠️ FAQ ID ${faqId} already exists, trying next number...`);
-      retries++;
-      
-      if (retries >= maxRetries) {
-        return res.status(500).json({ error: 'Failed to generate unique FAQ ID. Please try again.' });
-      }
-    }
-    
-    // Create FAQ document
+    const faqId = await nextFaqId();
+
     const faq = new FAQ({
       _id: faqId,
       question: question.trim(),
@@ -535,7 +349,7 @@ app.delete('/api/faqs/:id', async (req, res) => {
 });
 
 // Register socket.io handlers
-registerSocketHandlers(io, redis);
+registerSocketHandlers(io);
 
 // Start server
 const PORT = process.env.PORT || 5000;

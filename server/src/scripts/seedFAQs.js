@@ -1,7 +1,6 @@
 require('dotenv').config({ path: './.env' });
 const connectMongoDB = require('../config/mongoClient');
 const FAQ = require('../models/FAQ');
-const redis = require('../config/redisClient');
 
 // Sample FAQs to seed the database
 const sampleFAQs = [
@@ -73,18 +72,8 @@ async function seedFAQs() {
       process.exit(0);
     }
     
-    // Get starting ID from Redis or use 1
-    let startId = 1;
-    try {
-      const counter = await redis.incr('faq_sequence_counter');
-      // Decrement once to get the correct starting point
-      await redis.decr('faq_sequence_counter');
-      if (counter > sampleFAQs.length) {
-        startId = counter - sampleFAQs.length;
-      }
-    } catch (err) {
-      console.log('⚠️  Redis not available, using sequential IDs starting from 1');
-    }
+    const lastFaq = await FAQ.findOne({}, { _id: 1 }).sort({ _id: -1 }).lean();
+    const startId = (lastFaq ? Number(lastFaq._id) || 0 : 0) + 1;
     
     // Insert sample FAQs with sequential IDs
     const faqsToInsert = sampleFAQs.map((faq, index) => ({

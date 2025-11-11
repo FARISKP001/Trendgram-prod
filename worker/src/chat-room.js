@@ -1,585 +1,549 @@
 /**
- * ChatRoom Durable Object
- * Handles WebSocket connections for a pair of users
- * Auto-cleans up after 5 minutes of inactivity or when both users disconnect
+ * ChatRoomDO is responsible for managing a single chat session between two users.
+ * It keeps transient state in-memory, persists lightweight snapshots to state.storage,
+ * and writes a final summary to KV before tearing itself down when both users leave.
  */
-export class ChatRoom {
+export class ChatRoomDO {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.clients = new Set();
-    this.messages = [];
-    this.userIds = new Set();
+    this.roomId = state.id.toString();
+    this.clients = new Map(); // userId -> WebSocket
     this.userNames = new Map(); // userId -> userName
-    this.lastActivity = Date.now();
-    this.alarmScheduled = false;
-    this.idleTimeout = 5 * 60 * 1000; // 5 minutes
-    this.messageLimit = 20; // Keep last 20 messages in memory
-    this.nextCleanupTimeout = null; // Track cleanup timeout for proper cancellation
-    this.pendingDisconnects = new Map(); // Track pending disconnect notifications: userId -> timeoutId
-    this.disconnectGracePeriod = 5000; // 5 seconds grace period before notifying partner
-    
-    // Initialize alarm handler
-    this.state.storage.setAlarm(Date.now() + this.idleTimeout).catch(console.error);
-    this.alarmScheduled = true;
+    this.messages = [];
+    this.stats = { totalMessages: 0 };
+    this.disconnectedUsers = new Set();
+    this.config = null;
+    this.queueKey = null;
+    this.sessionId = null;
+    this.snapshotKey = `chat:snapshot:${this.roomId}`;
+
+    this.state.blockConcurrencyWhile(async () => {
+      this.config = await this.state.storage.get("config");
+      this.queueKey = await this.state.storage.get("queueKey");
+      this.sessionId = await this.state.storage.get("sessionId");
+      // Fallback: try to get from state.id.name if it's a named ID
+      if (!this.sessionId && this.state.id.name) {
+        this.sessionId = this.state.id.name;
+      }
+      const storedMessages = await this.state.storage.get("messages");
+      if (storedMessages) this.messages = storedMessages;
+      const storedStats = await this.state.storage.get("stats");
+      if (storedStats) this.stats = storedStats;
+    });
+  }
+
+  getIdleTimeoutMs() {
+    // Default: 5 minutes
+    const raw = this.env?.CHAT_IDLE_MINUTES;
+    const minutes = Number.parseInt(raw, 10);
+    if (Number.isFinite(minutes) && minutes > 0 && minutes <= 60) {
+      return minutes * 60_000;
+    }
+    return 5 * 60_000;
   }
 
   async fetch(request) {
-    // Only accept WebSocket upgrade requests
-    if (request.headers.get("Upgrade") !== "websocket") {
-      return new Response("Expected WebSocket", { status: 426 });
+    const url = new URL(request.url);
+    const method = request.method.toUpperCase();
+
+    if (method === "POST" && url.pathname.endsWith("/init")) {
+      return this.handleInit(request);
     }
 
-    try {
-      // Create WebSocket pair
-      const pair = new WebSocketPair();
-      const [client, server] = Object.values(pair);
-
-      // Accept the server WebSocket
-      this.handleSession(server, request);
-
-      // Return the client WebSocket with upgrade headers
-      return new Response(null, {
-        status: 101,
-        webSocket: client,
-        headers: {
-          "Upgrade": "websocket",
-          "Connection": "Upgrade",
-        },
-      });
-    } catch (error) {
-      console.error("ChatRoom fetch error:", error);
-      return new Response(JSON.stringify({ error: "WebSocket error" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (method === "POST" && url.pathname.endsWith("/leave")) {
+      return this.handleLeave(request);
     }
+
+    if (request.headers.get("upgrade") === "websocket") {
+      return this.handleWebSocket(request);
+    }
+
+    return new Response("Expected WebSocket upgrade", { status: 426 });
   }
 
-  handleSession(ws, request) {
-    ws.accept();
+  async handleInit(request) {
+    const payload = await request.json();
+    if (!payload?.users || !Array.isArray(payload.users)) {
+      return new Response("Invalid init payload", { status: 400 });
+    }
+
+    console.log(`[ChatRoomDO:${this.roomId}] handleInit`, {
+      queueKey: payload.queueKey,
+      userIds: payload.users.map((u) => (typeof u === "string" ? u : u.userId)),
+    });
+
+    this.queueKey = payload.queueKey ?? this.queueKey ?? null;
+    // Extract sessionId from payload if available, or use state.id.name
+    if (payload.sessionId) {
+      this.sessionId = payload.sessionId;
+    } else if (!this.sessionId && this.state.id.name) {
+      this.sessionId = this.state.id.name;
+    }
     
+    this.config = {
+      roomId: this.roomId,
+      sessionId: this.sessionId,
+      queueKey: payload.queueKey ?? null,
+      filters: payload.filters ?? {},
+      users: payload.users,
+      createdAt: payload.createdAt ?? Date.now(),
+    };
+
+    await this.state.storage.put("config", this.config);
+    await this.state.storage.put("messages", this.messages);
+    await this.state.storage.put("stats", this.stats);
+    await this.state.storage.put("queueKey", this.queueKey);
+    if (this.sessionId) {
+      await this.state.storage.put("sessionId", this.sessionId);
+    }
+
+    // Schedule idle cleanup in case clients never connect
+    try {
+      await this.state.storage.setAlarm(Date.now() + this.getIdleTimeoutMs());
+    } catch (err) {
+      console.error(`[ChatRoomDO:${this.roomId}] failed to set idle alarm`, err);
+    }
+
+    return new Response(null, { status: 204 });
+  }
+
+  async handleLeave(request) {
+    const payload = await request.json();
+    if (!payload?.userId) {
+      return new Response("userId is required", { status: 400 });
+    }
+
+    await this.cleanupChat(payload.userId, { reason: "manual_leave" });
+    return new Response(null, { status: 204 });
+  }
+
+  handleWebSocket(request) {
     const url = new URL(request.url);
     const userId = url.searchParams.get("userId");
     const userName = url.searchParams.get("userName") || "Stranger";
-    
-    // If this user reconnects, cancel any pending disconnect notification
-    if (userId && this.pendingDisconnects.has(userId)) {
-      console.log(`[ChatRoom] User ${userId} reconnected, canceling pending disconnect notification`);
-      clearTimeout(this.pendingDisconnects.get(userId));
-      this.pendingDisconnects.delete(userId);
-    }
-    
-    if (userId) {
-      this.userIds.add(userId);
-      this.userNames.set(userId, userName);
+    const queueKeyParam = url.searchParams.get("queueKey");
+    const sessionIdParam = url.searchParams.get("sessionId");
+
+    if (!userId) {
+      return new Response("Missing userId query parameter", { status: 400 });
     }
 
-    // Store WebSocket with metadata
-    ws.userId = userId;
-    ws.connectedAt = Date.now();
-    
-    this.clients.add(ws);
-    this.lastActivity = Date.now();
-    this.resetAlarm();
-
-    console.log(`[ChatRoom] Client connected: userId=${userId}, total=${this.clients.size}`);
-
-    // Send existing messages to new client (last 20)
-    if (this.messages.length > 0) {
-      const recentMessages = this.messages.slice(-this.messageLimit);
-      ws.send(JSON.stringify({ type: "history", messages: recentMessages }));
+    // Store sessionId if provided (needed for rehydration)
+    if (sessionIdParam) {
+      this.sessionId = sessionIdParam;
+      this.state.storage.put("sessionId", this.sessionId).catch((err) =>
+        console.error(`[ChatRoomDO:${this.roomId}] failed to persist sessionId`, err),
+      );
+    } else {
+      // Fallback: try to get from state.id.name if it's a named ID
+      const idName = this.state.id.name;
+      if (idName) {
+        this.sessionId = idName;
+      }
     }
 
-    // Validate session: ensure we have exactly 2 users before allowing chat
-    // If only 1 user connects, wait for partner (don't notify partner_found yet)
-    // Only notify when both users are connected
-    if (this.clients.size === 1) {
-      // First user connected, wait for partner
-      console.log(`[ChatRoom] First user ${userId} connected, waiting for partner...`);
-      // Don't send any notifications yet - wait for partner
-    } else if (this.clients.size === 2 && userId) {
-      // Both users connected - session is valid
-      console.log(`[ChatRoom] Both users connected! Session is active.`);
-      
-      // Find the other user (partner) - the one who is NOT the newly connected user
-      const otherClient = Array.from(this.clients).find(client => client !== ws && client.userId);
-      const otherUserId = otherClient?.userId;
-      const otherUserName = otherClient ? (this.userNames.get(otherUserId) || "Stranger") : "Stranger";
-      
-      // CRITICAL: Send partner_connected to BOTH users:
-      // 1. Send to the newly connected user (User B) with the first user's info
-      // 2. Send to the first user (User A) with the newly connected user's info
-      if (otherUserId && otherClient) {
-        // Send to newly connected user (User B) - notify them about User A
-        if (ws.readyState === WebSocket.READY_STATE_OPEN) {
-          ws.send(JSON.stringify({
-            type: "partner_connected",
-            userId: otherUserId,
-            userName: otherUserName,
-            timestamp: Date.now(),
-          }));
-          console.log(`[ChatRoom] ✅ Sent partner_connected to newly connected user ${userId} about partner ${otherUserId}`);
+    if (queueKeyParam) {
+      this.queueKey = queueKeyParam;
+      this.state.storage.put("queueKey", this.queueKey).catch((err) =>
+        console.error(`[ChatRoomDO:${this.roomId}] failed to persist queueKey from websocket`, err),
+      );
+    }
+
+    const pair = new WebSocketPair();
+    const [client, server] = Object.values(pair);
+    this.acceptSocket(server, { userId, userName }).catch((err) =>
+      console.error(`[ChatRoomDO:${this.roomId}] accept socket failed`, err),
+    );
+
+    return new Response(null, {
+      status: 101,
+      webSocket: client,
+      headers: {
+        Upgrade: "websocket",
+        Connection: "Upgrade",
+      },
+    });
+  }
+
+  async acceptSocket(ws, { userId, userName }) {
+    ws.accept();
+
+    try {
+      await this.ensureConfig();
+    } catch (error) {
+      console.error(`[ChatRoomDO:${this.roomId}] failed to load config`, error);
+      const restored = await this.rehydrateConfig();
+      if (!restored) {
+        safeSend(ws, {
+          type: "system",
+          text: "Chat session is not ready. Returning to matchmaking...",
+        });
+        try {
+          ws.close(1012, "Chat configuration missing");
+        } catch (_) {
+          /* ignore */
         }
-        
-        // Send to first user (User A) - notify them about User B
-        if (otherClient.readyState === WebSocket.READY_STATE_OPEN) {
-          otherClient.send(JSON.stringify({
-            type: "partner_connected",
-            userId: userId,
-            userName: userName,
-            timestamp: Date.now(),
-          }));
-          console.log(`[ChatRoom] ✅ Sent partner_connected to first user ${otherUserId} about newly connected partner ${userId}`);
-        }
-      } else {
-        // Fallback: Use broadcast if we can't find the other client
-        console.warn(`[ChatRoom] Could not find other client, using broadcast fallback`);
-        this.broadcast({
+        return;
+      }
+    }
+
+    this.clients.set(userId, ws);
+    this.userNames.set(userId, userName);
+    this.disconnectedUsers.delete(userId);
+
+    if (this.messages.length) {
+      safeSend(ws, { type: "history", messages: this.messages.slice(-20) });
+    }
+
+    const partnerId = this.getPartnerId(userId);
+    if (partnerId) {
+      const partnerName = this.userNames.get(partnerId) ?? "Stranger";
+      console.log(`[ChatRoomDO:${this.roomId}] User ${userId} connected, partnerId: ${partnerId}, partnerName: ${partnerName}, partnerConnected: ${this.clients.has(partnerId)}`);
+      
+      // If partner is already connected, notify both users
+      if (this.clients.has(partnerId)) {
+        console.log(`[ChatRoomDO:${this.roomId}] Both users connected, sending partner_connected events`);
+        safeSend(ws, {
+          type: "partner_connected",
+          userId: partnerId,
+          userName: partnerName,
+          timestamp: Date.now(),
+        });
+        safeSend(this.clients.get(partnerId), {
           type: "partner_connected",
           userId,
           userName,
           timestamp: Date.now(),
-        }, ws);
+        });
+      } else {
+        // Partner not connected yet, but send info about who they're waiting for
+        // This helps the UI show the correct partner name
+        console.log(`[ChatRoomDO:${this.roomId}] Partner not connected yet, sending partner_info`);
+        safeSend(ws, {
+          type: "partner_info",
+          userId: partnerId,
+          userName: partnerName,
+          timestamp: Date.now(),
+        });
       }
-    } else if (this.clients.size > 2) {
-      // More than 2 clients - this shouldn't happen, reject new connection
-      console.warn(`[ChatRoom] Too many clients (${this.clients.size}), rejecting connection from ${userId}`);
-      ws.close(1008, "Chat room already full");
-      this.clients.delete(ws);
-      return;
+    } else {
+      console.warn(`[ChatRoomDO:${this.roomId}] No partnerId found for userId: ${userId}`);
     }
 
-    // Handle incoming messages
     ws.addEventListener("message", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        this.handleMessage(data, ws);
-      } catch (error) {
-        console.error("[ChatRoom] Message parse error:", error);
-        ws.send(JSON.stringify({ type: "error", message: "Invalid message format" }));
-      }
+      this.handleSocketMessage(userId, event.data);
     });
 
-    // Handle close
-    ws.addEventListener("close", () => {
-      this.handleClose(ws);
+    ws.addEventListener("close", (event) => {
+      this.cleanupChat(userId, {
+        reason: "socket_close",
+        closeInfo: { code: event.code, reason: event.reason },
+      });
     });
 
-    // Handle errors
     ws.addEventListener("error", (error) => {
-      console.error("[ChatRoom] WebSocket error:", error);
-      this.handleClose(ws);
+      console.error(`[ChatRoomDO:${this.roomId}] socket error for ${userId}`, error);
+      this.cleanupChat(userId, { reason: "socket_error" });
     });
   }
 
-  handleMessage(data, ws) {
-    this.lastActivity = Date.now();
-    this.resetAlarm();
+  handleSocketMessage(userId, rawData) {
+    let payload;
+    try {
+      payload = JSON.parse(rawData);
+    } catch (error) {
+      safeSend(this.clients.get(userId), {
+        type: "error",
+        message: "Invalid message payload",
+      });
+      return;
+    }
 
-    switch (data.type) {
-      case "chatMessage":
-        this.handleChatMessage(data, ws);
+    switch (payload.type) {
+      case "chatMessage": {
+        const text = typeof payload.message === "string" ? payload.message.trim() : "";
+        if (!text) return;
+        if (text.length > 2000) return;
+
+        const messageRecord = {
+          type: "chatMessage",
+          userId,
+          userName: this.userNames.get(userId) ?? "Stranger",
+          message: text,
+          timestamp: Date.now(),
+        };
+
+        this.messages.push(messageRecord);
+        if (this.messages.length > 100) {
+          this.messages.shift();
+        }
+        this.stats.totalMessages += 1;
+        this.persistSnapshotSoon();
+
+        this.broadcast(messageRecord, userId);
+        break;
+      }
+      case "next":
+        this.cleanupChat(userId, { reason: "user_clicked_next" });
         break;
       case "heartbeat":
-        // Keep-alive ping
-        ws.send(JSON.stringify({ type: "heartbeat_ack", timestamp: Date.now() }));
-        break;
-      case "partner_found":
-        // Already handled by matchmaking
-        break;
-      case "next":
-        // User clicked Next button OR browser navigation (back/refresh/close)
-        // Notify partner and cleanup
-        const reason = data.reason || "User clicked Next";
-        console.log(`[ChatRoom] Received "next" message from ${ws.userId || 'unknown'}, reason: ${reason}`);
-        this.handleNext(ws, reason);
+        safeSend(this.clients.get(userId), { type: "heartbeat_ack", timestamp: Date.now() });
         break;
       default:
-        console.warn("[ChatRoom] Unknown message type:", data.type);
+        safeSend(this.clients.get(userId), {
+          type: "error",
+          message: `Unknown event type: ${payload.type}`,
+        });
     }
   }
 
-  handleNext(ws, reason = "User clicked Next") {
-    const userId = ws.userId;
-    const userName = this.userNames.get(userId) || "Stranger";
-    
-    console.log(`[ChatRoom] User ${userId} leaving (${reason}), notifying partner and closing all connections`);
-    
-    // Cancel any pending disconnect notification for this user (if exists)
-    if (userId && this.pendingDisconnects.has(userId)) {
-      console.log(`[ChatRoom] Canceling pending disconnect notification for ${userId} (user clicked Next)`);
-      clearTimeout(this.pendingDisconnects.get(userId));
-      this.pendingDisconnects.delete(userId);
+  broadcast(message, excludeUserId) {
+    const encoded = JSON.stringify(message);
+    for (const [uid, socket] of this.clients.entries()) {
+      if (uid === excludeUserId) continue;
+      try {
+        socket.send(encoded);
+      } catch (error) {
+        console.error(`[ChatRoomDO:${this.roomId}] broadcast failure`, error);
+      }
     }
-    
-    // Notify the partner that this user has left BEFORE closing connections
-    // This ensures the partner receives the notification immediately
-    if (this.clients.size > 1) {
-      const isBrowserNavigation = reason.includes("Browser");
-      
-      // Send partner_left message (for re-queuing logic)
-      // IMPORTANT: Even for browser navigation, User B should auto-requeue
-      // User A (who closed browser) will navigate away and NOT be re-queued (handled client-side)
-      const partnerMessage = {
-        type: "partner_left",
+  }
+
+  getPartnerId(userId) {
+    if (!this.config?.users) return null;
+    const ids = this.config.users.map((entry) =>
+      typeof entry === "string" ? entry : entry.userId,
+    );
+    return ids.find((id) => id !== userId) ?? null;
+  }
+
+  /**
+   * Cleanup wrapper invoked for every disconnect path (socket close, manual leave, browser exit).
+   * It removes the user from in-memory collections, notifies the remaining participant, informs
+   * the matchmaking layer, and when the room is empty it writes a terminal snapshot before
+   * deleting all persisted state so the Durable Object can be evicted.
+   */
+  async cleanupChat(userId, context = {}) {
+    if (!userId || this.disconnectedUsers.has(userId)) return;
+    this.disconnectedUsers.add(userId);
+
+    const departingName = this.userNames.get(userId) ?? "Stranger";
+    const socket = this.clients.get(userId);
+    if (socket) {
+      try {
+        socket.close(1000, context.reason ?? "disconnect");
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    this.clients.delete(userId);
+    this.userNames.delete(userId);
+
+    await this.notifyMatchQueue(userId);
+
+    const partnerId = this.getPartnerId(userId);
+    if (partnerId && this.clients.has(partnerId)) {
+      safeSend(this.clients.get(partnerId), {
+        type: "partner_disconnected",
         userId,
-        userName,
+        userName: departingName,
+        reason: context.reason ?? "disconnect",
         timestamp: Date.now(),
-        reason: isBrowserNavigation ? reason : "Partner clicked Next",
-        autoRequeue: true, // Always auto-requeue User B, regardless of how User A left
-      };
-      
-      // Send room_closed message for browser navigation to force partner to leave completely
-      const roomClosedMessage = isBrowserNavigation ? {
-        type: "room_closed",
-        reason: "Partner left via browser navigation - session terminated",
-        timestamp: Date.now(),
-      } : null;
-      
-      // Send messages to all other clients (the partner)
-      const otherClients = Array.from(this.clients).filter(client => client !== ws);
-      console.log(`[ChatRoom] Sending notifications to ${otherClients.length} partner(s)`);
-      
-      for (const client of otherClients) {
-        if (client.readyState === WebSocket.READY_STATE_OPEN) {
-          try {
-            // Always send partner_left FIRST
-            client.send(JSON.stringify(partnerMessage));
-            console.log(`[ChatRoom] ✅ Sent partner_left to partner ${client.userId}`);
-            
-            // If browser navigation, also send room_closed to force partner to navigate away
-            if (roomClosedMessage) {
-              // Small delay between messages to ensure both are received
-              setTimeout(() => {
-                if (client.readyState === WebSocket.READY_STATE_OPEN) {
-                  try {
-                    client.send(JSON.stringify(roomClosedMessage));
-                    console.log(`[ChatRoom] ✅ Sent room_closed to partner ${client.userId} (browser navigation detected)`);
-                  } catch (error) {
-                    console.error("[ChatRoom] Error sending room_closed message:", error);
-                  }
-                }
-              }, 50); // 50ms delay between messages
-            }
-            
-            // Mark that this partner's disconnect should not trigger a grace period
-            const partnerUserId = client.userId;
-            if (partnerUserId) {
-              client._notifiedAboutPartnerLeave = true;
-            }
-          } catch (error) {
-            console.error("[ChatRoom] Error sending messages to partner:", error);
-          }
-        } else {
-          console.warn(`[ChatRoom] Partner ${client.userId} WebSocket not open, readyState: ${client.readyState}`);
-        }
-      }
-      
-      // Cancel any existing cleanup timeout
-      if (this.nextCleanupTimeout) {
-        clearTimeout(this.nextCleanupTimeout);
-      }
-      
-      // Give enough delay to ensure partner receives both messages before closing connections
-      // For browser navigation, we need more time to ensure messages are received
-      const cleanupDelay = isBrowserNavigation ? 500 : 100; // 500ms for browser nav, 100ms for Next button
-      console.log(`[ChatRoom] Setting cleanup delay of ${cleanupDelay}ms for ${isBrowserNavigation ? 'browser navigation' : 'Next button click'}`);
-      
-      this.nextCleanupTimeout = setTimeout(() => {
-        this.nextCleanupTimeout = null;
-        
-        // Close ALL WebSocket connections (both the user who clicked Next and their partner)
-        console.log(`[ChatRoom] Closing all ${this.clients.size} connection(s)`);
-        
-        // First, remove and close the user who clicked Next
-        if (userId) {
-          this.userIds.delete(userId);
-          this.userNames.delete(userId);
-        }
-        this.clients.delete(ws);
-        if (ws.readyState === WebSocket.READY_STATE_OPEN || ws.readyState === WebSocket.READY_STATE_CONNECTING) {
-          try {
-            ws.close(1000, "User clicked Next");
-          } catch (error) {
-            console.error("[ChatRoom] Error closing user's WebSocket:", error);
-          }
-        }
-        
-        // Then close all remaining connections (the partner)
-        // Create a copy of clients array to avoid iteration issues
-        const remainingClients = Array.from(this.clients);
-        for (const client of remainingClients) {
-          const partnerUserId = client.userId;
-          if (partnerUserId) {
-            this.userIds.delete(partnerUserId);
-            this.userNames.delete(partnerUserId);
-          }
-          
-          if (client.readyState === WebSocket.READY_STATE_OPEN || client.readyState === WebSocket.READY_STATE_CONNECTING) {
-            try {
-              // Use different close reason for browser navigation vs Next button
-              const closeReason = isBrowserNavigation 
-                ? "Room closed - partner left via browser navigation" 
-                : "Partner clicked Next - session ended";
-              client.close(1000, closeReason);
-              console.log(`[ChatRoom] Closed partner ${partnerUserId}'s connection: ${closeReason}`);
-            } catch (error) {
-              console.error("[ChatRoom] Error closing partner's WebSocket:", error);
-            }
-          }
-        }
-        
-        // Clear all clients and messages
-        this.clients.clear();
-        
-        // Cleanup immediately - both users are now disconnected
-        console.log("[ChatRoom] All clients disconnected after Next, clearing chat data immediately");
-        this.cleanup();
-      }, cleanupDelay); // Use dynamic delay based on whether it's browser navigation
+      });
+    }
+
+    if (this.clients.size === 0) {
+      await this.finalizeAndDestroy(context);
     } else {
-      // Only one client, cleanup immediately
-      if (userId) {
-        this.userIds.delete(userId);
-        this.userNames.delete(userId);
-      }
-      
-      this.clients.delete(ws);
-      if (ws.readyState === WebSocket.READY_STATE_OPEN || ws.readyState === WebSocket.READY_STATE_CONNECTING) {
-        try {
-          ws.close(1000, "User clicked Next");
-        } catch (error) {
-          console.error("[ChatRoom] Error closing WebSocket:", error);
-        }
-      }
-      
-      console.log("[ChatRoom] Only client disconnected, clearing chat data immediately");
-      this.cleanup();
+      await this.persistSnapshotSoon();
     }
   }
 
-  cleanup() {
-    console.log("[ChatRoom] Cleaning up chat room - clearing all messages and connections");
-    
-    // Cancel any pending cleanup timeout
-    if (this.nextCleanupTimeout) {
-      clearTimeout(this.nextCleanupTimeout);
-      this.nextCleanupTimeout = null;
+  async notifyMatchQueue(userId) {
+    if (!this.config?.queueKey || !this.env.MATCH_QUEUE) return;
+    try {
+      const stub = this.env.MATCH_QUEUE.get(
+        this.env.MATCH_QUEUE.idFromName(this.config.queueKey),
+      );
+      await stub.fetch("https://queue.internal/leave", {
+        method: "POST",
+        body: JSON.stringify({ userId }),
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      console.error(
+        `[ChatRoomDO:${this.roomId}] failed to notify match queue about ${userId}`,
+        error,
+      );
     }
-    
-    // Close all remaining WebSocket connections
-    for (const client of this.clients) {
-      if (client.readyState === WebSocket.READY_STATE_OPEN) {
-        try {
-          client.close(1011, "Room cleaned up");
-        } catch (error) {
-          console.error("[ChatRoom] Error closing client during cleanup:", error);
-        }
-      }
-    }
-    
-    // Clear all data
-    this.clients.clear();
-    this.messages = [];
-    this.userIds.clear();
-    this.userNames.clear();
-    this.lastActivity = Date.now();
-    
-    console.log("[ChatRoom] Cleanup complete - all messages and connections cleared");
   }
 
-  handleChatMessage(data, ws) {
-    if (!data.message || !data.userId || !data.userName) {
-      return;
-    }
-
-    // Validate message content (basic check)
-    if (typeof data.message !== "string" || data.message.trim().length === 0) {
-      return;
-    }
-
-    const msg = {
-      type: "chatMessage",
-      userId: data.userId,
-      userName: data.userName || this.userNames.get(data.userId) || "Stranger",
-      message: data.message.trim(),
-      timestamp: data.timestamp || Date.now(),
+  async finalizeAndDestroy(context) {
+    const finalSnapshot = {
+      chatId: this.roomId,
+      endedAt: Date.now(),
+      reason: context.reason ?? "cleanup",
+      userIds: Array.isArray(this.config?.users)
+        ? this.config.users.map((entry) => (typeof entry === "string" ? entry : entry.userId)).filter(Boolean)
+        : Array.from(this.userNames.keys()),
+      totalMessages: this.stats.totalMessages,
     };
 
-    // Store message (keep last 20)
-    this.messages.push(msg);
-    if (this.messages.length > this.messageLimit) {
-      this.messages.shift();
-    }
-
-    // Broadcast to all clients except sender
-    this.broadcast(msg, ws);
-    
-    console.log(`[ChatRoom] Message from ${data.userId}: ${msg.message.substring(0, 50)}`);
-  }
-
-  broadcast(message, excludeWs = null) {
-    const messageStr = JSON.stringify(message);
-    let sentCount = 0;
-    
-    for (const client of this.clients) {
-      if (client === excludeWs) continue;
-      if (client.readyState === WebSocket.READY_STATE_OPEN) {
-        try {
-          client.send(messageStr);
-          sentCount++;
-        } catch (error) {
-          console.error("[ChatRoom] Broadcast error:", error);
-        }
-      }
-    }
-    
-    return sentCount;
-  }
-
-  handleClose(ws) {
-    const userId = ws.userId;
-    const userName = this.userNames.get(userId) || "Stranger";
-    
-    // Remove event listeners if stored
-    if (ws._handlers) {
-      ws.removeEventListener("message", ws._handlers.messageHandler);
-      ws.removeEventListener("close", ws._handlers.closeHandler);
-      ws.removeEventListener("error", ws._handlers.errorHandler);
-      delete ws._handlers;
-    }
-    
-    this.clients.delete(ws);
-    
-    console.log(`[ChatRoom] Client disconnected: userId=${userId}, userName=${userName}, remaining=${this.clients.size}`);
-
-    // If this disconnect was already handled via "next" message (user clicked Next),
-    // the partner was already notified and connections are being closed intentionally
-    // Check if this WebSocket was marked as notified (from handleNext)
-    if (ws._notifiedAboutPartnerLeave) {
-      console.log(`[ChatRoom] Partner was already notified about ${userId} leaving, skipping grace period`);
-      // Just cleanup - partner was already notified
-      if (userId) {
-        this.userIds.delete(userId);
-        this.userNames.delete(userId);
-      }
-      if (this.clients.size === 0) {
-        this.scheduleCleanup();
-      }
-      return;
-    }
-    
-    // Only notify partner if they haven't already been notified (e.g., via "next" message)
-    // Add grace period to avoid false positives from temporary connection issues
-    if (userId && this.clients.size > 0 && !this.pendingDisconnects.has(userId)) {
-      // Set up grace period before notifying partner
-      // This allows time for the user to reconnect if it's a temporary network issue
-      const timeoutId = setTimeout(() => {
-        // Check if user reconnected (would have canceled this timeout)
-        if (!this.userIds.has(userId)) {
-          // User didn't reconnect - notify partner
-          const message = {
-            type: "partner_left",
-            userId,
-            userName,
-            timestamp: Date.now(),
-            reason: "Partner disconnected",
-            autoRequeue: false, // Manual re-queue for unexpected disconnects
-          };
-          
-          const sentCount = this.broadcast(message);
-          console.log(`[ChatRoom] Notified ${sentCount} remaining client(s) about ${userId} leaving after grace period`);
-        } else {
-          // User reconnected - cancel notification
-          console.log(`[ChatRoom] User ${userId} reconnected within grace period, not sending partner_left`);
-        }
-        
-        // Clean up pending disconnect tracking
-        this.pendingDisconnects.delete(userId);
-        
-        // Remove userId from tracking if not reconnected
-        if (!this.userIds.has(userId)) {
-          this.userIds.delete(userId);
-          this.userNames.delete(userId);
-        }
-      }, this.disconnectGracePeriod);
-      
-      this.pendingDisconnects.set(userId, timeoutId);
-      console.log(`[ChatRoom] Set grace period for ${userId} disconnect notification (${this.disconnectGracePeriod}ms)`);
-    } else {
-      // No remaining clients or already has pending disconnect - just cleanup
-      // Remove from tracking even if no clients remain
-      if (userId) {
-        this.userIds.delete(userId);
-        this.userNames.delete(userId);
+    if (this.env.MATCH_QUEUE_BACKUP) {
+      try {
+        // Persist a terminal snapshot for analytics before removing the ephemeral record.
+        await this.env.MATCH_QUEUE_BACKUP.put(
+          this.snapshotKey,
+          JSON.stringify(finalSnapshot),
+        );
+        // Removing the key keeps the KV namespace tidy once downstream processors have consumed it.
+        await this.env.MATCH_QUEUE_BACKUP.delete(this.snapshotKey);
+      } catch (error) {
+        console.error(
+          `[ChatRoomDO:${this.roomId}] failed to persist/delete final snapshot`,
+          error,
+        );
       }
     }
 
-    // If no clients remain, schedule cleanup
-    if (this.clients.size === 0) {
-      console.log("[ChatRoom] All clients disconnected, scheduling cleanup");
-      this.scheduleCleanup();
-    }
+    await this.state.storage.deleteAll();
+    this.clients.clear();
+    this.userNames.clear();
+    this.messages = [];
+    this.stats = { totalMessages: 0 };
+    this.config = null;
+    this.queueKey = null;
   }
 
-  resetAlarm() {
-    if (this.clients.size === 0) {
-      // If no clients, schedule immediate cleanup
-      this.scheduleCleanup();
-      return;
-    }
-
-    // Reset alarm for idle timeout
-    const alarmTime = Date.now() + this.idleTimeout;
-    this.state.storage.setAlarm(alarmTime).catch(console.error);
-    this.alarmScheduled = true;
-  }
-
-  scheduleCleanup() {
-    // Use the cleanup method to ensure consistent behavior
-    this.cleanup();
-    
-    // Schedule cleanup in 30 seconds after last disconnect
-    const cleanupDelay = 30000; // 30 seconds
-    const alarmTime = Date.now() + cleanupDelay;
-    this.state.storage.setAlarm(alarmTime).catch(console.error);
-    this.alarmScheduled = true;
+  async persistSnapshotSoon() {
+    await this.state.storage.put("messages", this.messages);
+    await this.state.storage.put("stats", this.stats);
   }
 
   async alarm() {
-    // Called by Durable Object alarm system
-    const now = Date.now();
-    const timeSinceActivity = now - this.lastActivity;
-    const hasClients = this.clients.size > 0;
+    // Idle alarm: if nobody is connected, tear down the room to avoid leaks
+    if (this.clients.size === 0) {
+      await this.finalizeAndDestroy({ reason: "idle_timeout" });
+      return;
+    }
 
-    console.log(`[ChatRoom] Alarm triggered: clients=${this.clients.size}, idle=${timeSinceActivity}ms`);
+    // If someone is connected, re-arm the alarm for continued supervision
+    try {
+      await this.state.storage.setAlarm(Date.now() + this.getIdleTimeoutMs());
+    } catch (err) {
+      console.error(`[ChatRoomDO:${this.roomId}] failed to re-arm idle alarm`, err);
+    }
+  }
 
-    // If no clients and enough time has passed, clear ALL chat data
-    if (!hasClients || timeSinceActivity >= this.idleTimeout) {
-      console.log("[ChatRoom] Clearing all messages and chat data due to inactivity");
-      this.messages = [];
-      this.userIds.clear();
-      this.userNames.clear();
-      
-      // Close any remaining connections
-      for (const client of this.clients) {
-        if (client.readyState === WebSocket.READY_STATE_OPEN) {
-          try {
-            client.send(JSON.stringify({ type: "room_closed", reason: "inactivity" }));
-            client.close(1011, "Room inactive");
-          } catch (error) {
-            console.error("[ChatRoom] Error closing client:", error);
+  async ensureConfig() {
+    if (this.config) return this.config;
+
+    if (!this.queueKey) {
+      const storedQueueKey = await this.state.storage.get("queueKey");
+      if (storedQueueKey) this.queueKey = storedQueueKey;
+    }
+
+    const tryLoad = async () => {
+      const stored = await this.state.storage.get("config");
+      if (stored) {
+        this.config = stored;
+        // Populate userNames map from config if users are defined
+        if (this.config.users && Array.isArray(this.config.users)) {
+          for (const user of this.config.users) {
+            const uid = typeof user === "string" ? user : user.userId;
+            const uname = typeof user === "string" ? "Stranger" : (user.userName || "Stranger");
+            if (uid && !this.userNames.has(uid)) {
+              this.userNames.set(uid, uname);
+            }
           }
         }
+        return true;
       }
-      
-      this.clients.clear();
-      this.userIds.clear();
-      this.userNames.clear();
-    } else if (hasClients) {
-      // Still have clients, reset alarm for next check
-      this.resetAlarm();
+      return false;
+    };
+
+    if (await tryLoad()) return this.config;
+
+    // Poll a few times to allow the /init request to arrive.
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (await tryLoad()) return this.config;
     }
+
+    throw new Error(`Chat configuration missing for ${this.roomId}`);
+  }
+
+  async rehydrateConfig() {
+    console.log(`[ChatRoomDO:${this.roomId}] attempting to rehydrate config...`);
+    
+    // Try to load queueKey from storage if not already set
+    if (!this.queueKey) {
+      this.queueKey = await this.state.storage.get("queueKey");
+    }
+    
+    if (!this.env.MATCH_QUEUE || !this.queueKey) {
+      console.warn(`[ChatRoomDO:${this.roomId}] unable to rehydrate config: missing MATCH_QUEUE binding or queueKey (queueKey: ${this.queueKey})`);
+      return false;
+    }
+
+    // Ensure we have sessionId - try to get from storage or state.id.name
+    if (!this.sessionId) {
+      this.sessionId = await this.state.storage.get("sessionId");
+      if (!this.sessionId && this.state.id.name) {
+        this.sessionId = this.state.id.name;
+      }
+    }
+
+    if (!this.sessionId) {
+      console.warn(`[ChatRoomDO:${this.roomId}] unable to rehydrate config: missing sessionId (queueKey: ${this.queueKey})`);
+      return false;
+    }
+
+    console.log(`[ChatRoomDO:${this.roomId}] calling heal with sessionId: ${this.sessionId}, queueKey: ${this.queueKey}`);
+
+    try {
+      const stub = this.env.MATCH_QUEUE.get(
+        this.env.MATCH_QUEUE.idFromName(this.queueKey),
+      );
+      const healResponse = await stub.fetch("https://queue.internal/heal", {
+        method: "POST",
+        body: JSON.stringify({ sessionId: this.sessionId }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const healResult = await healResponse.json();
+      console.log(`[ChatRoomDO:${this.roomId}] heal response:`, healResult);
+    } catch (error) {
+      console.error(`[ChatRoomDO:${this.roomId}] failed to request heal from queue`, error);
+      return false;
+    }
+
+    console.log(`[ChatRoomDO:${this.roomId}] polling for config after heal...`);
+    // Wait a bit longer initially to allow bootstrap to complete
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const stored = await this.state.storage.get("config");
+      if (stored) {
+        console.log(`[ChatRoomDO:${this.roomId}] ✅ Config found after ${attempt + 1} attempts`);
+        this.config = stored;
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    console.error(`[ChatRoomDO:${this.roomId}] rehydrate attempt timed out after 50 attempts`);
+    return false;
   }
 }
 
+function safeSend(ws, payload) {
+  if (!ws) return;
+  try {
+    ws.send(JSON.stringify(payload));
+  } catch (_) {
+    /* ignore send failures */
+  }
+}
+
+export { ChatRoomDO as ChatRoom };

@@ -5,17 +5,23 @@ compatibility_flags = ["nodejs_compat"]
 
 [durable_objects]
 bindings = [
-  { name = "CHAT_ROOM", class_name = "ChatRoom", script_name = "trendgram-chat" }
+  { name = "CHAT_ROOM", class_name = "ChatRoom", script_name = "trendgram-chat" },
+  { name = "MATCH_QUEUE", class_name = "MatchQueueDO", script_name = "trendgram-chat" }
 ]
 
 [[durable_objects.migrations]]
 tag = "v1"
 new_classes = ["ChatRoom"]
 
+[[durable_objects.migrations]]
+tag = "v2"
+new_classes = ["MatchQueueDO"]
+
 [[kv_namespaces]]
-binding = "MATCH_QUEUE"
+binding = "MATCH_QUEUE_BACKUP"
 id = "YOUR_KV_NAMESPACE_ID"
 preview_id = "YOUR_KV_PREVIEW_ID"
+# Used for five-minute backup snapshots and final chat teardown summaries.
 
 [vars]
 # Set in Cloudflare Dashboard or via wrangler secret
@@ -26,10 +32,11 @@ name = "trendgram-chat"
 
 [env.production.durable_objects]
 bindings = [
-  { name = "CHAT_ROOM", class_name = "ChatRoom", script_name = "trendgram-chat" }
+  { name = "CHAT_ROOM", class_name = "ChatRoom", script_name = "trendgram-chat" },
+  { name = "MATCH_QUEUE", class_name = "MatchQueueDO", script_name = "trendgram-chat" }
 ]
 
 [[env.production.kv_namespaces]]
-binding = "MATCH_QUEUE"
+binding = "MATCH_QUEUE_BACKUP"
 id = "YOUR_KV_NAMESPACE_ID"
 

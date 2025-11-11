@@ -29,6 +29,9 @@ const languagePlaceholders = {
 };
 
 const moodEmojis = ['😊', '😢', '😡', '😴', '😍', '🤔', '😂', '😎', '😱', '🤗'];
+const RESUME_MATCH_KEY = 'resumeMatchRequest';
+const RESUME_MATCH_CRITERIA_KEY = 'resumeMatchCriteria';
+const RESUME_MATCH_WINDOW_MS = 120000;
 
 const HomePage = () => {
   usePageView('HomePage');
@@ -104,6 +107,8 @@ const HomePage = () => {
       sessionStorage.removeItem('partnerId');
       sessionStorage.removeItem('partnerName');
       sessionStorage.removeItem('sessionId');
+      sessionStorage.removeItem('chatWsUrl');
+      sessionStorage.removeItem('workerWsBase');
     }
   }, []); // Run once on mount
 
@@ -185,6 +190,7 @@ const HomePage = () => {
   const [showMoodDialog, setShowMoodDialog] = useState(false);
   const [showTextDialog, setShowTextDialog] = useState(false);
   const [dialogError, setDialogError] = useState('');
+  const [resumeMatchPending, setResumeMatchPending] = useState(null);
 
   const { socket, isConnected, setUserContext } = useSocketContext();
   const { startMatchmaking, isMatching: isMatchingHook, matchStatus: matchStatusHook } = useMatchmaking();
@@ -271,7 +277,15 @@ const HomePage = () => {
       }
       
       const eventDetail = event.detail || {};
-      const { partnerId, partnerName, sessionId } = eventDetail;
+      const {
+        partnerId,
+        partnerName,
+        sessionId: sessionIdFromEvent,
+        roomId,
+        wsUrl,
+        workerWsBase,
+      } = eventDetail;
+      const sessionId = sessionIdFromEvent || roomId || null;
       
       console.log('✅ [HomePage] partner_found event received:', { 
         partnerId, 
@@ -303,6 +317,20 @@ const HomePage = () => {
         
         console.log('🚀 [HomePage] Navigating to chatbox...');
         
+        // Store partner info in sessionStorage BEFORE navigation to ensure it's available
+        // This helps the early event listener in ChatBox catch events that arrive early
+        sessionStorage.setItem('partnerId', partnerId);
+        sessionStorage.setItem('partnerName', finalPartnerName);
+        sessionStorage.setItem('sessionId', sessionId);
+        if (wsUrl) {
+          sessionStorage.setItem('chatWsUrl', wsUrl);
+        } else {
+          sessionStorage.removeItem('chatWsUrl');
+        }
+        if (workerWsBase) {
+          sessionStorage.setItem('workerWsBase', workerWsBase);
+        }
+        
         // Use setTimeout(0) to ensure navigation happens in next event loop tick
         // This ensures all state updates are processed first
         setTimeout(() => {
@@ -313,15 +341,17 @@ const HomePage = () => {
               userName: name || 'Stranger', 
               partnerName: finalPartnerName,
               sessionId,
+              wsUrl: wsUrl || null,
+              workerWsBase: workerWsBase || null,
             },
           });
         }, 0);
       } else {
-        console.warn('⚠️ [HomePage] partner_found event missing required fields:', { 
-          hasPartnerId: !!partnerId, 
-          hasSessionId: !!sessionId, 
+        console.warn('⚠️ [HomePage] partner_found event missing required fields:', {
+          hasPartnerId: !!partnerId,
+          hasSessionId: !!sessionId,
           partnerName,
-          eventDetail 
+          eventDetail,
         });
       }
     };
@@ -373,6 +403,21 @@ const HomePage = () => {
     if (language) sessionStorage.setItem('originalLanguage', language);
     else sessionStorage.removeItem('originalLanguage');
     sessionStorage.setItem('originalMode', 'null'); // Store as string for null mode
+    sessionStorage.setItem('lastSelectedOption', selectedOption || '');
+    try {
+      sessionStorage.setItem(RESUME_MATCH_CRITERIA_KEY, JSON.stringify({
+        userName: name,
+        deviceId,
+        selectedOption,
+        emotion,
+        language,
+        mode: null,
+        timestamp: Date.now(),
+      }));
+    } catch (err) {
+      console.warn('⚠️ [HomePage] Failed to persist resume match criteria', err);
+    }
+    sessionStorage.removeItem(RESUME_MATCH_KEY);
     
     console.log("🟢 [HomePage] Starting matchmaking", { 
       userId: userId.current, 
@@ -411,6 +456,91 @@ const HomePage = () => {
       setStatus('');
     }
   };
+
+  const startMatchRef = useRef(startMatch);
+  useEffect(() => {
+    startMatchRef.current = startMatch;
+  }, [startMatch]);
+
+  useEffect(() => {
+    const resumeRaw = sessionStorage.getItem(RESUME_MATCH_KEY);
+    if (!resumeRaw) return;
+
+    let resumeMeta = null;
+    try {
+      resumeMeta = JSON.parse(resumeRaw);
+    } catch (err) {
+      console.warn('⚠️ [HomePage] Invalid resume match metadata', err);
+      sessionStorage.removeItem(RESUME_MATCH_KEY);
+      return;
+    }
+
+    const criteriaRaw = sessionStorage.getItem(RESUME_MATCH_CRITERIA_KEY);
+    if (!criteriaRaw) {
+      sessionStorage.removeItem(RESUME_MATCH_KEY);
+      return;
+    }
+
+    let criteria = null;
+    try {
+      criteria = JSON.parse(criteriaRaw);
+    } catch (err) {
+      console.warn('⚠️ [HomePage] Invalid resume match criteria', err);
+      sessionStorage.removeItem(RESUME_MATCH_KEY);
+      return;
+    }
+
+    const resumeTimestamp = resumeMeta?.timestamp || criteria?.timestamp || Date.now();
+    if (Date.now() - resumeTimestamp > RESUME_MATCH_WINDOW_MS) {
+      sessionStorage.removeItem(RESUME_MATCH_KEY);
+      return;
+    }
+
+    if (criteria?.userName) setName(criteria.userName);
+    if (criteria?.selectedOption) setSelectedOption(criteria.selectedOption);
+    setShowGate(false);
+    setShowMoodDialog(false);
+    setShowTextDialog(false);
+    setDialogError('');
+
+    setResumeMatchPending({
+      ...criteria,
+      resumeTimestamp,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!resumeMatchPending) return;
+    if (Date.now() - resumeMatchPending.resumeTimestamp > RESUME_MATCH_WINDOW_MS) {
+      sessionStorage.removeItem(RESUME_MATCH_KEY);
+      setResumeMatchPending(null);
+      return;
+    }
+    if (!deviceId || !cookieDone || !ageConfirmed) return;
+    if (!resumeMatchPending.userName) {
+      sessionStorage.removeItem(RESUME_MATCH_KEY);
+      setResumeMatchPending(null);
+      return;
+    }
+    if (name !== resumeMatchPending.userName) return;
+    if (resumeMatchPending.selectedOption && selectedOption !== resumeMatchPending.selectedOption) return;
+    if (matching || isMatchingHook) return;
+
+    sessionStorage.removeItem(RESUME_MATCH_KEY);
+    setTimeout(() => {
+      startMatchRef.current && startMatchRef.current();
+    }, 0);
+    setResumeMatchPending(null);
+  }, [
+    resumeMatchPending,
+    deviceId,
+    cookieDone,
+    ageConfirmed,
+    name,
+    selectedOption,
+    matching,
+    isMatchingHook,
+  ]);
 
   const handleFindMatch = (e) => {
     e.preventDefault();

@@ -23,6 +23,9 @@ const showMobileExitToast = (onConfirm) => {
   });
 };
 
+const RESUME_MATCH_KEY = 'resumeMatchRequest';
+const RESUME_MATCH_CRITERIA_KEY = 'resumeMatchCriteria';
+
 const ChatBox = () => {
   const { socket, isConnected, setUserContext, connectToChat: connectToChatFromContext, connectToMatch } = useSocketContext();
   const location = useLocation();
@@ -285,6 +288,8 @@ const ChatBox = () => {
       hasPartner: !!partnerId 
     });
 
+    sessionStorage.removeItem(RESUME_MATCH_KEY);
+
     // Clear ALL previous messages and chat data when leaving
     // Only show this message to the user who clicked Next (not the partner)
     setMessages([{ text: 'You have left the chat, wait for the new partner', from: 'system' }]);
@@ -517,7 +522,7 @@ const ChatBox = () => {
           // Use refs and sessionStorage to get current values (avoid stale closure)
           const currentPartnerId = partnerIdRef.current;
           const hasPartnerInStorage = !!sessionStorage.getItem('partnerId');
-          const hasSessionIdInStorage = !!sessionStorage.getItem('sessionId') || !!location.state?.sessionId;
+          const hasSessionIdInStorage = !!sessionStorage.getItem('sessionId') || !!location.state?.sessionId || !!location.state?.roomId;
           
           // If we have partner info in storage/state or ref, stop polling
           // partner_found event sets these values before navigation
@@ -609,7 +614,9 @@ const ChatBox = () => {
     
     const partnerIdFromState = location.state?.partnerId;
     const partnerNameFromState = location.state?.partnerName;
-    const sessionIdFromState = location.state?.sessionId;
+    const sessionIdFromState = location.state?.sessionId || location.state?.roomId || sessionStorage.getItem('sessionId');
+    const wsUrlFromState = location.state?.wsUrl || sessionStorage.getItem('chatWsUrl');
+    const workerWsBase = location.state?.workerWsBase || sessionStorage.getItem('workerWsBase');
     
     if (partnerIdFromState && sessionIdFromState) {
       // We have a matched partner, connect to WebSocket
@@ -627,28 +634,59 @@ const ChatBox = () => {
       hasHandledLeave.current = false;
       leftManually.current = false; // Reset the flag for new session
       
-      // Set timeout: if partner doesn't connect within 15 seconds, treat as no partner
-      const partnerConnectionTimeout = setTimeout(() => {
-        console.warn('⚠️ [ChatBox] Partner did not connect within 15 seconds, treating as no partner available');
-        if (isMountedRef.current) {
-          setMessages([{ text: 'Partner did not connect. Searching for a new partner...', from: 'system' }]);
-          setChatState('searching');
-          setPartnerId(null);
-          setPartnerName('');
-          sessionStorage.removeItem('partnerId');
-          sessionStorage.removeItem('partnerName');
-          // Re-queue for matchmaking
-          if (socket && userId && userName) {
-            handleNewBuddy();
+      // Check if we already received partner_connected event (early arrival)
+      const pendingPartnerConnected = sessionStorage.getItem('pendingPartnerConnected');
+      let hasImmediatePartner = false;
+      if (pendingPartnerConnected) {
+        try {
+          const pendingData = JSON.parse(pendingPartnerConnected);
+          const pendingAge = Date.now() - (pendingData.timestamp || 0);
+          // Only use if it's recent (within 5 seconds)
+          if (pendingAge < 5000 && pendingData.partnerId === partnerIdFromState) {
+            console.log('✅ [ChatBox] Found pending partner_connected event, processing immediately:', pendingData);
+            sessionStorage.removeItem('pendingPartnerConnected');
+            hasImmediatePartner = true;
+            // Trigger partner_connected handler immediately
+            window.dispatchEvent(new CustomEvent('partner_connected', { detail: pendingData }));
+          } else {
+            sessionStorage.removeItem('pendingPartnerConnected');
           }
+        } catch (error) {
+          console.error('🔴 [ChatBox] Error parsing pending partner_connected:', error);
+          sessionStorage.removeItem('pendingPartnerConnected');
         }
-      }, 15000);
-      
-      // Store timeout reference
-      if (partnerConnectionTimeoutRef.current) {
-        clearTimeout(partnerConnectionTimeoutRef.current);
       }
-      partnerConnectionTimeoutRef.current = partnerConnectionTimeout;
+      
+      if (!hasImmediatePartner) {
+        // Set timeout: if partner doesn't connect within 15 seconds, treat as no partner
+        const partnerConnectionTimeout = setTimeout(() => {
+          console.warn('⚠️ [ChatBox] Partner did not connect within 15 seconds, treating as no partner available');
+          if (isMountedRef.current) {
+            setMessages([{ text: 'Partner did not connect. Searching for a new partner...', from: 'system' }]);
+            setChatState('searching');
+            setPartnerId(null);
+            setPartnerName('');
+            sessionStorage.removeItem('partnerId');
+            sessionStorage.removeItem('partnerName');
+            sessionStorage.removeItem('sessionId');
+            sessionStorage.removeItem('chatWsUrl');
+            sessionStorage.removeItem('workerWsBase');
+            // Re-queue for matchmaking
+            if (socket && userId && userName) {
+              handleNewBuddy();
+            }
+          }
+        }, 15000);
+        
+        // Store timeout reference
+        if (partnerConnectionTimeoutRef.current) {
+          clearTimeout(partnerConnectionTimeoutRef.current);
+        }
+        partnerConnectionTimeoutRef.current = partnerConnectionTimeout;
+      } else if (partnerConnectionTimeoutRef.current) {
+        clearTimeout(partnerConnectionTimeoutRef.current);
+        partnerConnectionTimeoutRef.current = null;
+      }
       
       // Load original matchmaking criteria from sessionStorage if available
       originalEmotionRef.current = sessionStorage.getItem('originalEmotion') || null;
@@ -677,7 +715,9 @@ const ChatBox = () => {
         isConnected: socket?.connected,
         hasWs: !!socket?.ws,
         wsReadyState: socket?.ws?.readyState,
-        sessionId: sessionIdFromState 
+        sessionId: sessionIdFromState,
+        wsUrlFromState,
+        workerWsBase,
       });
       
       // Small delay to ensure context is ready
@@ -692,14 +732,28 @@ const ChatBox = () => {
             wsReady
           });
           
-          if (!socket.connected && !wsReady) {
+          if (!socket.connected && !wsReady && sessionIdFromState) {
             console.log('🟢 [ChatBox] WebSocket not connected, connecting now...');
-            // Use worker URL (localhost:8787 in dev), NOT frontend URL (localhost:5173)
-            const workerURL = import.meta.env.VITE_WORKER_URL || (import.meta.env.DEV ? 'http://localhost:8787' : window.location.origin);
-            const protocol = workerURL.startsWith('https') ? 'wss' : 'ws';
-            const wsBase = workerURL.replace(/^https?:\/\//, '').replace(/\/$/, '');
-            const wsUrl = `${protocol}://${wsBase}/chat?sessionId=${sessionIdFromState}&userId=${userId}&userName=${encodeURIComponent(userName)}`;
-            console.log('🟢 [ChatBox] WebSocket URL:', { wsUrl, workerURL, wsBase });
+            const fallbackWorker = workerWsBase
+              || import.meta.env.VITE_WORKER_URL
+              || (import.meta.env.DEV ? 'http://localhost:8787' : window.location.origin);
+            let wsUrl = wsUrlFromState;
+            if (!wsUrl) {
+              try {
+                const workerUrlObj = new URL(fallbackWorker);
+                const protocol = workerUrlObj.protocol === 'https:' ? 'wss:' : 'ws:';
+                wsUrl = `${protocol}//${workerUrlObj.host}/chat/${sessionIdFromState}?userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
+              } catch (error) {
+                console.error('🔴 [ChatBox] Failed to build WebSocket URL:', error, { fallbackWorker, sessionIdFromState });
+              }
+            }
+
+            if (!wsUrl) {
+              console.error('🔴 [ChatBox] Unable to resolve WebSocket URL, aborting connection');
+              return;
+            }
+
+            console.log('🟢 [ChatBox] WebSocket URL resolved:', { wsUrl, fallbackWorker, wsUrlFromState });
             
             // Use connectToChat from context (exposed directly)
             if (connectToChatFromContext) {
@@ -739,14 +793,71 @@ const ChatBox = () => {
     return () => clearTimeout(delay);
   }, [userId, deviceId, location.state]);
 
+  // Set up event listeners early, before WebSocket connection
+  // This ensures we don't miss partner_connected events that arrive early
+  useEffect(() => {
+    if (!userId || !userName) return;
+    
+    // Handle partner_connected early setup - define handler
+    const handlePartnerConnectedEarly = (event) => {
+      const data = event.detail || {};
+      const connectedPartnerId = data.userId;
+      const connectedPartnerName = data.userName;
+      
+      // Only process if we have partner info from location.state (i.e., we just navigated here)
+      const partnerIdFromState = location.state?.partnerId;
+      const sessionIdFromState = location.state?.sessionId || location.state?.roomId || sessionStorage.getItem('sessionId');
+      
+      if (connectedPartnerId && (partnerIdFromState || sessionIdFromState)) {
+        console.log('✅ [ChatBox] Early partner_connected received, will process when component is ready:', {
+          connectedPartnerId,
+          connectedPartnerName,
+          partnerIdFromState
+        });
+        // Store in sessionStorage so the main handler can pick it up
+        sessionStorage.setItem('pendingPartnerConnected', JSON.stringify({
+          partnerId: connectedPartnerId,
+          partnerName: connectedPartnerName,
+          timestamp: Date.now()
+        }));
+      }
+    };
+    
+    window.addEventListener('partner_connected', handlePartnerConnectedEarly);
+    
+    return () => {
+      window.removeEventListener('partner_connected', handlePartnerConnectedEarly);
+    };
+  }, [userId, userName, location.state]);
+  
   useEffect(() => {
     if (!socket || !userId || !userName) return;
     
     const handlePartnerFound = (event) => {
-      const { partnerId: foundPartnerId, partnerName: foundPartnerName, sessionId: foundSessionId, emotion, language, mode } = event.detail || {};
+      const {
+        partnerId: foundPartnerId,
+        partnerName: foundPartnerName,
+        sessionId: foundSessionId,
+        roomId,
+        wsUrl,
+        workerWsBase,
+        emotion,
+        language,
+        mode,
+      } = event.detail || {};
+      const resolvedSessionId = foundSessionId || roomId || null;
       if (!foundPartnerId) return;
       
-      console.log('PARTNER FOUND PAYLOAD:', { partnerId: foundPartnerId, partnerName: foundPartnerName, sessionId: foundSessionId, emotion, language, mode });
+      console.log('PARTNER FOUND PAYLOAD:', {
+        partnerId: foundPartnerId,
+        partnerName: foundPartnerName,
+        sessionId: resolvedSessionId,
+        wsUrl,
+        workerWsBase,
+        emotion,
+        language,
+        mode,
+      });
       
       // Stop any active polling immediately
       if (matchmakingPollRef.current) {
@@ -777,8 +888,14 @@ const ChatBox = () => {
       // Update sessionStorage (including sessionId for navigation check)
       sessionStorage.setItem('partnerId', foundPartnerId);
       sessionStorage.setItem('partnerName', foundPartnerName || 'Stranger');
-      if (foundSessionId) {
-        sessionStorage.setItem('sessionId', foundSessionId);
+      if (resolvedSessionId) {
+        sessionStorage.setItem('sessionId', resolvedSessionId);
+      }
+      if (wsUrl) {
+        sessionStorage.setItem('chatWsUrl', wsUrl);
+      }
+      if (workerWsBase) {
+        sessionStorage.setItem('workerWsBase', workerWsBase);
       }
       
       // IMPORTANT: Don't enter chat mode immediately - wait for partner_connected confirmation
@@ -805,6 +922,9 @@ const ChatBox = () => {
           setPartnerName('');
           sessionStorage.removeItem('partnerId');
           sessionStorage.removeItem('partnerName');
+        sessionStorage.removeItem('sessionId');
+        sessionStorage.removeItem('chatWsUrl');
+        sessionStorage.removeItem('workerWsBase');
           // Re-queue for matchmaking
           if (socket && userId && userName) {
             handleNewBuddy();
@@ -827,12 +947,18 @@ const ChatBox = () => {
     };
     
     // Handle partner_connected event - confirms partner is actually in the chat
-    const handlePartnerConnected = (event) => {
+  const handlePartnerConnected = (event) => {
       const data = event.detail || {};
       const connectedPartnerId = data.userId;
       const connectedPartnerName = data.userName;
       
-      console.log('✅ [ChatBox] Partner connected confirmation received:', { connectedPartnerId, connectedPartnerName });
+      console.log('✅ [ChatBox] Partner connected confirmation received:', { 
+        connectedPartnerId, 
+        connectedPartnerName,
+        currentChatState: chatState,
+        currentPartnerId: partnerId,
+        hasPartnerId: !!partnerId
+      });
       
       // Clear partner connection timeout
       if (partnerConnectionTimeoutRef.current) {
@@ -840,15 +966,28 @@ const ChatBox = () => {
         partnerConnectionTimeoutRef.current = null;
       }
       
-      // Proceed if we're in 'connecting' state OR if we don't have a partnerId yet (timing issue)
-      const currentPartnerId = partnerId || sessionStorage.getItem('partnerId');
-      const shouldProcess = chatState === 'connecting' || (!currentPartnerId && chatState !== 'chatting');
+      // Get partner info from various sources
+      const currentPartnerId = partnerId || sessionStorage.getItem('partnerId') || location.state?.partnerId;
+      const currentPartnerName = partnerName || sessionStorage.getItem('partnerName') || location.state?.partnerName;
+      
+      // Process if:
+      // 1. We're in 'connecting' state (waiting for partner)
+      // 2. We're in 'idle' or 'searching' but have partner info (early arrival)
+      // 3. We don't have a partnerId yet but got one from the event
+      // 4. We have partner info that matches the connected partner
+      const hasMatchingPartner = currentPartnerId === connectedPartnerId || connectedPartnerId;
+      const shouldProcess = 
+        chatState === 'connecting' || 
+        (chatState === 'idle' && hasMatchingPartner) ||
+        (chatState === 'searching' && hasMatchingPartner) ||
+        (!currentPartnerId && connectedPartnerId);
       
       if (shouldProcess && connectedPartnerId) {
-        console.log('✅ [ChatBox] Partner confirmed connected, entering chat mode', {
+        console.log('✅ [ChatBox] Processing partner_connected event:', {
           chatState,
           connectedPartnerId,
           currentPartnerId,
+          hasMatchingPartner,
           shouldProcess
         });
         playSound('join');
@@ -858,44 +997,91 @@ const ChatBox = () => {
         setNextButtonDisabled(false); // Re-enable Next button
         setCanClickNext(true);
         
-        // Update partner info if we got it from the event
-        if (connectedPartnerId && !partnerId) {
+        // Update partner info - use event data as source of truth
+        if (connectedPartnerId) {
           setPartnerId(connectedPartnerId);
+          sessionStorage.setItem('partnerId', connectedPartnerId);
         }
-        if (connectedPartnerName && !partnerName) {
+        if (connectedPartnerName) {
           setPartnerName(connectedPartnerName);
+          sessionStorage.setItem('partnerName', connectedPartnerName);
         }
         
-        toast.success(`✅ Connected with ${connectedPartnerName || partnerName || 'Stranger'}`);
+        try {
+          const resumeSelectedOption = sessionStorage.getItem('lastSelectedOption') || null;
+          const resumeEmotion = originalEmotionRef.current || sessionStorage.getItem('originalEmotion') || null;
+          const resumeLanguage = originalLanguageRef.current || sessionStorage.getItem('originalLanguage') || null;
+          const storedMode = originalModeRef.current !== null ? originalModeRef.current : (sessionStorage.getItem('originalMode') || null);
+          const resumeMode = storedMode === 'null' ? null : storedMode;
+          sessionStorage.setItem(RESUME_MATCH_CRITERIA_KEY, JSON.stringify({
+            userName,
+            deviceId,
+            selectedOption: resumeSelectedOption,
+            emotion: resumeEmotion,
+            language: resumeLanguage,
+            mode: resumeMode,
+            timestamp: Date.now(),
+          }));
+        } catch (err) {
+          console.warn('⚠️ [ChatBox] Failed to persist resume criteria', err);
+        }
+        
+        sessionStorage.removeItem(RESUME_MATCH_KEY);
+        toast.success(`✅ Connected with ${connectedPartnerName || currentPartnerName || 'Stranger'}`);
         
         chatStartTime.current = Date.now();
         trackSessionStart();
         
         console.log('✅ [ChatBox] Chat session started, partner confirmed connected', {
           partnerId: connectedPartnerId || currentPartnerId,
-          partnerName: connectedPartnerName || partnerName
+          partnerName: connectedPartnerName || currentPartnerName
         });
       } else {
-        console.log('⚠️ [ChatBox] Received partner_connected but state mismatch:', {
+        console.log('⚠️ [ChatBox] Received partner_connected but conditions not met:', {
           chatState,
           connectedPartnerId,
           currentPartnerId,
+          hasMatchingPartner,
           shouldProcess
         });
         
-        // If we're already in 'chatting' but got partner_connected, it's a duplicate - ignore
-        // But if we're in 'idle' or 'searching', maybe partner connected before we finished setup
-        if (chatState === 'idle' || chatState === 'searching') {
-          console.log('🟡 [ChatBox] Partner connected but we were in wrong state, updating anyway');
+        // Even if conditions aren't perfect, if we have a valid partner connection, accept it
+        // This handles edge cases where timing is off
+        if (connectedPartnerId && chatState !== 'chatting') {
+          console.log('🟡 [ChatBox] Accepting partner_connected despite state mismatch to prevent stuck state');
           setChatState('chatting');
-          if (connectedPartnerId && !partnerId) {
+          if (connectedPartnerId) {
             setPartnerId(connectedPartnerId);
+            sessionStorage.setItem('partnerId', connectedPartnerId);
           }
-          if (connectedPartnerName && !partnerName) {
+          if (connectedPartnerName) {
             setPartnerName(connectedPartnerName);
+            sessionStorage.setItem('partnerName', connectedPartnerName);
           }
+          setNextButtonDisabled(false);
+          setCanClickNext(true);
           chatStartTime.current = Date.now();
           trackSessionStart();
+          try {
+            const resumeSelectedOption = sessionStorage.getItem('lastSelectedOption') || null;
+            const resumeEmotion = originalEmotionRef.current || sessionStorage.getItem('originalEmotion') || null;
+            const resumeLanguage = originalLanguageRef.current || sessionStorage.getItem('originalLanguage') || null;
+            const storedMode = originalModeRef.current !== null ? originalModeRef.current : (sessionStorage.getItem('originalMode') || null);
+            const resumeMode = storedMode === 'null' ? null : storedMode;
+            sessionStorage.setItem(RESUME_MATCH_CRITERIA_KEY, JSON.stringify({
+              userName,
+              deviceId,
+              selectedOption: resumeSelectedOption,
+              emotion: resumeEmotion,
+              language: resumeLanguage,
+              mode: resumeMode,
+              timestamp: Date.now(),
+            }));
+          } catch (err) {
+            console.warn('⚠️ [ChatBox] Failed to persist resume criteria', err);
+          }
+          sessionStorage.removeItem(RESUME_MATCH_KEY);
+          toast.success(`✅ Connected with ${connectedPartnerName || 'Stranger'}`);
         }
       }
     };
@@ -925,7 +1111,11 @@ const ChatBox = () => {
       // Check multiple sources for partnerId in case state hasn't updated yet
       // BUT: If we're in 'chatting' state, we should process partner_left even if partnerId isn't set yet (timing issue)
       const hasPartnerId = !!currentPartnerId;
-      const isInChatSession = chatState === 'chatting' || !!sessionStorage.getItem('sessionId') || !!location.state?.sessionId;
+      const isInChatSession =
+        chatState === 'chatting' ||
+        !!sessionStorage.getItem('sessionId') ||
+        !!location.state?.sessionId ||
+        !!location.state?.roomId;
       
       // CRITICAL: If user clicked Next themselves, they should NEVER process partner_left
       // The leftManually flag is set synchronously IMMEDIATELY when Next is clicked
@@ -955,7 +1145,7 @@ const ChatBox = () => {
           fromState: location.state?.partnerId,
           fromStorage: sessionStorage.getItem('partnerId'),
           hasSessionId: !!sessionStorage.getItem('sessionId'),
-          locationSessionId: !!location.state?.sessionId
+          locationSessionId: !!location.state?.sessionId || !!location.state?.roomId
         });
         return;
       }
@@ -987,30 +1177,18 @@ const ChatBox = () => {
       // Partner left - show system message and automatically re-queue
       playSound('leave');
       
-      // Check if autoRequeue is requested (partner clicked Next)
-      // If autoRequeue is explicitly true, always auto-requeue
-      // Otherwise, if we're in a chat session (chatting state), default to auto-requeue
-      // The server sends autoRequeue: true when partner clicks Next
-      const shouldAutoRequeue = data.autoRequeue === true || (data.autoRequeue !== false && chatState === 'chatting');
+      const shouldAutoRequeue = false;
       
-      console.log('📤 [ChatBox] Processing partner_left, shouldAutoRequeue:', shouldAutoRequeue, {
+      console.log('📤 [ChatBox] Processing partner_left, auto requeue disabled', {
         autoRequeueFromData: data.autoRequeue,
         chatState,
         isInChatSession
       });
       
-      // Clear ALL previous messages and chat data when partner leaves
-      if (shouldAutoRequeue) {
-        setMessages([
-          { text: 'Partner has left. Searching for a new partner...', from: 'system' },
-        ]);
-        setChatState('searching');
-      } else {
-        setMessages([
-          { text: 'Partner has left the chat. Click "Next" to find a new buddy.', from: 'system' },
-        ]);
-        setChatState('noBuddy');
-      }
+      setMessages([
+        { text: 'Partner has left the chat. Click "Next" to find a new buddy.', from: 'system' },
+      ]);
+      setChatState('noBuddy');
       
       const previousPartnerId = currentPartnerId;
       
@@ -1038,147 +1216,25 @@ const ChatBox = () => {
         }
       }
       
-      if (shouldAutoRequeue) {
-        // Automatically re-queue the user with same criteria (no need to click Next)
-        console.log('📤 [ChatBox] Partner clicked Next, auto-requeuing User B with same criteria');
-        
-        // Get original matchmaking criteria from refs or sessionStorage
-        const emotion = originalEmotionRef.current || sessionStorage.getItem('originalEmotion') || null;
-        const language = originalLanguageRef.current || sessionStorage.getItem('originalLanguage') || null;
-        const storedMode = originalModeRef.current !== null ? originalModeRef.current : (sessionStorage.getItem('originalMode') || null);
-        const mode = storedMode === 'null' ? null : storedMode;
-        
-        // Update state to searching
-        setChatState('searching');
-        setMessages([{ text: 'Partner has left. Searching for a new partner...', from: 'system' }]);
-        
-        // Reset Next button state (but keep leftManually true if we're the one who clicked Next)
-        setNextButtonDisabled(false);
-        setCanClickNext(true);
-        nextButtonClickedRef.current = false;
-        hasHandledLeave.current = false;
-        // Only reset leftManually if we're NOT the one who clicked Next
-        // leftManually will be reset when User A processes their own Next click
-        if (!leftManually.current) {
-          leftManually.current = false;
-        }
-        
-        // Start new matchmaking with ORIGINAL criteria
-        // Add a slightly longer delay for User B to ensure User A has already been queued
-        console.log('🟢 [ChatBox] Setting up auto-requeue matchmaking, will start in 500ms...', { emotion, language, mode, hasConnectToMatch: !!(connectToMatch) });
-        
-        setTimeout(async () => {
-          console.log('🟢 [ChatBox] Auto-requeue timeout fired, checking connectToMatch...', { hasConnectToMatch: !!(connectToMatch), userId, userName, deviceId });
-          
-          // Use connectToMatch directly from context
-          if (connectToMatch && typeof connectToMatch === 'function') {
-            try {
-              console.log('🟢 [ChatBox] Auto-requeuing after partner left with criteria:', { emotion, language, mode });
-              
-              // Make first matchmaking call
-              const firstResult = await connectToMatch(userId, userName, deviceId, emotion, language, mode);
-              
-              // If matched immediately, partner_found event will handle it
-              if (firstResult && firstResult.matched) {
-                console.log('✅ [ChatBox] Immediate match found after auto-requeue');
-                return;
-              }
-              
-              // Clear any existing polling interval before starting new one
-              if (matchmakingPollRef.current) {
-                clearInterval(matchmakingPollRef.current);
-                matchmakingPollRef.current = null;
-              }
-              
-              // Set up polling for matchmaking (poll every 2 seconds)
-              let pollCount = 0;
-              const maxPolls = 30; // 60 seconds total (30 * 2 seconds)
-              
-              matchmakingPollRef.current = setInterval(async () => {
-                // Check if component is still mounted
-                if (!isMountedRef.current) {
-                  if (matchmakingPollRef.current) {
-                    clearInterval(matchmakingPollRef.current);
-                    matchmakingPollRef.current = null;
-                  }
-                  return;
-                }
-                
-                pollCount++;
-                console.log(`🟡 [ChatBox] Polling for match (attempt ${pollCount}/${maxPolls})`);
-                
-                try {
-                  const result = await connectToMatch(userId, userName, deviceId, emotion, language, mode);
-                  if (result && result.matched) {
-                    console.log('✅ [ChatBox] Match found during polling after auto-requeue');
-                    if (matchmakingPollRef.current) {
-                      clearInterval(matchmakingPollRef.current);
-                      matchmakingPollRef.current = null;
-                    }
-                    // partner_found event will handle navigation
-                  } else if (pollCount >= maxPolls) {
-                    console.log('⏰ [ChatBox] Max polls reached after auto-requeue');
-                    if (matchmakingPollRef.current) {
-                      clearInterval(matchmakingPollRef.current);
-                      matchmakingPollRef.current = null;
-                    }
-                    if (isMountedRef.current) {
-                      notifyNoBuddy();
-                    }
-                  }
-                } catch (error) {
-                  console.error('🔴 [ChatBox] Polling error after auto-requeue:', error);
-                  if (matchmakingPollRef.current) {
-                    clearInterval(matchmakingPollRef.current);
-                    matchmakingPollRef.current = null;
-                  }
-                  if (isMountedRef.current) {
-                    notifyNoBuddy();
-                  }
-                }
-              }, 2000); // Poll every 2 seconds
-              
-              // Store interval ref for cleanup
-              if (searchTimeout.current) {
-                clearTimeout(searchTimeout.current);
-              }
-              searchTimeout.current = setTimeout(() => {
-                if (matchmakingPollRef.current) {
-                  clearInterval(matchmakingPollRef.current);
-                  matchmakingPollRef.current = null;
-                }
-                if (isMountedRef.current) {
-                  console.log('⏰ [ChatBox] Search timeout (60s) reached after auto-requeue');
-                  notifyNoBuddy();
-                }
-              }, 60000);
-            } catch (error) {
-              console.error('🔴 [ChatBox] Auto-requeue matchmaking error:', error);
-              toast.error('Failed to find new partner');
-              setChatState('noBuddy');
-              setNextButtonDisabled(false);
-              nextButtonClickedRef.current = false;
-            }
-          }
-        }, 500); // Longer delay for User B to ensure User A has already been queued
-      } else {
-        // Manual Next required (legacy support)
-        setNextButtonDisabled(false);
-        setCanClickNext(true);
-        nextButtonClickedRef.current = false;
-        
-        hasHandledLeave.current = false;
-        leftManually.current = false;
-        
-        if (searchTimeout.current) {
-          clearTimeout(searchTimeout.current);
-        }
-        
-        console.log('📤 [ChatBox] Partner left, Next button enabled (manual click required)', {
-          userId,
-          partnerWas: previousPartnerId
-        });
+      setNextButtonDisabled(false);
+      setCanClickNext(true);
+      nextButtonClickedRef.current = false;
+      hasHandledLeave.current = false;
+      leftManually.current = false;
+      
+      if (matchmakingPollRef.current) {
+        clearInterval(matchmakingPollRef.current);
+        matchmakingPollRef.current = null;
       }
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+        searchTimeout.current = null;
+      }
+      
+      console.log('📤 [ChatBox] Partner left, waiting for user to click Next', {
+        userId,
+        partnerWas: previousPartnerId
+      });
     };
     const handleChatMessage = (event) => {
       const msg = event.detail || event;
@@ -1261,113 +1317,37 @@ const ChatBox = () => {
       const isPartnerBrowserNavigation = reason.includes('browser navigation') || reason.includes('Browser');
       
       if (isPartnerBrowserNavigation) {
-        // Partner closed browser/back/refresh - auto-requeue User B to same queue
-        console.log('🟢 [ChatBox] Partner left via browser navigation, auto-requeuing User B');
-        
-        // Mark that we're handling this
-        hasHandledLeave.current = true;
-        
-        // Get original matchmaking criteria from refs or sessionStorage
-        const emotion = originalEmotionRef.current || sessionStorage.getItem('originalEmotion') || null;
-        const language = originalLanguageRef.current || sessionStorage.getItem('originalLanguage') || null;
-        const storedMode = originalModeRef.current !== null ? originalModeRef.current : (sessionStorage.getItem('originalMode') || null);
-        const mode = storedMode === 'null' ? null : storedMode;
-        
-        // Clear partner info but keep original criteria
-        setMessages([{ text: 'Partner has left. Searching for a new partner...', from: 'system' }]);
-        setChatState('searching');
+        console.log('🟡 [ChatBox] Partner left via browser navigation, waiting for user to click Next');
+        setMessages([{ text: 'Partner closed the chat. Click "Next" to find a new buddy.', from: 'system' }]);
+        setChatState('noBuddy');
         setPartnerId(null);
         setPartnerName('');
-        setNextButtonDisabled(false);
-        setCanClickNext(true);
-        nextButtonClickedRef.current = false;
-        hasHandledLeave.current = false;
-        leftManually.current = false;
-        
-        // Clear only partner-related sessionStorage, keep original criteria
         sessionStorage.removeItem('partnerId');
         sessionStorage.removeItem('partnerName');
         sessionStorage.removeItem('sessionId');
-        
-        // Close WebSocket connection
+        sessionStorage.removeItem('chatWsUrl');
+        sessionStorage.removeItem('workerWsBase');
+        setNextButtonDisabled(false);
+        setCanClickNext(true);
+        nextButtonClickedRef.current = false;
+        leftManually.current = false;
+        if (matchmakingPollRef.current) {
+          clearInterval(matchmakingPollRef.current);
+          matchmakingPollRef.current = null;
+        }
+        if (searchTimeout.current) {
+          clearTimeout(searchTimeout.current);
+          searchTimeout.current = null;
+        }
         if (socket && socket.ws && (socket.ws.readyState === WebSocket.OPEN || socket.ws.readyState === WebSocket.CONNECTING)) {
           try {
-            socket.ws.close(1000, 'Partner left via browser navigation - auto-requeuing');
+            socket.ws.close(1000, 'Partner left via browser navigation');
           } catch (error) {
-            console.error('🔴 [ChatBox] Error closing WebSocket on room_closed:', error);
+            console.error('🔴 [ChatBox] Error closing WebSocket after partner browser navigation:', error);
           }
         }
-        
         trackSessionEnd();
-        
-        // Auto-requeue with original criteria
-        setTimeout(async () => {
-          if (connectToMatch && typeof connectToMatch === 'function') {
-            try {
-              console.log('🟢 [ChatBox] Auto-requeuing after partner browser navigation with criteria:', { emotion, language, mode });
-              
-              const firstResult = await connectToMatch(userId, userName, deviceId, emotion, language, mode);
-              
-              if (firstResult && firstResult.matched) {
-                console.log('✅ [ChatBox] Immediate match found after auto-requeue (browser navigation)');
-                return;
-              }
-              
-              // Set up polling
-              if (matchmakingPollRef.current) {
-                clearInterval(matchmakingPollRef.current);
-                matchmakingPollRef.current = null;
-              }
-              
-              let pollCount = 0;
-              const maxPolls = 30;
-              
-              matchmakingPollRef.current = setInterval(async () => {
-                if (!isMountedRef.current || partnerIdRef.current || sessionStorage.getItem('partnerId')) {
-                  if (matchmakingPollRef.current) {
-                    clearInterval(matchmakingPollRef.current);
-                    matchmakingPollRef.current = null;
-                  }
-                  return;
-                }
-                
-                pollCount++;
-                try {
-                  const result = await connectToMatch(userId, userName, deviceId, emotion, language, mode);
-                  if (result && result.matched) {
-                    if (matchmakingPollRef.current) {
-                      clearInterval(matchmakingPollRef.current);
-                      matchmakingPollRef.current = null;
-                    }
-                  } else if (pollCount >= maxPolls) {
-                    if (matchmakingPollRef.current) {
-                      clearInterval(matchmakingPollRef.current);
-                      matchmakingPollRef.current = null;
-                    }
-                    if (isMountedRef.current) {
-                      notifyNoBuddy();
-                    }
-                  }
-                } catch (error) {
-                  console.error('🔴 [ChatBox] Polling error after auto-requeue (browser navigation):', error);
-                  if (matchmakingPollRef.current) {
-                    clearInterval(matchmakingPollRef.current);
-                    matchmakingPollRef.current = null;
-                  }
-                  if (isMountedRef.current) {
-                    notifyNoBuddy();
-                  }
-                }
-              }, 2000);
-            } catch (error) {
-              console.error('🔴 [ChatBox] Auto-requeue error after browser navigation:', error);
-              setChatState('noBuddy');
-              setNextButtonDisabled(false);
-            }
-          }
-        }, 500);
-        
-        return; // Don't navigate away - auto-requeue instead
+        return;
       }
       
       // For other room_closed scenarios (not browser navigation), navigate away
@@ -1550,6 +1530,29 @@ const ChatBox = () => {
 
   // Handle browser navigation and page unload
   useEffect(() => {
+    const ensureResumeCriteria = () => {
+      try {
+        const hasCriteria = !!sessionStorage.getItem(RESUME_MATCH_CRITERIA_KEY);
+        if (hasCriteria) return;
+        const resumeSelectedOption = sessionStorage.getItem('lastSelectedOption') || null;
+        const resumeEmotion = originalEmotionRef.current || sessionStorage.getItem('originalEmotion') || null;
+        const resumeLanguage = originalLanguageRef.current || sessionStorage.getItem('originalLanguage') || null;
+        const storedMode = originalModeRef.current !== null ? originalModeRef.current : (sessionStorage.getItem('originalMode') || null);
+        const resumeMode = storedMode === 'null' ? null : storedMode;
+        sessionStorage.setItem(RESUME_MATCH_CRITERIA_KEY, JSON.stringify({
+          userName,
+          deviceId,
+          selectedOption: resumeSelectedOption,
+          emotion: resumeEmotion,
+          language: resumeLanguage,
+          mode: resumeMode,
+          timestamp: Date.now(),
+        }));
+      } catch (err) {
+        console.warn('⚠️ [ChatBox] Unable to ensure resume criteria', err);
+      }
+    };
+
     const notifyPartnerAndCleanup = (reason) => {
       if (chatState === 'chatting' && socket && userId && partnerId && !hasHandledLeave.current) {
         console.log(`🔴 [ChatBox] Notifying partner before browser ${reason}`, { userId, partnerId });
@@ -1557,6 +1560,21 @@ const ChatBox = () => {
         // Mark as handled immediately to prevent duplicate notifications
         hasHandledLeave.current = true;
         
+        const lowerReason = reason?.toLowerCase() || '';
+        if (lowerReason.includes('refresh') || lowerReason.includes('unload')) {
+          ensureResumeCriteria();
+          try {
+            sessionStorage.setItem(RESUME_MATCH_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              reason,
+            }));
+          } catch (err) {
+            console.warn('⚠️ [ChatBox] Unable to persist resume intent', err);
+          }
+        } else {
+          sessionStorage.removeItem(RESUME_MATCH_KEY);
+        }
+
         // Send "next" message to server FIRST to notify partner immediately
         // This ensures partner gets notified before WebSocket closes
         if (socket.ws && socket.ws.readyState === WebSocket.OPEN) {
@@ -1606,7 +1624,7 @@ const ChatBox = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('unload', handleUnload);
     };
-  }, [chatState, socket, userId, partnerId, trackSessionEnd]);
+  }, [chatState, socket, userId, partnerId, userName, deviceId, trackSessionEnd]);
 
   useExitProtection({
     enabled: chatState === 'chatting',

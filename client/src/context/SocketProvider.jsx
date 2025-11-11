@@ -9,12 +9,22 @@ const logWarn = (...args) => DEBUG && console.warn(...args);
 
 // Retrieve or create a persistent user ID for the current client.
 const getUserToken = () => {
-  let token = localStorage.getItem('userId');
-  if (!token) {
-    token = crypto.randomUUID();
-    localStorage.setItem('userId', token);
+  try {
+    if (typeof window === 'undefined' || !window?.localStorage) {
+      return `srv-${Math.random().toString(36).slice(2, 10)}`;
+    }
+    let token = window.localStorage.getItem('userId');
+    if (!token) {
+      const uuid = (typeof crypto !== 'undefined' && crypto?.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      token = uuid;
+      window.localStorage.setItem('userId', token);
+    }
+    return token;
+  } catch (_) {
+    return `anon-${Math.random().toString(36).slice(2, 10)}`;
   }
-  return token;
 };
 
 // Get Worker URL from environment or use current origin
@@ -32,12 +42,73 @@ const getWorkerURL = () => {
     return devUrl;
   }
   // Priority 3: Production - use worker URL or fallback to origin
-  const prodUrl = window.location.origin;
-  logWarn('[SocketProvider] Production mode, using origin as worker URL (may be incorrect):', prodUrl);
-  return prodUrl;
+  if (typeof window !== 'undefined' && window?.location?.origin) {
+    const prodUrl = window.location.origin;
+    logWarn('[SocketProvider] Production mode, using origin as worker URL (may be incorrect):', prodUrl);
+    return prodUrl;
+  }
+  logWarn('[SocketProvider] Production mode in non-window environment, no worker URL available');
+  return null;
 };
 
-const SocketProvider = ({ children }) => {
+const normalizeBaseURL = (value) => {
+  if (!value) return null;
+  let normalized = value.trim();
+  if (normalized.startsWith('ws://')) {
+    normalized = normalized.replace(/^ws:/i, 'http:');
+  } else if (normalized.startsWith('wss://')) {
+    normalized = normalized.replace(/^wss:/i, 'https:');
+  }
+  try {
+    return new URL(normalized);
+  } catch (err) {
+    try {
+      const fallback = normalized.replace(/^\/*/, '');
+      return new URL(`https://${fallback}`);
+    } catch (_) {
+      return null;
+    }
+  }
+};
+
+const buildWsUrl = (base, roomId, userId, userName, queueKey) => {
+  if (!base || !roomId || !userId) return null;
+  const urlObj = normalizeBaseURL(base);
+  if (!urlObj) return null;
+  const protocol = urlObj.protocol === 'https:' ? 'wss:' : 'ws:';
+  const encodedName = userName ? `&userName=${encodeURIComponent(userName)}` : '';
+  const queueKeyParam = queueKey ? `&queueKey=${encodeURIComponent(queueKey)}` : '';
+  return `${protocol}//${urlObj.host}/chat/${roomId}?userId=${encodeURIComponent(userId)}${encodedName}${queueKeyParam}`;
+};
+
+const extractRoomId = (wsUrl) => {
+  if (!wsUrl) return null;
+  try {
+    const url = new URL(wsUrl);
+    const segments = url.pathname.split('/').filter(Boolean);
+    return segments.pop() || null;
+  } catch (_) {
+    return null;
+  }
+};
+
+const deriveWorkerBase = (value) => {
+  const urlObj = normalizeBaseURL(value);
+  if (!urlObj) return null;
+  return `${urlObj.protocol}//${urlObj.host}`;
+};
+
+const noopTelemetry = {
+  onMatchStart: () => {},
+  onMatchResult: () => {},
+  onMatchError: () => {},
+  onWsOpen: () => {},
+  onWsError: () => {},
+  onWsClose: () => {},
+  onReconnectScheduled: () => {},
+};
+
+const SocketProvider = ({ children, telemetry }) => {
   const [ws, setWs] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState(null);
@@ -47,9 +118,20 @@ const SocketProvider = ({ children }) => {
   const userIdRef = useRef(getUserToken());
   const userNameRef = useRef(null);
   const deviceIdRef = useRef(null);
+  const workerBaseRef = useRef(null);
+  const wsUrlRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 10;
+  const queueKeyRef = useRef(null);
+  const handlersRef = useRef({});
+  const telemetryRef = useRef(noopTelemetry);
+  const matchAbortRef = useRef(null);
+  const matchTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    telemetryRef.current = telemetry || noopTelemetry;
+  }, [telemetry]);
   
   // Cleanup reconnect timeout on unmount
   useEffect(() => {
@@ -58,16 +140,67 @@ const SocketProvider = ({ children }) => {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
+      if (matchTimeoutRef.current) {
+        clearTimeout(matchTimeoutRef.current);
+        matchTimeoutRef.current = null;
+      }
+      if (matchAbortRef.current) {
+        try { matchAbortRef.current.abort('component-unmount'); } catch {}
+        matchAbortRef.current = null;
+      }
+      // Remove any globally registered window event handlers
+      try {
+        const allHandlers = handlersRef.current || {};
+        Object.keys(allHandlers).forEach((eventName) => {
+          const list = allHandlers[eventName] || [];
+          list.forEach((item) => {
+            if (item?.wrappedHandler) {
+              window.removeEventListener(eventName, item.wrappedHandler);
+            }
+          });
+        });
+        handlersRef.current = {};
+      } catch (err) {
+        logWarn('[SocketProvider] Error cleaning up handlers on unmount', err);
+      }
     };
   }, []);
 
   // Connect to matchmaking and then to chat room
   const connectToMatch = async (userId, userName, deviceId, emotion = null, language = null, mode = null) => {
     try {
+      // Persist identity for later reconnect flows
+      userIdRef.current = userId || userIdRef.current;
+      userNameRef.current = userName || userNameRef.current;
+
       const workerURL = getWorkerURL();
-      log('[SocketProvider] Calling matchmaking API:', { userId, userName, emotion, language, mode, workerURL });
-      
-      const response = await fetch(`${workerURL}/api/match`, {
+      const baseUrl = workerURL.replace(/\/$/, '');
+      const workerUrlObj = normalizeBaseURL(workerURL);
+      const matchUrl = workerUrlObj
+        ? new URL('/api/match', workerUrlObj).toString()
+        : `${baseUrl}/api/match`;
+      log('[SocketProvider] Calling matchmaking API:', { userId, userName, emotion, language, mode, workerURL, matchUrl });
+
+      // Abort any previous in-flight matchmaking request
+      if (matchTimeoutRef.current) {
+        clearTimeout(matchTimeoutRef.current);
+        matchTimeoutRef.current = null;
+      }
+      if (matchAbortRef.current) {
+        try { matchAbortRef.current.abort('new-match-request'); } catch {}
+        matchAbortRef.current = null;
+      }
+
+      const controller = new AbortController();
+      matchAbortRef.current = controller;
+      const MATCH_TIMEOUT_MS = 10000;
+      const matchStartTs = performance.now();
+      telemetryRef.current.onMatchStart?.({ userId, userName, deviceId, emotion, language, mode });
+      matchTimeoutRef.current = setTimeout(() => {
+        try { controller.abort('matchmaking-timeout'); } catch {}
+      }, MATCH_TIMEOUT_MS);
+
+      const response = await fetch(matchUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -78,6 +211,7 @@ const SocketProvider = ({ children }) => {
           language,
           mode,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -88,59 +222,68 @@ const SocketProvider = ({ children }) => {
 
       const data = await response.json();
       log('[SocketProvider] Matchmaking response:', data);
+      const latencyMs = Math.round(performance.now() - matchStartTs);
 
-      if (data.matched && data.sessionId) {
-        // Match found! Connect to WebSocket
-        // Ensure partnerName has a fallback value
-        const partnerName = data.partnerName || 'Stranger';
-        
-        log('[SocketProvider] ✅ Match found!', { 
-          sessionId: data.sessionId, 
-          partnerId: data.partnerId, 
-          partnerName,
-          wsUrl: data.wsUrl 
+      const isMatched = data.status === 'matched' || data.matched;
+      const roomId = data.sessionId || data.roomId || extractRoomId(data.wsUrl);
+
+      if (isMatched && (roomId || data.wsUrl)) {
+        telemetryRef.current.onMatchResult?.({
+          matched: true,
+          roomId,
+          latencyMs,
         });
-        
-        setSessionId(data.sessionId);
+        const partnerNameResolved = data.partnerName || 'Stranger';
+        const workerFallbackBase = deriveWorkerBase(workerURL);
+        const resolvedWorkerBase = data.workerWsBase || deriveWorkerBase(data.wsUrl) || workerFallbackBase;
+        const wsUrlToUse =
+          data.wsUrl ||
+          buildWsUrl(resolvedWorkerBase, roomId, userId, userName, data.queueKey) ||
+          buildWsUrl(workerFallbackBase, roomId, userId, userName, data.queueKey);
+
+        log('[SocketProvider] ✅ Match found!', {
+          roomId,
+          partnerId: data.partnerId,
+          partnerName: partnerNameResolved,
+          wsUrl: wsUrlToUse,
+          queueKey: data.queueKey || null,
+          workerWsBase: resolvedWorkerBase,
+        });
+
+        setSessionId(roomId || null);
         setPartnerId(data.partnerId);
-        setPartnerName(partnerName);
-        
-        // Trigger partner_found event with original criteria
-        // CRITICAL: Ensure all required fields are present
+        setPartnerName(partnerNameResolved);
+        workerBaseRef.current = resolvedWorkerBase;
+        wsUrlRef.current = wsUrlToUse;
+
         const eventDetail = {
           partnerId: data.partnerId,
-          partnerName: partnerName, // Always provide a value, never null/undefined
-          sessionId: data.sessionId,
-          emotion: emotion, // Include original criteria
-          language: language,
-          mode: mode,
+          partnerName: partnerNameResolved,
+          sessionId: roomId,
+          roomId,
+          emotion,
+          language,
+          mode,
+          wsUrl: wsUrlToUse,
+          workerWsBase: resolvedWorkerBase,
+          queueKey: data.queueKey || null,
         };
-        
+
         log('[SocketProvider] Dispatching partner_found event:', eventDetail);
-        
-        // Dispatch event synchronously to ensure it's received
+
         try {
           window.dispatchEvent(new CustomEvent('partner_found', { detail: eventDetail }));
           log('[SocketProvider] ✅ partner_found event dispatched successfully');
         } catch (error) {
           logError('[SocketProvider] Error dispatching partner_found event:', error);
         }
-        
-        // Connect to WebSocket chat room
-        // Build WebSocket URL using worker URL, not frontend URL
-        if (data.wsUrl) {
-          // Use wsUrl from response if provided
-          connectToChat(data.wsUrl, userId, userName);
-        } else {
-          // Build WebSocket URL manually if not in response
-          const protocol = workerURL.startsWith('https') ? 'wss' : 'ws';
-          const wsUrlObj = new URL(workerURL);
-          const fullWsUrl = `${protocol}://${wsUrlObj.host}/chat?sessionId=${data.sessionId}&userId=${userId}&userName=${encodeURIComponent(userName)}`;
-          log('[SocketProvider] Connecting to WebSocket (built URL):', { fullWsUrl, workerURL, host: wsUrlObj.host });
-          connectToChat(fullWsUrl, userId, userName);
+
+        if (wsUrlToUse) {
+          queueKeyRef.current = data.queueKey || null;
+          connectToChat(wsUrlToUse, userId, userName, queueKeyRef.current);
         }
-        
-        return data;
+
+        return { ...data, matched: true, roomId, wsUrl: wsUrlToUse, workerWsBase: resolvedWorkerBase };
       } else {
         // Still waiting, poll again after a delay
         log('[SocketProvider] Still waiting for partner...', data.message);
@@ -148,19 +291,56 @@ const SocketProvider = ({ children }) => {
       }
     } catch (error) {
       logError('[SocketProvider] Matchmaking error:', error);
+      telemetryRef.current.onMatchError?.({
+        error: String(error?.message || error),
+        isAbort: error?.name === 'AbortError',
+      });
       throw error;
+    } finally {
+      if (matchTimeoutRef.current) {
+        clearTimeout(matchTimeoutRef.current);
+        matchTimeoutRef.current = null;
+      }
+      if (matchAbortRef.current) {
+        // keep controller if caller might read it; otherwise clear
+        matchAbortRef.current = null;
+      }
     }
   };
 
   // Connect to chat room WebSocket
-  const connectToChat = (wsUrl, userId, userName) => {
+  const connectToChat = (wsUrl, userId, userName, queueKey = null) => {
     try {
+      log('[SocketProvider] connectToChat called', { wsUrl, userId, userName, queueKey, hasExistingWs: !!ws });
+      
       // Close existing connection if any
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close();
+        log('[SocketProvider] Closing existing WebSocket connection');
+        ws.close(1000, 'Reconnecting');
       }
 
+      if (queueKey) {
+        queueKeyRef.current = queueKey;
+      }
+
+      // Ensure user identity is persisted for reconnects
+      userIdRef.current = userId || userIdRef.current;
+      userNameRef.current = userName || userNameRef.current;
+
+      if (!wsUrl) {
+        const effectiveQueueKey = queueKey ?? queueKeyRef.current ?? null;
+        wsUrl = wsUrlRef.current
+          || buildWsUrl(workerBaseRef.current || getWorkerURL(), sessionId, userId, userName, effectiveQueueKey);
+        log('[SocketProvider] Built WebSocket URL:', wsUrl);
+      }
+      if (!wsUrl) {
+        logError('[SocketProvider] Missing WebSocket URL for chat connection', { sessionId, userId, userName, queueKey });
+        throw new Error('Missing WebSocket URL for chat connection');
+      }
+
+      log('[SocketProvider] Creating new WebSocket connection', { wsUrl, userId, userName });
       const newWs = new WebSocket(wsUrl);
+      wsUrlRef.current = wsUrl;
 
       newWs.onopen = () => {
         log('[SocketProvider] ✅ WebSocket connected successfully!', { 
@@ -170,6 +350,11 @@ const SocketProvider = ({ children }) => {
           userName 
         });
         setIsConnected(true);
+        const attempt = reconnectAttemptsRef.current;
+        telemetryRef.current.onWsOpen?.({
+          wsUrl,
+          attempt,
+        });
         reconnectAttemptsRef.current = 0;
 
         // Send initial connection message
@@ -201,6 +386,10 @@ const SocketProvider = ({ children }) => {
           readyState: newWs.readyState,
           url: wsUrl 
         });
+        telemetryRef.current.onWsError?.({
+          wsUrl,
+          error: String(error?.message || error),
+        });
       };
 
       newWs.onclose = (event) => {
@@ -212,6 +401,12 @@ const SocketProvider = ({ children }) => {
           userId: userIdRef.current
         });
         setIsConnected(false);
+        telemetryRef.current.onWsClose?.({
+          wsUrl,
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        });
 
         // Check if this is a room_closed scenario (browser navigation)
         const reason = event.reason || '';
@@ -278,6 +473,11 @@ const SocketProvider = ({ children }) => {
           reconnectAttemptsRef.current++;
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
           log(`[SocketProvider] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
+          telemetryRef.current.onReconnectScheduled?.({
+            attempt: reconnectAttemptsRef.current,
+            delayMs: delay,
+            wsUrl,
+          });
           
           // Clear existing reconnect timeout before setting new one
           if (reconnectTimeoutRef.current) {
@@ -287,12 +487,13 @@ const SocketProvider = ({ children }) => {
           
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectTimeoutRef.current = null;
-            if (sessionId && userIdRef.current && userNameRef.current) {
-              const baseWorkerURL = getWorkerURL();
-              const protocol = baseWorkerURL.startsWith('https') ? 'wss' : 'ws';
-              const wsUrlObj = new URL(baseWorkerURL);
-              const wsUrl = `${protocol}://${wsUrlObj.host}/chat?sessionId=${sessionId}&userId=${userIdRef.current}&userName=${encodeURIComponent(userNameRef.current)}`;
-              connectToChat(wsUrl, userIdRef.current, userNameRef.current);
+            if (userIdRef.current && userNameRef.current) {
+              const fallbackBase = workerBaseRef.current || getWorkerURL();
+              const wsUrlNext = wsUrlRef.current
+                || buildWsUrl(fallbackBase, sessionId, userIdRef.current, userNameRef.current, queueKeyRef.current);
+              if (wsUrlNext) {
+                connectToChat(wsUrlNext, userIdRef.current, userNameRef.current, queueKeyRef.current);
+              }
             }
           }, delay);
         }
@@ -316,7 +517,8 @@ const SocketProvider = ({ children }) => {
   const sendMessage = (type, payload) => {
     log('[SocketProvider] sendMessage called', { type, payload, wsReadyState: ws?.readyState, hasWs: !!ws });
     if (ws && ws.readyState === WebSocket.OPEN) {
-      const message = JSON.stringify({ type, ...payload });
+      const { type: _ignored, ...rest } = payload || {};
+      const message = JSON.stringify({ type, ...rest });
       log('[SocketProvider] Sending message:', message);
       ws.send(message);
       log('[SocketProvider] ✅ Message sent successfully');
@@ -339,7 +541,7 @@ const SocketProvider = ({ children }) => {
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (ws && ws.readyState !== WebSocket.CLOSED) {
-        ws.close();
+        ws.close(1000, 'Provider unmount');
       }
     };
   }, [ws]);
@@ -364,7 +566,24 @@ const SocketProvider = ({ children }) => {
           }
         }));
       } else if (data.type === 'partner_connected') {
-        window.dispatchEvent(new CustomEvent('partner_connected', { detail: data }));
+        const detail = { ...data, sessionId };
+        try {
+          sessionStorage.setItem('pendingPartnerConnected', JSON.stringify({
+            partnerId: detail.userId,
+            partnerName: detail.userName,
+            sessionId: detail.sessionId || null,
+            timestamp: Date.now(),
+          }));
+        } catch (err) {
+          logWarn('[SocketProvider] Unable to persist pending partner_connected event', err);
+        }
+        window.dispatchEvent(new CustomEvent('partner_connected', { detail }));
+      } else if (data.type === 'partner_info') {
+        // Partner info received - partner exists but hasn't connected yet
+        // Treat this similarly to partner_connected so UI can show partner name
+        const detail = { ...data, sessionId };
+        log('[SocketProvider] Partner info received:', detail);
+        window.dispatchEvent(new CustomEvent('partner_connected', { detail }));
       } else if (data.type === 'room_closed') {
         window.dispatchEvent(new CustomEvent('room_closed', { detail: data }));
       }
@@ -418,7 +637,9 @@ const SocketProvider = ({ children }) => {
             }
           } else if (event === 'next') {
             // Legacy event - close current connection and find new buddy
-            if (ws) ws.close();
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+              ws.close(1000, 'User clicked Next');
+            }
             if (data.userId && data.userName && data.deviceId) {
               connectToMatch(data.userId, data.userName, data.deviceId, null, null, null)
                 .catch(err => logError('[SocketProvider] Matchmaking error:', err));
@@ -430,33 +651,49 @@ const SocketProvider = ({ children }) => {
         on: (event, handler) => {
           // Register event handler
           const wrappedHandler = (e) => handler(e.detail);
-          window.addEventListener(event, wrappedHandler);
-          // Store handler for cleanup
-          if (!ws._handlers) ws._handlers = {};
-          if (!ws._handlers[event]) ws._handlers[event] = [];
-          ws._handlers[event].push({ handler, wrappedHandler });
+          if (typeof window !== 'undefined') {
+            window.addEventListener(event, wrappedHandler);
+          }
+          // Store handler for cleanup independent of WebSocket instance
+          if (!handlersRef.current[event]) handlersRef.current[event] = [];
+          handlersRef.current[event].push({ handler, wrappedHandler });
+          // Return unsubscribe function to allow easy cleanup by callers
+          return () => {
+            const list = handlersRef.current[event] || [];
+            const item = list.find(h => h.handler === handler);
+            if (item) {
+              if (typeof window !== 'undefined') {
+                window.removeEventListener(event, item.wrappedHandler);
+              }
+              handlersRef.current[event] = list.filter(h => h !== item);
+            }
+          };
         },
         off: (event, handler) => {
           // Remove event handler
-          if (ws?._handlers?.[event]) {
-            const item = ws._handlers[event].find(h => h.handler === handler);
-            if (item) {
+          const list = handlersRef.current[event];
+          if (!list) return;
+          const item = list.find(h => h.handler === handler);
+          if (item) {
+            if (typeof window !== 'undefined') {
               window.removeEventListener(event, item.wrappedHandler);
-              ws._handlers[event] = ws._handlers[event].filter(h => h !== item);
             }
+            handlersRef.current[event] = list.filter(h => h !== item);
           }
         },
         disconnect: () => {
-          if (ws) ws.close();
+          if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+            ws.close(1000, 'Manual disconnect');
+          }
         },
         connect: () => {
           // Trigger reconnection
-          if (sessionId && userIdRef.current && userNameRef.current) {
-            const baseWorkerURL = getWorkerURL();
-            const protocol = baseWorkerURL.startsWith('https') ? 'wss' : 'ws';
-            const wsUrlObj = new URL(baseWorkerURL);
-            const wsUrl = `${protocol}://${wsUrlObj.host}/chat?sessionId=${sessionId}&userId=${userIdRef.current}&userName=${encodeURIComponent(userNameRef.current)}`;
-            connectToChat(wsUrl, userIdRef.current, userNameRef.current);
+          if (userIdRef.current && userNameRef.current) {
+            const wsUrlNext = wsUrlRef.current
+              || buildWsUrl(workerBaseRef.current || getWorkerURL(), sessionId, userIdRef.current, userNameRef.current, queueKeyRef.current);
+            if (wsUrlNext) {
+              connectToChat(wsUrlNext, userIdRef.current, userNameRef.current, queueKeyRef.current);
+            }
           }
         },
         connectToChat: connectToChat, // Expose connectToChat method
