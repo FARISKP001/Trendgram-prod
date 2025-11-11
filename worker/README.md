@@ -4,9 +4,19 @@ This directory contains the Cloudflare Worker implementation for the Trendgram c
 
 ## Architecture
 
-- **Worker Entrypoint** (`src/index.js`): Handles matchmaking API and routes WebSocket connections
-- **ChatRoom Durable Object** (`src/chat-room.js`): Manages WebSocket connections for chat pairs
-- **KV Namespace** (`MATCH_QUEUE`): Stores matchmaking queue with 30s TTL
+- **Worker Entrypoint** (`src/index.js`): Handles matchmaking API, routes WebSocket upgrades, applies CORS
+- **MatchQueue Durable Object** (`src/match-queue.js`): Performs matchmaking (waiting list, pairing, snapshots)
+- **ChatRoom Durable Object** (`src/chat-room.js`): Manages WebSocket connections, broadcasts, heartbeats, teardown
+- **KV Namespace (optional)** (`MATCH_QUEUE_BACKUP`): Stores periodic queue snapshots and terminal chat summaries
+
+## Queue keys
+
+- Format: `queue:<category>:<value>`
+  - `queue:emotion:😊`
+  - `queue:language:english` (lowercased)
+  - `queue:mode:emoji`
+
+Derivation happens automatically from the matchmaking payload (`emotion`, `language`, `mode`) when `queueKey` is not passed.
 
 ## Setup
 
@@ -19,11 +29,9 @@ npm install -g wrangler
 ### 2. Configure KV Namespace
 
 ```bash
-# Create KV namespace
-wrangler kv:namespace create "MATCH_QUEUE"
-
-# Create preview namespace for local development
-wrangler kv:namespace create "MATCH_QUEUE" --preview
+# Optional: backup snapshots & terminal chat summaries
+wrangler kv:namespace create "MATCH_QUEUE_BACKUP"
+wrangler kv:namespace create "MATCH_QUEUE_BACKUP" --preview
 ```
 
 Update `wrangler.toml` with the returned namespace IDs.
@@ -68,9 +76,17 @@ wrangler deploy
 
 Set these in Cloudflare Dashboard or via wrangler:
 
-```bash
-# Optional: Custom KV TTL (default: 30 seconds)
-wrangler secret put MATCH_QUEUE_TTL
+- `ALLOWED_ORIGINS`: Comma-separated list or `*` (default). Used by CORS helper.
+- `MATCH_QUEUE_TTL`: Optional matchmaking wait TTL in seconds (default 30s).
+- `CHAT_IDLE_MINUTES`: Optional chat idle timeout (default 5 minutes).
+- `NODE_ENV`: Optional, for logging behavior.
+
+For local development, you can create a `.dev.vars` file:
+
+```
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+MATCH_QUEUE_TTL=30
+CHAT_IDLE_MINUTES=5
 ```
 
 ## API Endpoints
@@ -118,7 +134,7 @@ WebSocket endpoint for chat room connection.
 
 ## Features
 
-- ✅ Matchmaking using KV with 30s TTL
+- ✅ Matchmaking using Durable Objects (with optional KV snapshots)
 - ✅ WebSocket support via Durable Objects
 - ✅ Auto-cleanup after 5 minutes of inactivity
 - ✅ Message history (last 20 messages per room)
@@ -145,14 +161,19 @@ WebSocket endpoint for chat room connection.
 - [x] Matchmaking logic
 - [x] WebSocket handling
 - [x] Auto-cleanup alarms
-- [ ] Frontend WebSocket integration
-- [ ] Testing with production load
-- [ ] Monitoring setup
+- [x] Frontend WebSocket integration (client connects to `/chat` URL)
+- [x] Testing with production load (k6 script)
+- [x] Monitoring setup (Analytics Engine + Cloudflare Analytics)
+- [x] Gradual cutover toggles (`USE_WORKER_*`) and rollback docs
+- [x] Full switchover procedure (Week 4)
 
 ## Notes
 
-- Messages are stored in-memory (Durable Object) with 5min TTL
-- Matchmaking queue uses KV with 30s TTL
+- Messages are stored in-memory (Durable Object) with ~5min idle TTL
 - Each chat room is a separate Durable Object instance
 - WebSocket connections are automatically reconnected on failure
+
+## Week 4 Switchover
+
+See `docs/week4-switchover.md` for path-level cutover, flags, and rollback steps.
 

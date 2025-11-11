@@ -156,6 +156,14 @@ export class ChatRoomDO {
       console.error(`[ChatRoomDO:${this.roomId}] accept socket failed`, err),
     );
 
+    // Observability: connection attempt
+    try {
+      this.env.AE?.writeDataPoint({
+        blobs: ["ws_connect", this.queueKey || "unknown"],
+        doubles: [1],
+      });
+    } catch (_err) {}
+
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -240,11 +248,23 @@ export class ChatRoomDO {
         reason: "socket_close",
         closeInfo: { code: event.code, reason: event.reason },
       });
+      try {
+        this.env.AE?.writeDataPoint({
+          blobs: ["ws_close", this.queueKey || "unknown"],
+          doubles: [1],
+        });
+      } catch (_err) {}
     });
 
     ws.addEventListener("error", (error) => {
       console.error(`[ChatRoomDO:${this.roomId}] socket error for ${userId}`, error);
       this.cleanupChat(userId, { reason: "socket_error" });
+      try {
+        this.env.AE?.writeDataPoint({
+          blobs: ["ws_error", this.queueKey || "unknown"],
+          doubles: [1],
+        });
+      } catch (_err) {}
     });
   }
 
@@ -282,6 +302,12 @@ export class ChatRoomDO {
         this.persistSnapshotSoon();
 
         this.broadcast(messageRecord, userId);
+      try {
+        this.env.AE?.writeDataPoint({
+          blobs: ["ws_message", this.queueKey || "unknown"],
+          doubles: [1],
+        });
+      } catch (_err) {}
         break;
       }
       case "next":

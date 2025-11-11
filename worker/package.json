@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "tail": "wrangler tail",
+    "test:parity": "node ./tests/parity.mjs",
+    "test:load:k6": "k6 run ./tests/load-k6.js"
   },
   "keywords": [],
   "author": "",

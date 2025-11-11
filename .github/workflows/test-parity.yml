@@ -1,0 +1,39 @@
+name: Worker Parity Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      worker_url:
+        description: 'Worker base URL'
+        required: true
+      origin_url:
+        description: 'Origin base URL'
+        required: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run parity tests
+        env:
+          WORKER_URL: ${{ github.event.inputs.worker_url }}
+          ORIGIN_URL: ${{ github.event.inputs.origin_url }}
+        run: npm run test:parity
+
+

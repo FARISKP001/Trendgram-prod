@@ -4,6 +4,8 @@
 node_modules/
 client/client-vite/node_modules/
 server/node_modules/
+worker/node_modules
+docs
 
 # Build output
 dist/
@@ -43,3 +45,7 @@ coverage/
 
 # Optional: Ignore local data
 *.local
+
+# Cloudflare Workers local files
+worker/.dev.vars
+worker/.wrangler/

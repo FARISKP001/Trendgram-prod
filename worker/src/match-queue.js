@@ -179,6 +179,14 @@ export class MatchQueueDO {
       this.scheduleSnapshots();
       await this.persistMatchSnapshot();
 
+      // Observability: matched pair
+      try {
+        this.env.AE?.writeDataPoint({
+          blobs: ["matched", queueKey],
+          doubles: [1],
+        });
+      } catch (_err) {}
+
       return { matched: true, ...matchRecord };
     }
 
@@ -197,6 +205,14 @@ export class MatchQueueDO {
     this.meta.stats.joinCount += 1;
     this.meta.updatedAt = timestamp;
     this.scheduleSnapshots();
+
+    // Observability: queued
+    try {
+      this.env.AE?.writeDataPoint({
+        blobs: ["queued", queueKey],
+        doubles: [1],
+      });
+    } catch (_err) {}
 
     return { matched: false, waitingUsers: this.waitingUsers.length };
   }

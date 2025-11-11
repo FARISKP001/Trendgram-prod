@@ -23,9 +23,32 @@ id = "YOUR_KV_NAMESPACE_ID"
 preview_id = "YOUR_KV_PREVIEW_ID"
 # Used for five-minute backup snapshots and final chat teardown summaries.
 
+[[kv_namespaces]]
+binding = "APP_KV"
+id = "YOUR_APP_KV_NAMESPACE_ID"
+preview_id = "YOUR_APP_KV_PREVIEW_ID"
+
+[analytics_engine_datasets]
+bindings = [
+  { binding = "AE", dataset = "trendgram_metrics" }
+]
+
 [vars]
-# Set in Cloudflare Dashboard or via wrangler secret
+# CORS allowlist. Comma-separated origins or "*" for open. Can be set in Dashboard.
+# ALLOWED_ORIGINS = "https://trendgram.example.com,https://app.example.com"
+# Optional matchmaking TTL (seconds)
 # MATCH_QUEUE_TTL = "30"
+# Optional chat idle timeout (minutes)
+# CHAT_IDLE_MINUTES = "5"
+# Optional origin (Express) to proxy read-only APIs from
+# ORIGIN_URL = "https://api.your-origin.example.com"
+# Optional Turnstile secret
+# TURNSTILE_SECRET_KEY = ""
+# Optional session TTL (seconds)
+# SESSION_TTL_SECONDS = "7200"
+# Feature flags for gradual cutover
+USE_WORKER_MATCHMAKING = "true"
+USE_WORKER_READONLY = "true"
 
 [env.production]
 name = "trendgram-chat"
@@ -39,4 +62,23 @@ bindings = [
 [[env.production.kv_namespaces]]
 binding = "MATCH_QUEUE_BACKUP"
 id = "YOUR_KV_NAMESPACE_ID"
+
+[[env.production.kv_namespaces]]
+binding = "APP_KV"
+id = "YOUR_APP_KV_NAMESPACE_ID"
+
+[env.production.analytics_engine_datasets]
+bindings = [
+  { binding = "AE", dataset = "trendgram_metrics" }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trendgram-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[env.production.d1_databases]
+bindings = [
+  { binding = "DB", database_name = "trendgram-db", database_id = "YOUR_D1_DATABASE_ID" }
+]
 
